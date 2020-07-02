@@ -1,5 +1,5 @@
 {
-  "name": "@sciencemesh/cs3api4lab",
+  "name": "@JarCz/cs3_jlab_test_ext",
   "version": "0.1.0",
   "description": "CS3APIs Jupyterlab contents connector",
   "keywords": [
@@ -9,12 +9,12 @@
     "CS3APIs",
     "CS3"
   ],
-  "homepage": "https://github.com/sciencemesh/cs3api4lab",
+  "homepage": "https://github.com/JarCz/cs3_jlab_test_ext",
   "bugs": {
-    "url": "https://github.com/sciencemesh/cs3api4lab/issues"
+    "url": "https://github.com/JarCz/cs3_jlab_test_ext/issues"
   },
   "license": "Apache-2.0",
-  "author": "CS3MESH4EOSC",
+  "author": "cs3_jlab_test_ext",
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
     "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
@@ -24,16 +24,16 @@
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sciencemesh/cs3api4lab.git"
+    "url": "https://github.com/JarCz/cs3_jlab_test_ext.git"
   },
   "scripts": {
     "build": "jlpm run build:lib",
-    "build:labextension": "cd cs3api4lab && rimraf labextension && mkdirp labextension && cd labextension && npm pack ../..",
+    "build:labextension": "cd cs3api_test_ext && rimraf labextension && mkdirp labextension && cd labextension && npm pack ../..",
     "build:lib": "tsc",
     "build:all": "jlpm run build:labextension",
     "clean": "jlpm run clean:lib",
     "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
-    "clean:labextension": "rimraf cs3api4lab/labextension",
+    "clean:labextension": "rimraf cs3api_test_ext/labextension",
     "clean:all": "jlpm run clean:lib && jlpm run clean:labextension",
     "eslint": "eslint . --ext .ts,.tsx --fix",
     "eslint:check": "eslint . --ext .ts,.tsx",
@@ -66,7 +66,7 @@
           "pip"
         ],
         "base": {
-          "name": "cs3api4lab"
+          "name": "cs3_jlab_test_ext"
         }
       }
     },
