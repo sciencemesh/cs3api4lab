@@ -1,9 +1,4 @@
-import configparser
-import logging
-
 from notebook.services.contents.manager import ContentsManager
-from cs3api_test_ext.cs3api.cs3_file_api import Cs3FileApi
-
 
 class CS3APIsManager(ContentsManager):
 
@@ -11,14 +6,14 @@ class CS3APIsManager(ContentsManager):
 
         # ToDo: Setup logger from jupyter logger
 
-        log_handler = logging.FileHandler('/var/tmp/cs3api.log')
-        log_handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(name)s[%(process)d] %(levelname)-8s %(message)s',
-                                                   datefmt='%Y-%m-%dT%H:%M:%S'))
-        log = logging.getLogger('cs3api.test')
-        log.addHandler(log_handler)
-        log.setLevel(logging.DEBUG)
+        # log_handler = logging.FileHandler('/var/tmp/cs3api.log')
+        # log_handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(name)s[%(process)d] %(levelname)-8s %(message)s',
+        #                                            datefmt='%Y-%m-%dT%H:%M:%S'))
+        # log = logging.getLogger('cs3api.test')
+        # log.addHandler(log_handler)
+        # log.setLevel(logging.DEBUG)
 
-        config = configparser.ConfigParser()
+        # config = configparser.ConfigParser()
 
         # ToDo: Setup config from jupyter config
 
@@ -31,9 +26,10 @@ class CS3APIsManager(ContentsManager):
         #     print("Missing option or missing configuration, check the test.conf file")
         #     raise
 
-        self.storage = Cs3FileApi(config, log)
-
-        return Cs3FileApi(self, config, log)
+        # self.storage = Cs3FileApi(config, log)
+        #
+        # return Cs3FileApi(self, config, log)
+        raise NotImplementedError('cs3: missing')
 
     def dir_exists(self, path):
         """Does a directory exist at the given path?
@@ -83,7 +79,8 @@ class CS3APIsManager(ContentsManager):
         """Get a file or directory model."""
 
         # ToDo: get user info/token from jupyter session
-        return self.__cs3_file_api().read_file("", path, "einstein")
+        # return self.__cs3_file_api().read_file("", path, "einstein")
+        return "cs3 api manager GET"
 
     def save(self, model, path):
         """
