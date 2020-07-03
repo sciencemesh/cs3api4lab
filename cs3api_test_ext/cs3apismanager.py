@@ -1,6 +1,39 @@
+import configparser
+import logging
+
 from notebook.services.contents.manager import ContentsManager
+from cs3api_test_ext.cs3api.cs3_file_api import Cs3FileApi
+
 
 class CS3APIsManager(ContentsManager):
+
+    def __cs3_file_api(self):
+
+        # ToDo: Setup logger from jupyter logger
+
+        log_handler = logging.FileHandler('/var/tmp/cs3api.log')
+        log_handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(name)s[%(process)d] %(levelname)-8s %(message)s',
+                                                   datefmt='%Y-%m-%dT%H:%M:%S'))
+        log = logging.getLogger('cs3api.test')
+        log.addHandler(log_handler)
+        log.setLevel(logging.DEBUG)
+
+        config = configparser.ConfigParser()
+
+        # ToDo: Setup config from jupyter config
+
+        # try:
+        #     with open('test.conf') as fdconf:
+        #         config.read_file(fdconf)
+        #     self.userid = config.get('cs3', 'userid')
+        #     self.endpoint = config.get('cs3', 'endpoint')
+        # except (KeyError, configparser.NoOptionError):
+        #     print("Missing option or missing configuration, check the test.conf file")
+        #     raise
+
+        self.storage = Cs3FileApi(config, log)
+
+        return Cs3FileApi(self, config, log)
 
     def dir_exists(self, path):
         """Does a directory exist at the given path?
@@ -48,7 +81,9 @@ class CS3APIsManager(ContentsManager):
 
     def get(self, path, content=True, type=None, format=None):
         """Get a file or directory model."""
-        raise NotImplementedError('cs3: missing')
+
+        # ToDo: get user info/token from jupyter session
+        return self.__cs3_file_api().read_file("", path, "einstein")
 
     def save(self, model, path):
         """
@@ -67,5 +102,5 @@ class CS3APIsManager(ContentsManager):
         """Rename a file or directory."""
         raise NotImplementedError('cs3: missing')
 
-    
+
 
