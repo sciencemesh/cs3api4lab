@@ -1,0 +1,15 @@
+.jp-ReactWidget {
+    background: var(--jp-layout-color1);
+    color: var(--jp-ui-font-color1);
+    display: flex;
+}
+
+.jp-ReactWidget .controlPanel {
+    width: 50%;
+    float: left;
+}
+
+.jp-ReactWidget .resultWindow {
+    width: 50%;
+    float: right;
+}
