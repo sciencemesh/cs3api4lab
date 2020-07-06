@@ -1,6 +1,7 @@
 from typing import Optional, Awaitable
 
 from notebook.base.handlers import APIHandler
+from notebook.utils import maybe_future
 from tornado import gen, web
 import json
 
@@ -37,18 +38,40 @@ class FilesHandle(APIHandler):
     def get(self, path=""):
 
         type = self.get_query_argument('type', default=None)
-
         format = self.get_query_argument('format', default=None)
-
         content = self.get_query_argument('content', default='1')
+        if self.get_query_argument('path', default="") != "":
+            path = self.get_query_argument('path', default="")
+
+        print("->>>>>>>>> FilesHandle get")
+        print(type, format, content)
+
+        if type not in {None, 'directory', 'file', 'notebook'}:
+            raise web.HTTPError(400, u'Type %r is invalid' % type)
+
+        if format not in {None, 'text', 'base64'}:
+            raise web.HTTPError(400, u'Format %r is invalid' % format)
+
+        if content not in {'0', '1'}:
+            raise web.HTTPError(400, u'Content %r is invalid' % content)
+        content = int(content)
 
         cs3manager = self.cs3api_manager
+        # model = cs3manager.get(path=path, type=type, format=format, content=content)
+
+        model = yield maybe_future(
+                cs3manager.get(path=path, type=type, format=format, content=content)
+            )
+
+        print("->>>>>>>>> Model:")
+        print(model)
+
         output = {
             'files': 'files',
             'path': path,
             'format': format,
             'type': type,
-            'model': cs3manager.get(path=path, type=type, format=format, content=content)
+            'model': model
         }
         self.set_header('Content-Type', 'application/json')
         self.finish(json.dumps(output))

@@ -1,9 +1,10 @@
 import unittest
 from unittest import TestCase
 
-from cs3api_test_ext.cs3api.cs3_file_api import Cs3FileApi
 import logging
 import configparser
+
+from cs3api_test_ext.cs3_file_api import Cs3FileApi
 
 
 class TestCs3FileApi(TestCase):
@@ -20,16 +21,24 @@ class TestCs3FileApi(TestCase):
 		log.addHandler(log_handler)
 		log.setLevel(logging.DEBUG)
 
-		config = configparser.ConfigParser()
+		config_parser = configparser.ConfigParser()
 
 		try:
 			with open('test.conf') as fdconf:
-				config.read_file(fdconf)
-			self.userid = config.get('cs3', 'userid')
-			self.endpoint = config.get('cs3', 'endpoint')
+				config_parser.read_file(fdconf)
+			self.userid = config_parser.get('cs3', 'userid')
+			self.endpoint = config_parser.get('cs3', 'endpoint')
 		except (KeyError, configparser.NoOptionError):
 			print("Missing option or missing configuration, check the test.conf file")
 			raise
+
+		config = {
+			"revahost": config_parser.get('cs3', 'revahost'),
+			"authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
+			"userid": config_parser.get('cs3', 'userid'),
+			"endpoint": config_parser.get('cs3', 'endpoint'),
+			"chunksize": config_parser.get('io', 'chunksize')
+		}
 
 		self.storage = Cs3FileApi(config, log)
 
