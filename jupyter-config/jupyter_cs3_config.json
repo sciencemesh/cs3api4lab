@@ -1,0 +1,9 @@
+{
+  "cs3":{
+	"revahost":"127.0.0.1:19000",
+	"authtokenvalidity": "3600",
+	"userid": "",
+	"endpoint": "/",
+  	"chunksize": "4194304"
+	}
+}

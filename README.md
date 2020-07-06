@@ -93,3 +93,9 @@ jupyter lab build
 jupyter lab 
 
 ```
+
+### Add dependecy
+At JupyterLab console
+```
+pip install cs3apis grpcio grpcio-tools
+```

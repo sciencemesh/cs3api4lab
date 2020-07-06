@@ -1,35 +1,54 @@
+import logging
+
+from jupyter_core.paths import jupyter_config_path
+from notebook.services.config import ConfigManager
 from notebook.services.contents.manager import ContentsManager
+
+from cs3api_test_ext.cs3_file_api import Cs3FileApi
+
 
 class CS3APIsManager(ContentsManager):
 
-    def __cs3_file_api(self):
+    config_dir = ""
+    config = {}
 
-        # ToDo: Setup logger from jupyter logger
+    def __init__(self):
 
-        # log_handler = logging.FileHandler('/var/tmp/cs3api.log')
-        # log_handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(name)s[%(process)d] %(levelname)-8s %(message)s',
-        #                                            datefmt='%Y-%m-%dT%H:%M:%S'))
-        # log = logging.getLogger('cs3api.test')
-        # log.addHandler(log_handler)
-        # log.setLevel(logging.DEBUG)
-
-        # config = configparser.ConfigParser()
-
-        # ToDo: Setup config from jupyter config
-
-        # try:
-        #     with open('test.conf') as fdconf:
-        #         config.read_file(fdconf)
-        #     self.userid = config.get('cs3', 'userid')
-        #     self.endpoint = config.get('cs3', 'endpoint')
-        # except (KeyError, configparser.NoOptionError):
-        #     print("Missing option or missing configuration, check the test.conf file")
-        #     raise
-
-        # self.storage = Cs3FileApi(config, log)
         #
-        # return Cs3FileApi(self, config, log)
-        raise NotImplementedError('cs3: missing')
+        # Get config from jupyter_cs3_config.json file
+        #
+        config_path = jupyter_config_path()
+        if self.config_dir not in config_path:
+            # add self.config_dir to the front, if set manually
+            config_path.insert(0, self.config_dir)
+        cm = ConfigManager(read_config_path=config_path)
+
+        cs3_config = cm.get('jupyter_cs3_config')
+
+        self.config = cs3_config.get("cs3", {
+            "revahost": "127.0.0.1:19000",
+            "endpoint": "/",
+            "authtokenvalidity": "3600",
+            "chunksize": "4194304"
+        })
+
+        return
+
+    def __cs3_file_api__(self):
+
+        #
+        # ToDo: Setup logger from jupyter logger
+        #
+
+        log_handler = logging.FileHandler('/var/tmp/cs3api.log')
+        log_handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(name)s[%(process)d] %(levelname)-8s %(message)s',
+                                                   datefmt='%Y-%m-%dT%H:%M:%S'))
+        log = logging.getLogger('cs3api.test')
+        log.addHandler(log_handler)
+        log.setLevel(logging.DEBUG)
+
+
+        return Cs3FileApi(self.config, log)
 
     def dir_exists(self, path):
         """Does a directory exist at the given path?
@@ -78,9 +97,17 @@ class CS3APIsManager(ContentsManager):
     def get(self, path, content=True, type=None, format=None):
         """Get a file or directory model."""
 
+        # ToDo: Reorganize file or directory type
+
         # ToDo: get user info/token from jupyter session
-        # return self.__cs3_file_api().read_file("", path, "einstein")
-        return "cs3 api manager GET"
+        content = ''
+        for chunk in self.__cs3_file_api__().read_file("", path, "einstein"):
+            content += chunk
+
+        print("->>>>>>>>> CS3APIsManager get")
+        print(content)
+
+        return content
 
     def save(self, model, path):
         """
