@@ -102,10 +102,8 @@ class CS3APIsManager(ContentsManager):
         # ToDo: get user info/token from jupyter session
         content = ''
         for chunk in self.__cs3_file_api__().read_file("", path, "einstein"):
-            content += chunk
-
-        print("->>>>>>>>> CS3APIsManager get")
-        print(content)
+            if len(chunk) > 0:
+                content += chunk.decode('utf-8')
 
         return content
 
