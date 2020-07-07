@@ -131,6 +131,52 @@ class TestCs3FileApi(TestCase):
 		with self.assertRaises(IOError):
 			self.storage.stat(self.endpoint, fileid, self.userid)
 
+
+	def test_write_example(self):
+
+		buffer = b"Example from cs3 API"
+		fileid = "/example1.txt"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
+		buffer = b"Example2 from cs3 API"
+		fileid = "/example2.txt"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
+		buffer = b'{\
+					"cells": [\
+						{\
+							"cell_type": "markdown",\
+							"metadata": {},\
+							"source": [\
+								"### Markdown example"\
+							]\
+						}\
+					],\
+					"metadata": {\
+						"kernelspec": {\
+							"display_name": "Python 3",\
+							"language": "python",\
+							"name": "python3"\
+						},\
+						"language_info": {\
+							"codemirror_mode": {\
+								"name": "ipython",\
+								"version": 3\
+							},\
+							"file_extension": ".py",\
+							"mimetype": "text/x-python",\
+							"name": "python",\
+							"nbconvert_exporter": "python",\
+							"pygments_lexer": "ipython3",\
+							"version": "3.7.4"\
+						}\
+					},\
+					"nbformat": 4,\
+					"nbformat_minor": 4\
+					}'
+		fileid = "/note1.ipynb"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
 	def test_remove_file(self):
 		fileid = "/file_to_remove.txt"
 		buffer = b"ebe5tresbsrdthbrdhvdtr"
