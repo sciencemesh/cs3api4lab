@@ -12,7 +12,10 @@ class CS3APIsManager(ContentsManager):
     config_dir = ""
     config = {}
 
-    def __init__(self):
+    def __init__(self, parent, log):
+
+        # print("->>>>>>>>>>>>>> CS3APIsManager __init__")
+        # print(self, parent, log)
 
         #
         # Get config from jupyter_cs3_config.json file
