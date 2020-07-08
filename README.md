@@ -79,6 +79,18 @@ pip uninstall cs3api_test_ext
 jupyter labextension uninstall @JarCz/cs3api_test_ext
 ```
 
+### Setup env 
+
+Windows console:
+```
+mkdir c:\var\tmp
+pip install cs3apis grpcio grpcio-tools
+```
+
+JupyterLab console:
+```
+pip install cs3apis grpcio grpcio-tools
+```
 
 ### Quick build
 
@@ -94,8 +106,8 @@ jupyter lab
 
 ```
 
-### Add dependecy
-At JupyterLab console
-```
-pip install cs3apis grpcio grpcio-tools
+### Quick build python
+```bash
+jupyter labextension install .
+jupyter lab
 ```
