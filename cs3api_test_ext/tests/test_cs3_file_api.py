@@ -187,6 +187,60 @@ class TestCs3FileApi(TestCase):
 		with self.assertRaises(IOError):
 			self.storage.stat(self.endpoint, fileid, self.userid)
 
+	def test_read_directory(self):
+
+		"""
+		[type: RESOURCE_TYPE_FILE
+		id {
+			storage_id: "123e4567-e89b-12d3-a456-426655440000"
+			opaque_id: "fileid-%2Fexample1.txt"
+		}
+		etag: "\"433b3efae4d700628204b60fb7207787\""
+		mime_type: "text/plain; charset=utf-8"
+		mtime {
+			seconds: 1594195752
+		}
+		path: "/example1.txt"
+		permission_set {
+			create_container: true
+			list_container: true
+		}
+		size: 20
+		owner {
+			idp: "http://cernbox.cern.ch"
+			opaque_id: "4c510ada-c86b-4815-8820-42cdf82c3d51"
+		}
+		arbitrary_metadata {
+						   }
+		, ......			   }
+		, type: RESOURCE_TYPE_CONTAINER
+		id {
+			storage_id: "123e4567-e89b-12d3-a456-426655440000"
+			opaque_id: "fileid-%2Fhome%2FMyShares"
+		}
+		etag: "\"56fb030b7dc4dfbf9e87fc4ed1ddb14d\""
+		mime_type: "httpd/unix-directory"
+		mtime {
+			seconds: 1593606956
+		}
+		path: "/home/MyShares"
+		permission_set {
+			create_container: true
+			list_container: true
+		}
+		size: 512
+		owner {
+			idp: "http://cernbox.cern.ch"
+			opaque_id: "4c510ada-c86b-4815-8820-42cdf82c3d51"
+		}
+		arbitrary_metadata {
+		}
+		]
+		"""
+		fileid = "/"
+		read_directory = self.storage.read_directory(self.endpoint, fileid, self.userid)
+		self.assertIsNotNone(read_directory[0])
+		self.assertIsNotNone(read_directory[0].path)
 
 if __name__ == '__main__':
 	unittest.main()
