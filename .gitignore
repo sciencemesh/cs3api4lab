@@ -107,5 +107,7 @@ dmypy.json
 .pyre/
 
 # End of https://www.gitignore.io/api/python
+/package-lock.json
+/yarn.lock
 *.iml
 .idea/
