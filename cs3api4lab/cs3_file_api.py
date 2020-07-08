@@ -27,15 +27,14 @@ class Cs3FileApi:
 		Init module-level variables
 		"""
 		self.ctx['log'] = log
-		self.ctx['chunksize'] = config.getint('io', 'chunksize')
-		self.ctx['authtokenvalidity'] = config.getint('cs3', 'authtokenvalidity')
+		self.ctx['chunksize'] = int(config['chunksize'])
+		self.ctx['authtokenvalidity'] = int(config['authtokenvalidity'])
 
-		reva_host = config.get('cs3', 'revahost')
+		reva_host = config['revahost']
 
 		# prepare the gRPC connection
 		ch = grpc.insecure_channel(reva_host)
 		self.ctx['cs3stub'] = cs3gw_grpc.GatewayAPIStub(ch)
-
 		return
 
 	def __authenticate(self, userid):
@@ -196,18 +195,19 @@ class Cs3FileApi:
 		#
 		# Download
 		#
-		fileget = None
+		file_get = None
 		try:
-			fileget = requests.get(url=initfiledownloadres.download_endpoint, headers={'x-access-token': self.__authenticate(userid)})
+			file_get = requests.get(url=initfiledownloadres.download_endpoint, headers={'x-access-token': self.__authenticate(userid)})
 		except requests.exceptions.RequestException as e:
 			self.ctx['log'].error('msg="Exception when downloading file from Reva" reason="%s"' % e)
 			yield IOError(e)
 
 		tend = time.time()
-		data = fileget.content
-		if fileget.status_code != http.HTTPStatus.OK:
-			self.ctx['log'].error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (fileget.status_code, fileget.reason))
-			yield IOError(fileget.reason)
+		data = file_get.content
+
+		if file_get.status_code != http.HTTPStatus.OK:
+			self.ctx['log'].error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (file_get.status_code, file_get.reason))
+			yield IOError(file_get.reason)
 		else:
 			self.ctx['log'].info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
 			for i in range(0, len(data), self.ctx['chunksize']):

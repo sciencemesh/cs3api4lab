@@ -21,16 +21,24 @@ class TestCs3FileApi(TestCase):
 		log.addHandler(log_handler)
 		log.setLevel(logging.DEBUG)
 
-		config = configparser.ConfigParser()
+		config_parser = configparser.ConfigParser()
 
 		try:
 			with open('test.conf') as fdconf:
-				config.read_file(fdconf)
-			self.userid = config.get('cs3', 'userid')
-			self.endpoint = config.get('cs3', 'endpoint')
+				config_parser.read_file(fdconf)
+			self.userid = config_parser.get('cs3', 'userid')
+			self.endpoint = config_parser.get('cs3', 'endpoint')
 		except (KeyError, configparser.NoOptionError):
 			print("Missing option or missing configuration, check the test.conf file")
 			raise
+
+		config = {
+			"revahost": config_parser.get('cs3', 'revahost'),
+			"authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
+			"userid": config_parser.get('cs3', 'userid'),
+			"endpoint": config_parser.get('cs3', 'endpoint'),
+			"chunksize": config_parser.get('io', 'chunksize')
+		}
 
 		self.storage = Cs3FileApi(config, log)
 
@@ -122,6 +130,52 @@ class TestCs3FileApi(TestCase):
 		self.storage.remove_file(self.endpoint, fileid, self.userid)
 		with self.assertRaises(IOError):
 			self.storage.stat(self.endpoint, fileid, self.userid)
+
+
+	def test_write_example(self):
+
+		buffer = b"Example from cs3 API"
+		fileid = "/example1.txt"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
+		buffer = b"Example2 from cs3 API"
+		fileid = "/example2.txt"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
+		buffer = b'{\
+					"cells": [\
+						{\
+							"cell_type": "markdown",\
+							"metadata": {},\
+							"source": [\
+								"### Markdown example"\
+							]\
+						}\
+					],\
+					"metadata": {\
+						"kernelspec": {\
+							"display_name": "Python 3",\
+							"language": "python",\
+							"name": "python3"\
+						},\
+						"language_info": {\
+							"codemirror_mode": {\
+								"name": "ipython",\
+								"version": 3\
+							},\
+							"file_extension": ".py",\
+							"mimetype": "text/x-python",\
+							"name": "python",\
+							"nbconvert_exporter": "python",\
+							"pygments_lexer": "ipython3",\
+							"version": "3.7.4"\
+						}\
+					},\
+					"nbformat": 4,\
+					"nbformat_minor": 4\
+					}'
+		fileid = "/note1.ipynb"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
 
 	def test_remove_file(self):
 		fileid = "/file_to_remove.txt"
