@@ -1,9 +1,10 @@
 import unittest
 from unittest import TestCase
 
-from cs3api4lab.cs3api.cs3_file_api import Cs3FileApi
 import logging
 import configparser
+
+from cs3api4lab.cs3_file_api import Cs3FileApi
 
 
 class TestCs3FileApi(TestCase):
