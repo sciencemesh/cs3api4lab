@@ -142,6 +142,18 @@ class TestCs3FileApi(TestCase):
 		fileid = "/example2.txt"
 		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
 
+		buffer = b"Example3 from cs3 API"
+		fileid = "/example3.txt"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
+		buffer = b"Example4 from cs3 API"
+		fileid = "/example4.txt"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
+		buffer = b"Example5 from cs3 API"
+		fileid = "/example5.txt"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
 		buffer = b'{\
 					"cells": [\
 						{\

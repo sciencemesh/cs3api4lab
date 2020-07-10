@@ -43,8 +43,8 @@ class FilesHandle(APIHandler):
         if self.get_query_argument('path', default="") != "":
             path = self.get_query_argument('path', default="")
 
-        print("->>>>>>>>> FilesHandle get")
-        print(type, format, content)
+        print("-------------------> FilesHandle::get():")
+        print("path: ", path, "content: ", content, "type: ", type, "format: ", format)
 
         if type not in {None, 'directory', 'file', 'notebook'}:
             raise web.HTTPError(400, u'Type %r is invalid' % type)
@@ -57,24 +57,13 @@ class FilesHandle(APIHandler):
         content = int(content)
 
         cs3manager = self.cs3api_manager
-        # model = cs3manager.get(path=path, type=type, format=format, content=content)
-
         model = yield maybe_future(
                 cs3manager.get(path=path, type=type, format=format, content=content)
             )
 
-        print("->>>>>>>>> Model:")
-        print(model)
+        print("-------------------> FilesHandle::get():")
 
-        output = {
-            'files': 'files',
-            'path': path,
-            'format': format,
-            'type': type,
-            'model': model
-        }
-        self.set_header('Content-Type', 'application/json')
-        self.finish(json.dumps(output))
+        self._finish_model(model)
 
     @web.authenticated
     @gen.coroutine
@@ -97,6 +86,17 @@ class FilesHandle(APIHandler):
         Delete a file in the given path
         """
 
+    def _finish_model(self, model, location=True):
+
+        if location:
+            location = self.location_url(model['path'])
+            self.set_header('Location', location)
+        self.set_header('Last-Modified', model['last_modified'])
+        self.set_header('Content-Type', 'application/json')
+
+        # print("---------> finish_model", model)
+
+        self.finish(json.dumps(model))
 
 class ShareHandle(APIHandler):
 

@@ -92,8 +92,27 @@ JupyterLab console:
 pip install cs3apis grpcio grpcio-tools
 ```
 
-### Quick build
+Replace notebook File Content Manager class
 
+Create config:
+```
+jupyter notebook --generate-config
+```
+
+Enable CS3 File Content Manager
+Replace in file HOME_FOLDER/.jupyter/jupyter_notebook_config.py line 
+
+```
+c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemanager.LargeFileManager'
+```
+
+to
+
+```
+c.NotebookApp.contents_manager_class = 'cs3api_test_ext.CS3APIsManager'
+```
+
+### Quick build
 ```bash
 pip install -e .
 jupyter serverextension enable --py cs3api_test_ext --sys-prefix
