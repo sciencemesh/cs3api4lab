@@ -83,13 +83,16 @@ class Cs3FileApi:
         return self.tokens[userid]['tok']
 
     def _cs3_reference(self, endpoint, fileid):
+
         if fileid[0] == '/':
             # assume this is a filepath
-            ref = cs3spr.Reference(path=fileid)
-        else:
-            # assume we have an opaque fileid
-            ref = cs3spr.Reference(id=cs3spr.ResourceId(storage_id=endpoint, opaque_id=fileid))
-        return ref
+            return cs3spr.Reference(path=fileid)
+
+        if endpoint == 'default' or endpoint is None:
+            raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
+
+        # assume we have an opaque fileid
+        return cs3spr.Reference(id=cs3spr.ResourceId(storage_id=endpoint, opaque_id=fileid))
 
     def stat(self, endpoint, fileid, userid):
 
@@ -99,15 +102,11 @@ class Cs3FileApi:
         start with a /).
         """
 
-        if endpoint == 'default':
-            raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
-
         time_start = time.time()
 
         ref = self._cs3_reference(endpoint, fileid)
 
-        stat_info = self.cs3_stub.Stat(request=cs3sp.StatRequest(ref=ref),
-                                       metadata=[('x-access-token', self._authenticate(userid))])
+        stat_info = self.cs3_stub.Stat(request=cs3sp.StatRequest(ref=ref), metadata=[('x-access-token', self._authenticate(userid))])
 
         time_end = time.time()
         self.log.info('msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (fileid, (time_end - time_start) * 1000))
@@ -124,71 +123,6 @@ class Cs3FileApi:
 
         self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (fileid, stat_info.status.message))
         raise IOError(stat_info.status.message)
-
-    def stat_x(self, endpoint, fileid, userid):
-        """
-        Get extended stat info (inode, filepath, userid, size, mtime). Equivalent to stat.
-        """
-
-        return self.stat(endpoint, fileid, userid)
-
-    def set_x_attr(self, endpoint, filepath, userid, key, value):
-        """Set the extended attribute <key> to <value> using the given userid as access token"""
-
-        reference = self._cs3_reference(endpoint, filepath)
-
-        arbitrary_metadata = cs3spr.ArbitraryMetadata()
-        arbitrary_metadata.metadata.update({key: str(value)})
-
-        req = cs3sp.SetArbitraryMetadataRequest(ref=reference, arbitrary_metadata=arbitrary_metadata)
-
-        res = self.cs3_stub.SetArbitraryMetadata(request=req,
-                                                 metadata=[('x-access-token', self._authenticate(userid))])
-        if res.status.code != cs3code.CODE_OK:
-            self.log.warning('msg="Failed to getxattr" filepath="%s" key="%s" reason="%s"' % (filepath, key, res.status.message))
-            raise IOError(res.status.message)
-
-    def get_x_attr(self, endpoint, filepath, userid, key):
-        """
-        Get the extended attribute <key> using the given userid as access token. Do not raise exceptions
-        """
-        time_start = time.time()
-        reference = self._cs3_reference(endpoint, filepath)
-
-        stat_info = self.cs3_stub.Stat(request=cs3sp.StatRequest(ref=reference),
-                                       metadata=[('x-access-token', self._authenticate(userid))])
-        time_end = time.time()
-
-        if stat_info.status.code != cs3code.CODE_OK:
-            self.log.warning('msg="Failed to stat" filepath="%s" key="%s" reason="%s"' % (filepath, key, stat_info.status.message))
-            raise IOError(stat_info.status.message)
-        try:
-            xattrvalue = stat_info.info.arbitrary_metadata.metadata[key]
-            if xattrvalue == '':
-                raise KeyError
-
-            self.log.debug('msg="Invoked stat for getxattr" filepath="%s" elapsedTimems="%.1f"' % (filepath, (time_end - time_start) * 1000))
-            return xattrvalue
-
-        except KeyError:
-            self.log.info('msg="Key not found in getxattr" filepath="%s" key="%s"' % (filepath, key))
-            return None
-
-    def remove_x_attr(self, endpoint, filepath, userid, key):
-        """
-        Remove the extime_ended attribute <key> using the given userid as access token
-        """
-
-        reference = self._cs3_reference(endpoint, filepath)
-
-        req = cs3sp.UnsetArbitraryMetadataRequest(ref=reference, arbitrary_metadata_keys=[key])
-        res = self.cs3_stub.UnsetArbitraryMetadata(request=req, metadata=[('x-access-token', self._authenticate(userid))])
-
-        if res.status.code != cs3code.CODE_OK:
-            self.log.warning('msg="Failed to rmxattr" filepath="%s" key="%s" exception="%s"' % (filepath, key, res.status.message))
-            raise IOError(res.status.message)
-
-        self.log.debug('msg="Invoked rmxattr" result="%s"' % res)
 
     def read_file(self, endpoint, filepath, userid):
         """

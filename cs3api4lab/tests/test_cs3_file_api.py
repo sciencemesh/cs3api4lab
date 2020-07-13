@@ -65,48 +65,9 @@ class TestCs3FileApi(TestCase):
 
         self.storage.remove_file(self.endpoint, fileid, self.userid)
 
-    def test_stat_x(self):
-        buf = b'bla\n'
-        file_path = '/test.txt'
-
-        self.storage.write_file(self.endpoint, file_path, self.userid, buf)
-        stat_info = self.storage.stat_x(self.endpoint, file_path, self.userid)
-        self.assertIsInstance(stat_info, dict)
-
-        fileid = stat_info['inode'].split(':')
-        self.assertEqual(len(fileid), 2, 'This storage interface does not support stat by fileid')
-
-        stat_info = self.storage.stat_x(fileid[0], fileid[1], self.userid)
-
-        self.assertIsInstance(stat_info, dict)
-
-        self.assertEqual(stat_info['filepath'], file_path, 'Filepath should be ' + file_path)
-        self.storage.remove_file(self.endpoint, file_path, self.userid)
-
     def test_stat_no_file(self):
         with self.assertRaises(IOError, msg='No such file or directory'):
             self.storage.stat(self.endpoint, '/hopefullynotexisting', self.userid)
-
-    def test_stat_x_no_file(self):
-        with self.assertRaises(IOError, msg='No such file or directory'):
-            self.storage.stat_x(self.endpoint, '/hopefullynotexisting', self.userid)
-
-    def test_operation_on_x_attr(self):
-
-        buf = b'bla\n'
-        file_path = '/testxattr.txt'
-
-        self.storage.write_file(self.endpoint, file_path, self.userid, buf)
-        self.storage.set_x_attr(self.endpoint, file_path, self.userid, 'testkey', 123)
-
-        v = self.storage.get_x_attr(self.endpoint, file_path, self.userid, 'testkey')
-        self.assertEqual(v, '123')
-
-        self.storage.remove_x_attr(self.endpoint, file_path, self.userid, 'testkey')
-        v = self.storage.get_x_attr(self.endpoint, file_path, self.userid, 'testkey')
-        self.assertEqual(v, None)
-
-        self.storage.remove_file(self.endpoint, file_path, self.userid)
 
     def test_read_file(self):
 
