@@ -27,6 +27,9 @@ class TestCs3FileApi(TestCase):
             with open('test.conf') as fdconf:
                 config_parser.read_file(fdconf)
 
+            self.userid = config_parser.get('cs3', 'userid')
+            self.endpoint = config_parser.get('cs3', 'endpoint')
+
             config = {
                 "revahost": config_parser.get('cs3', 'revahost'),
                 "authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
@@ -36,7 +39,9 @@ class TestCs3FileApi(TestCase):
                 "client_cert": config_parser.get('cs3', 'client_cert'),
                 "client_key": config_parser.get('cs3', 'client_key'),
                 "ca_cert": config_parser.get('cs3', 'ca_cert'),
-                "chunksize": config_parser.get('io', 'chunksize')
+                "chunksize": config_parser.get('io', 'chunksize'),
+                "client_id": config_parser.get('cs3', 'client_id'),
+                "client_secret": config_parser.get('cs3', 'client_secret'),
             }
 
             self.storage = Cs3FileApi(config, log)
