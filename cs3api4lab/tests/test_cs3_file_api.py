@@ -8,9 +8,9 @@ from cs3api4lab.cs3_file_api import Cs3FileApi
 
 
 class TestCs3FileApi(TestCase):
+
     userid = None
     endpoint = None
-    storagetype = None
 
     def setUp(self):
 
@@ -26,21 +26,24 @@ class TestCs3FileApi(TestCase):
         try:
             with open('test.conf') as fdconf:
                 config_parser.read_file(fdconf)
-            self.userid = config_parser.get('cs3', 'userid')
-            self.endpoint = config_parser.get('cs3', 'endpoint')
+
+            config = {
+                "revahost": config_parser.get('cs3', 'revahost'),
+                "authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
+                "userid": config_parser.get('cs3', 'userid'),
+                "endpoint": config_parser.get('cs3', 'endpoint'),
+                "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
+                "client_cert": config_parser.get('cs3', 'client_cert'),
+                "client_key": config_parser.get('cs3', 'client_key'),
+                "ca_cert": config_parser.get('cs3', 'ca_cert'),
+                "chunksize": config_parser.get('io', 'chunksize')
+            }
+
+            self.storage = Cs3FileApi(config, log)
+
         except (KeyError, configparser.NoOptionError):
             print("Missing option or missing configuration, check the test.conf file")
             raise
-
-        config = {
-            "revahost": config_parser.get('cs3', 'revahost'),
-            "authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
-            "userid": config_parser.get('cs3', 'userid'),
-            "endpoint": config_parser.get('cs3', 'endpoint'),
-            "chunksize": config_parser.get('io', 'chunksize')
-        }
-
-        self.storage = Cs3FileApi(config, log)
 
     def test_stat(self):
 
@@ -104,18 +107,18 @@ class TestCs3FileApi(TestCase):
 
         content_to_write = b'bla\n'
         content_check = 'bla\n'
-        filepatch = "/test_read.txt"
+        file_patch = "/test_read.txt"
 
-        self.storage.write_file(self.endpoint, filepatch, self.userid, content_to_write)
+        self.storage.write_file(self.endpoint, file_patch, self.userid, content_to_write)
         content = ''
 
-        for chunk in self.storage.read_file(self.endpoint, filepatch, self.userid):
+        for chunk in self.storage.read_file(self.endpoint, file_patch, self.userid):
             self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
             content += chunk.decode('utf-8')
 
-        self.assertEqual(content, content_check, 'File ' + filepatch + ' should contain the string: ' + content_check)
+        self.assertEqual(content, content_check, 'File ' + file_patch + ' should contain the string: ' + content_check)
 
-        self.storage.remove_file(self.endpoint, filepatch, self.userid)
+        self.storage.remove_file(self.endpoint, file_patch, self.userid)
 
     def test_write_file(self):
 
