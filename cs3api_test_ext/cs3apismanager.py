@@ -1,6 +1,8 @@
 import logging
 import mimetypes
+import os
 from datetime import date, datetime
+from pathlib import Path
 
 from jupyter_core.paths import jupyter_config_path
 from notebook.services.config import ConfigManager
@@ -46,7 +48,7 @@ class CS3APIsManager(ContentsManager):
 
         return
 
-    def __cs3_file_api__(self):
+    def _cs3_file_api(self):
 
         #
         # ToDo: Setup logger from jupyter logger
@@ -109,12 +111,12 @@ class CS3APIsManager(ContentsManager):
     def get(self, path, content=True, type=None, format=None):
         """Get a file or directory model."""
 
-        print("---> CS3APIsManager::get(): ", "path: ", path, "content: ", content, "type: ", type, "format: ", format)
+        print("---> CS3APIsManager::get(): ", "path:", path, "content:", content, "type:", type, "format:", format)
 
         # ToDo: Reorganize file or directory type
         # ToDo: get user info/token from jupyter session
 
-        if type in (None, 'directory'):
+        if type in (None, 'directory') and self._is_dir(path):
             model = self._dir_model(path, content=content)
         elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
             model = self._notebook_model(path, content=content)
@@ -129,6 +131,9 @@ class CS3APIsManager(ContentsManager):
         #     if type == 'directory':
         #         raise web.HTTPError(400, u'%s is not a directory' % path, reason='bad type')
         #     model = self._file_model(path, content=content, format=format)
+
+        print("---> CS3APIsManager::get(): ")
+
         return model
 
     def save(self, model, path):
@@ -150,9 +155,9 @@ class CS3APIsManager(ContentsManager):
 
     def _dir_model(self, path, content):
 
-        print("---> FileContentsManager::_dir_model(): ", "path: ", path, "content: ", content)
+        # print("---> FileContentsManager::_dir_model(): ", "path: ", path, "content: ", content)
 
-        cs3_file_api = self.__cs3_file_api__()
+        cs3_file_api = self._cs3_file_api()
         cs3_container = cs3_file_api.read_directory(self.config['endpoint'], path, self.user_id)
         model = self._convert_container_to_directory_model(path, cs3_container, content)
 
@@ -165,10 +170,50 @@ class CS3APIsManager(ContentsManager):
         return None
 
     def _file_model(self, path, content, format):
-        print("---> FileContentsManager::_file_model(): ", "path: ", path, "content: ", content, "format", format)
-        return None
+
+        directories = path.rsplit('/')
+        directories.reverse()
+        parent_path = self._replace_last(str(path), directories[0])
+
+        print("---> FileContentsManager::_file_model(): ", "path: ", path, "parent_path:", parent_path, "content: ", content, "format", format)
+
+        cs3_file_api = self._cs3_file_api()
+        cs3_container = cs3_file_api.read_directory(self.config['endpoint'], parent_path, self.user_id)
+
+        tmp_model = None
+        for cs3_model in cs3_container:
+            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
+                tmp_model = cs3_model
+
+        if tmp_model is None:
+            raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
+
+        model = self._convert_container_to_base_model(tmp_model.path, cs3_container)
+        model['type'] = 'file'
+        model['mimetype'] = mimetypes.guess_type(tmp_model.path)[0]
+
+        if content:
+            content = self._read_file(tmp_model.path, format)
+
+            if model['mimetype'] is None:
+                default_mime = {
+                    'text': 'text/plain',
+                    'base64': 'application/octet-stream'
+                }[format]
+                model['mimetype'] = default_mime
+
+            model.update(
+                content=content,
+                format=format,
+            )
+
+        print("---> FileContentsManager::_file_model(): ", "model:", model)
+
+        return model
 
     def _convert_container_to_base_model(self, path, cs3_container):
+
+        print("---> FileContentsManager::_convert_container_to_base_model(): ", "path:", path)
 
         size = None
         writable = False
@@ -271,7 +316,7 @@ class CS3APIsManager(ContentsManager):
             for cs3_model in cs3_container:
                 # ToDo: get data from cs3_model
                 if cs3_model.type == self.TYPE_DIRECTORY:
-                    print("-> DIR: ", cs3_model.path, path)
+                    # print("-> DIR: ", cs3_model.path, path)
                     sub_model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
                     sub_model['size'] = None
                     sub_model['type'] = 'directory'
@@ -279,12 +324,12 @@ class CS3APIsManager(ContentsManager):
                 elif cs3_model.type == self.TYPE_FILE:
 
                     if type == 'notebook' or (type is None and path.endswith('.ipynb')):
-                        print("-> NOTEBOOK: ", cs3_model.path, path)
+                        # print("-> NOTEBOOK: ", cs3_model.path, path)
                         contents.append(
                             self._convert_container_to_notebook_model(cs3_model, cs3_container, content=content)
                         )
                     else:
-                        print("-> FILE: ", cs3_model.path, path)
+                        # print("-> FILE: ", cs3_model.path, path)
                         contents.append(
                             self._convert_container_to_file_model(cs3_model, cs3_container, content=content, format=format)
                         )
@@ -298,22 +343,6 @@ class CS3APIsManager(ContentsManager):
         model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
         model['type'] = 'file'
         model['mimetype'] = mimetypes.guess_type(cs3_model.path)[0]
-
-        # if content:
-            # content, format = self.read_file(cs3_model.path, format)
-            # if model['mimetype'] is None:
-            #     default_mime = {
-            #         'text': 'text/plain',
-            #         'base64': 'application/octet-stream'
-            #     }[format]
-            #     model['mimetype'] = default_mime
-            #
-            # model.update(
-            #     content=content,
-            #     format=format,
-            # )
-
-        # print("---> FileContentsManager::_file_model(): ", "_base_model: ", model)
 
         return model
 
@@ -334,3 +363,30 @@ class CS3APIsManager(ContentsManager):
         # print("---> FileContentsManager::_note_model(): ", "_base_model: ", model)
 
         return model
+
+    def _is_dir(self, path):
+
+        if path == '/' or path == '' or path is None:
+            return True
+
+        cs3_file_api = self._cs3_file_api()
+        cs3_container = cs3_file_api.read_directory(self.config['endpoint'], path, self.user_id)
+
+        for cs3_model in cs3_container:
+            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
+                print("IS_FILE: ", cs3_model.type, cs3_model.path)
+                return False
+
+        return True
+
+    def _read_file(self, path, format):
+
+        content = ''
+        for chunk in self._cs3_file_api().read_file(self.config['endpoint'], path, self.user_id):
+            content += chunk.decode('utf-8')
+
+        return content
+
+    def _replace_last(self, source_string, replace_what, replace_with=""):
+        head, _sep, tail = source_string.rpartition(replace_what)
+        return head + replace_with + tail
