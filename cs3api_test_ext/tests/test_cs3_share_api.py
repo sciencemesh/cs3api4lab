@@ -28,16 +28,16 @@ class TestCs3ShareApi(TestCase):
         self.api.create("/", "/test.txt", "einstein", "marie")
 
     def test_list(self):
-        self.fail()
+        self.api.list("einstein")
 
     def test_remove(self):
-        self.fail()
+        self.api.remove("1", "einstein")
 
     def test_update(self):
         self.fail()
 
     def test_list_received(self):
-        self.fail()
+        self.api.list_received("/", "einstein")
 
     def test_update_received(self):
         self.fail()
