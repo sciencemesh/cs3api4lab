@@ -21,6 +21,7 @@ import cs3.identity.user.v1beta1.resources_pb2_grpc as identity_res_grpc
 from cs3api_test_ext.cs3_file_api import Cs3FileApi
 
 
+# todo refactor
 class Cs3ShareApi:
     gateway_stub = None
     config = {
@@ -56,6 +57,7 @@ class Cs3ShareApi:
         token = self._getToken(userid)
         share_response = self.gateway_stub.CreateShare(request=share_request,
                                                        metadata=[('x-access-token', token)])
+        self.log.info("Share created by: " + userid)
         self.log.info(share_response)
         return
 
@@ -107,15 +109,32 @@ class Cs3ShareApi:
             raise Exception("Invalid role")
 
     def list(self, userid):
-        return
+        # todo filters
+        list_req = sharing.ListSharesRequest()
+        list_res = self.gateway_stub.ListShares(request=list_req,
+                                                metadata=[('x-access-token', self._getToken(userid))])
+        self.log.info("List shares response for user: " + userid)
+        self.log.info(list_req)
+        return list_res
 
-    def remove(self, endpoint, shareid, userid):
-        return
+    def remove(self, shareid, userid):
+        share_id_object = sharing_res.ShareId(opaque_id=shareid)
+        ref = sharing_res.ShareReference(id=share_id_object)
+        remove_req = sharing.RemoveShareRequest(ref=ref)
+        remove_res = self.gateway_stub.RemoveShare(request=remove_req,
+                                                   metadata=[('x-access-token', self._getToken(userid))])
+        self.log.info("Removing share " + shareid + " from: " + userid)
+        return remove_res
 
     def update(self, endpoint, shareid, userid, role="viewer"):
         return
 
-    def list_received(self, endpoint, userid):
+    def list_received(self, userid):
+        list_req = sharing.ListReceivedSharesRequest()
+        list_res = self.gateway_stub.ListReceivedShares(request=list_req,
+                                                        metadata=[('x-access-token', self._getToken(userid))])
+        self.log.info("List received shares response for user: " + userid)
+        self.log.info(list_res)
         return
 
     def update_received(self, endpoint, shareid, userid, state="pending"):
