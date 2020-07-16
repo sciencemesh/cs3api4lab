@@ -154,6 +154,14 @@ class TestCs3FileApi(TestCase):
 		fileid = "/example5.txt"
 		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
 
+		buffer = b"Example6 from cs3 API"
+		fileid = "/example6.txt"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
+		buffer = b"Example7 from cs3 API"
+		fileid = "/example7.txt"
+		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+
 		buffer = b'{\
 					"cells": [\
 						{\
@@ -253,6 +261,15 @@ class TestCs3FileApi(TestCase):
 		read_directory = self.storage.read_directory(self.endpoint, fileid, self.userid)
 		self.assertIsNotNone(read_directory[0])
 		self.assertIsNotNone(read_directory[0].path)
+
+	#
+	# def test_read_directory_my_share(self):
+	# 	fileid = "/home/MyShares"
+	# 	read_directory = self.storage.read_directory(self.endpoint, fileid, self.userid)
+	# 	print(read_directory)
+	# 	# self.assertIsNotNone(read_directory[0])
+	# 	# self.assertIsNotNone(read_directory[0].path)
+	#
 
 if __name__ == '__main__':
 	unittest.main()
