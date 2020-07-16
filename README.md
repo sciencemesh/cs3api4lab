@@ -82,8 +82,8 @@ jupyter labextension uninstall @sciencemesh/cs3api4lab
 ### Setup env for integration testing
 
 #### Create local IOP instance 
-Based on tutorial: https://reva.link/docs/tutorials/share-tutorial/
-create first 3 steps:
+Follow the first 3 steps from this tutorial https://reva.link/docs/tutorials/share-tutorial/
+or create with commands: 
 
 ```bash
 git clone https://github.com/cs3org/reva
