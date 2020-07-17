@@ -10,14 +10,16 @@ from notebook.services.contents.manager import ContentsManager
 from tornado import web
 from notebook import _tz as tz
 
+import nbformat
+
 from cs3api_test_ext.cs3_file_api import Cs3FileApi
 
 
 class CS3APIsManager(ContentsManager):
 
-    config_dir = ""
-    config = {}
-    user_id = "einstein"
+    cs3_config_dir = ""
+    cs3_config = {}
+    cs3_user_id = "einstein"
 
     # ToDo: Change to cs3 Type
     TYPE_FILE = 1
@@ -32,14 +34,14 @@ class CS3APIsManager(ContentsManager):
         # Get config from jupyter_cs3_config.json file
         #
         config_path = jupyter_config_path()
-        if self.config_dir not in config_path:
+        if self.cs3_config_dir not in config_path:
             # add self.config_dir to the front, if set manually
-            config_path.insert(0, self.config_dir)
+            config_path.insert(0, self.cs3_config_dir)
         cm = ConfigManager(read_config_path=config_path)
 
         cs3_config = cm.get('jupyter_cs3_config')
 
-        self.config = cs3_config.get("cs3", {
+        self.cs3_config = cs3_config.get("cs3", {
             "revahost": "127.0.0.1:19000",
             "endpoint": "/",
             "authtokenvalidity": "3600",
@@ -62,7 +64,7 @@ class CS3APIsManager(ContentsManager):
         log.setLevel(logging.DEBUG)
 
 
-        return Cs3FileApi(self.config, log)
+        return Cs3FileApi(self.cs3_config, log)
 
     def dir_exists(self, path):
         """Does a directory exist at the given path?
@@ -111,28 +113,22 @@ class CS3APIsManager(ContentsManager):
     def get(self, path, content=True, type=None, format=None):
         """Get a file or directory model."""
 
-        print("---> CS3APIsManager::get(): ", "path:", path, "content:", content, "type:", type, "format:", format)
+        # print("---> CS3APIsManager::get(): ", "path:", path, "content:", content, "type:", type, "format:", format)
 
-        # ToDo: Reorganize file or directory type
-        # ToDo: get user info/token from jupyter session
-
+        #
+        # ToDo: Get user info/token from jupyter session
+        #
         if type in (None, 'directory') and self._is_dir(path):
             model = self._dir_model(path, content=content)
         elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
             model = self._notebook_model(path, content=content)
         else:
+            if type == 'directory':
+                raise web.HTTPError(400, u'%s is a directory' % path, reason='bad type')
+
             model = self._file_model(path, content=content, format=format)
 
-        # if type not in (None, 'directory'):
-        #     model = self._dir_model(path, content=content)
-        # elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
-        #     model = self._notebook_model(path, content=content)
-        # else:
-        #     if type == 'directory':
-        #         raise web.HTTPError(400, u'%s is not a directory' % path, reason='bad type')
-        #     model = self._file_model(path, content=content, format=format)
-
-        print("---> CS3APIsManager::get(): ")
+        # print("---> CS3APIsManager::get(): ")
 
         return model
 
@@ -158,7 +154,7 @@ class CS3APIsManager(ContentsManager):
         # print("---> FileContentsManager::_dir_model(): ", "path: ", path, "content: ", content)
 
         cs3_file_api = self._cs3_file_api()
-        cs3_container = cs3_file_api.read_directory(self.config['endpoint'], path, self.user_id)
+        cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], path, self.cs3_user_id)
         model = self._convert_container_to_directory_model(path, cs3_container, content)
 
         # print("---> FileContentsManager::_dir_model(): ", model)
@@ -166,29 +162,25 @@ class CS3APIsManager(ContentsManager):
         return model
 
     def _notebook_model(self, path, content):
-        print("---> FileContentsManager::_notebook_model(): ", "path: ", path, "content: ", content)
-        return None
+
+        model, tmp_model = self._create_base_model_from_cs3_container(path)
+        model['type'] = 'notebook'
+
+        if content:
+            file_content = self._read_file(tmp_model.path, format)
+            nb = nbformat.reads(file_content, as_version=4)
+            self.mark_trusted_cells(nb, path)
+            model['content'] = nb
+            model['format'] = 'json'
+            self.validate_notebook_model(model)
+
+        # print("---> FileContentsManager::_notebook_model(): ", "model: ", model)
+
+        return model
 
     def _file_model(self, path, content, format):
 
-        directories = path.rsplit('/')
-        directories.reverse()
-        parent_path = self._replace_last(str(path), directories[0])
-
-        print("---> FileContentsManager::_file_model(): ", "path: ", path, "parent_path:", parent_path, "content: ", content, "format", format)
-
-        cs3_file_api = self._cs3_file_api()
-        cs3_container = cs3_file_api.read_directory(self.config['endpoint'], parent_path, self.user_id)
-
-        tmp_model = None
-        for cs3_model in cs3_container:
-            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
-                tmp_model = cs3_model
-
-        if tmp_model is None:
-            raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
-
-        model = self._convert_container_to_base_model(tmp_model.path, cs3_container)
+        model, tmp_model = self._create_base_model_from_cs3_container(path)
         model['type'] = 'file'
         model['mimetype'] = mimetypes.guess_type(tmp_model.path)[0]
 
@@ -207,13 +199,13 @@ class CS3APIsManager(ContentsManager):
                 format=format,
             )
 
-        print("---> FileContentsManager::_file_model(): ", "model:", model)
+        # print("---> FileContentsManager::_file_model(): ", "model:", model)
 
         return model
 
     def _convert_container_to_base_model(self, path, cs3_container):
 
-        print("---> FileContentsManager::_convert_container_to_base_model(): ", "path:", path)
+        # print("---> FileContentsManager::_convert_container_to_base_model(): ", "path:", path)
 
         size = None
         writable = False
@@ -316,25 +308,23 @@ class CS3APIsManager(ContentsManager):
             for cs3_model in cs3_container:
                 # ToDo: get data from cs3_model
                 if cs3_model.type == self.TYPE_DIRECTORY:
-                    # print("-> DIR: ", cs3_model.path, path)
                     sub_model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
                     sub_model['size'] = None
                     sub_model['type'] = 'directory'
                     contents.append(sub_model)
+
                 elif cs3_model.type == self.TYPE_FILE:
 
                     if type == 'notebook' or (type is None and path.endswith('.ipynb')):
-                        # print("-> NOTEBOOK: ", cs3_model.path, path)
                         contents.append(
                             self._convert_container_to_notebook_model(cs3_model, cs3_container, content=content)
                         )
                     else:
-                        # print("-> FILE: ", cs3_model.path, path)
                         contents.append(
                             self._convert_container_to_file_model(cs3_model, cs3_container, content=content, format=format)
                         )
                 else:
-                    print("-> UNKNOWN: ", cs3_model.path, cs3_model.type)
+                    print("-> UNKNOWN TYPE: ", cs3_model.path, cs3_model.type)
 
         return model
 
@@ -352,16 +342,6 @@ class CS3APIsManager(ContentsManager):
         model['type'] = 'notebook'
         model['mimetype'] = mimetypes.guess_type(cs3_model.path)[0]
 
-        # if content:
-        #     nb = self._read_notebook(os_path, as_version=4)
-        #     self.mark_trusted_cells(nb, path)
-        #     model['content'] = nb
-        #     model['format'] = 'json'
-        #     self.validate_notebook_model(model)
-        #
-
-        # print("---> FileContentsManager::_note_model(): ", "_base_model: ", model)
-
         return model
 
     def _is_dir(self, path):
@@ -370,11 +350,11 @@ class CS3APIsManager(ContentsManager):
             return True
 
         cs3_file_api = self._cs3_file_api()
-        cs3_container = cs3_file_api.read_directory(self.config['endpoint'], path, self.user_id)
+        cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], path, self.cs3_user_id)
 
         for cs3_model in cs3_container:
             if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
-                print("IS_FILE: ", cs3_model.type, cs3_model.path)
+                # print("IS_FILE: ", cs3_model.type, cs3_model.path)
                 return False
 
         return True
@@ -382,7 +362,7 @@ class CS3APIsManager(ContentsManager):
     def _read_file(self, path, format):
 
         content = ''
-        for chunk in self._cs3_file_api().read_file(self.config['endpoint'], path, self.user_id):
+        for chunk in self._cs3_file_api().read_file(self.cs3_config['endpoint'], path, self.cs3_user_id):
             content += chunk.decode('utf-8')
 
         return content
@@ -390,3 +370,23 @@ class CS3APIsManager(ContentsManager):
     def _replace_last(self, source_string, replace_what, replace_with=""):
         head, _sep, tail = source_string.rpartition(replace_what)
         return head + replace_with + tail
+
+    def _create_base_model_from_cs3_container(self, path):
+
+        directories = path.rsplit('/')
+        directories.reverse()
+        parent_path = self._replace_last(str(path), directories[0])
+
+        cs3_file_api = self._cs3_file_api()
+        cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], parent_path, self.cs3_user_id)
+
+        cs3_model = None
+        for cs3_tmp_model in cs3_container:
+            if cs3_tmp_model.type == self.TYPE_FILE and cs3_tmp_model.path == path:
+                cs3_model = cs3_tmp_model
+
+        if cs3_model is None:
+            raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
+
+        model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
+        return model, cs3_model
