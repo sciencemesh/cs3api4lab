@@ -63,7 +63,7 @@ class TestCs3FileApi(TestCase):
         self.assertTrue('mtime' in stat_info, 'Missing mtime from stat output')
         self.assertTrue('size' in stat_info, 'Missing size from stat output')
 
-        self.storage.remove_file(self.endpoint, fileid, self.userid)
+        self.storage.remove(self.endpoint, fileid, self.userid)
 
     def test_stat_no_file(self):
         with self.assertRaises(IOError, msg='No such file or directory'):
@@ -84,7 +84,16 @@ class TestCs3FileApi(TestCase):
 
         self.assertEqual(content, content_check, 'File ' + file_patch + ' should contain the string: ' + content_check)
 
-        self.storage.remove_file(self.endpoint, file_patch, self.userid)
+        self.storage.remove(self.endpoint, file_patch, self.userid)
+
+    def test_read_file_no_file(self):
+
+        file_patch = "/test_read_no_existing_file.txt"
+        content = ''
+
+        with self.assertRaises(IOError, msg='No such file or directory'):
+            for chunk in self.storage.read_file(self.endpoint, file_patch, self.userid):
+                content += chunk.decode('utf-8')
 
     def test_write_file(self):
 
@@ -96,7 +105,7 @@ class TestCs3FileApi(TestCase):
         stat_info = self.storage.stat(self.endpoint, fileid, self.userid)
         self.assertIsInstance(stat_info, dict)
 
-        self.storage.remove_file(self.endpoint, fileid, self.userid)
+        self.storage.remove(self.endpoint, fileid, self.userid)
         with self.assertRaises(IOError):
             self.storage.stat(self.endpoint, fileid, self.userid)
 
@@ -152,7 +161,7 @@ class TestCs3FileApi(TestCase):
 
         self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
 
-        self.storage.remove_file(self.endpoint, fileid, self.userid)
+        self.storage.remove(self.endpoint, fileid, self.userid)
         with self.assertRaises(IOError):
             self.storage.stat(self.endpoint, fileid, self.userid)
 
