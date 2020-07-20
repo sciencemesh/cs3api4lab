@@ -7,6 +7,7 @@ Authors:
 """
 
 import http
+import sys
 import time
 
 import cs3.gateway.v1beta1.gateway_api_pb2 as cs3gw
@@ -19,7 +20,7 @@ import requests
 
 
 class Cs3FileApi:
-    
+
     tokens = {}  # map userid [string] to {authentication token, token expiration time}
 
     log = None
@@ -56,9 +57,10 @@ class Cs3FileApi:
 
                 ch = grpc.secure_channel(reva_host, credentials)
 
-            except():
-                print("Error create secure channel")
-                raise
+            except:
+                ex = sys.exc_info()[0]
+                self.log.error('msg="Error create secure channel" reason="%s"' % ex)
+                raise IOError(ex)
 
         else:
             ch = grpc.insecure_channel(reva_host)
@@ -142,12 +144,11 @@ class Cs3FileApi:
 
         if init_file_download.status.code == cs3code.CODE_NOT_FOUND:
             self.log.info('msg="File not found on read" filepath="%s"' % filepath)
-            yield IOError('No such file or directory')
+            raise IOError('No such file or directory')
 
         elif init_file_download.status.code != cs3code.CODE_OK:
-            self.log.debug('msg="Failed to initiateFileDownload on read" filepath="%s" reason="%s"' % \
-                                  (filepath, init_file_download.status.message))
-            yield IOError(init_file_download.status.message)
+            self.log.debug('msg="Failed to initiateFileDownload on read" filepath="%s" reason="%s"' % filepath, init_file_download.status.message)
+            raise IOError(init_file_download.status.message)
 
         self.log.debug('msg="readfile: InitiateFileDownloadRes returned" endpoint="%s"' % init_file_download.download_endpoint)
 
@@ -159,24 +160,23 @@ class Cs3FileApi:
             file_get = requests.get(url=init_file_download.download_endpoint, headers={'x-access-token': self._authenticate(userid)})
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when downloading file from Reva" reason="%s"' % e)
-            yield IOError(e)
+            raise IOError(e)
 
         time_end = time.time()
         data = file_get.content
 
         if file_get.status_code != http.HTTPStatus.OK:
             self.log.error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (file_get.status_code, file_get.reason))
-            yield IOError(file_get.reason)
+            raise IOError(file_get.reason)
         else:
             self.log.info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (filepath, (time_end - time_start) * 1000))
             for i in range(0, len(data), self.chunksize):
                 yield data[i:i + self.chunksize]
 
-    def write_file(self, endpoint, filepath, userid, content, noversion=0):
+    def write_file(self, endpoint, filepath, userid, content):
         """
         Write a file using the given userid as access token. The entire content is written
         and any pre-existing file is deleted (or moved to the previous version if supported).
-        The noversion flag is currently not supported.
         """
 
         #
@@ -219,10 +219,9 @@ class Cs3FileApi:
 
         self.log.info('msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (filepath, (time_end - time_start) * 1000))
 
-    def remove_file(self, endpoint, filepath, userid, force=0):
+    def remove(self, endpoint, filepath, userid):
         """
-        Remove a file using the given userid as access token.
-        The force argument is ignored for now for CS3 storage.
+        Remove a file or container using the given userid as access token.
         """
 
         reference = self._cs3_reference(endpoint, filepath)
@@ -231,7 +230,7 @@ class Cs3FileApi:
         res = self.cs3_stub.Delete(request=req, metadata=[('x-access-token', self._authenticate(userid))])
 
         if res.status.code != cs3code.CODE_OK:
-            self.log.warning('msg="Failed to remove file" filepath="%s" error="%s"' % (filepath, res))
+            self.log.warning('msg="Failed to remove file or folder" filepath="%s" error="%s"' % (filepath, res))
             raise IOError(res.status.message)
 
-        self.log.debug('msg="Invoked removefile" result="%s"' % res)
+        self.log.debug('msg="Invoked remove" result="%s"' % res)
