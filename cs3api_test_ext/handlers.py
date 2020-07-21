@@ -6,7 +6,7 @@ from tornado import gen, web
 import json
 
 from cs3api_test_ext import CS3APIsManager
-
+from cs3api_test_ext.cs3_share_api import Cs3ShareApi
 
 class HelloWorldHandle(APIHandler):
 
@@ -58,8 +58,8 @@ class FilesHandle(APIHandler):
 
         cs3manager = self.cs3api_manager
         model = yield maybe_future(
-                cs3manager.get(path=path, type=type, format=format, content=content)
-            )
+            cs3manager.get(path=path, type=type, format=format, content=content)
+        )
 
         print("-------------------> FilesHandle::get():")
 
@@ -98,6 +98,7 @@ class FilesHandle(APIHandler):
 
         self.finish(json.dumps(model))
 
+
 class ShareHandle(APIHandler):
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
@@ -105,12 +106,13 @@ class ShareHandle(APIHandler):
 
     @web.authenticated
     @gen.coroutine
-    def get(self):
-        output = {
-            'share': 'hello share'
-        }
+    def get(self, path=''):
+        response = Cs3ShareApi.list()
+        # output = {
+        #     'share': 'hello share'
+        # }
         self.set_header('Content-Type', 'application/json')
-        self.finish(json.dumps(output))
+        self.finish(json.dumps(response))
 
 
 class OcmShareHandle(APIHandler):
