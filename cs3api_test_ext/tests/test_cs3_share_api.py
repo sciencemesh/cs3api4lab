@@ -1,16 +1,5 @@
 from unittest import TestCase
 
-import http
-import time
-
-import grpc
-import cs3.gateway.v1beta1.gateway_api_pb2 as gateway
-import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
-import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
-import cs3.sharing.collaboration.v1beta1.resources_pb2 as sharing_res
-import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2_grpc as sharing_grpc
-import cs3.sharing.collaboration.v1beta1.resources_pb2 as sh
-# import cs3.sharing.ocm.v1beta1 as sh
 from cs3api_test_ext.cs3_share_api import Cs3ShareApi
 
 
@@ -34,10 +23,10 @@ class TestCs3ShareApi(TestCase):
         self.api.remove("1", "einstein")
 
     def test_update(self):
-        self.fail()
+        self.api.update("", "1", "einstein")
 
     def test_list_received(self):
         self.api.list_received("/", "einstein")
 
     def test_update_received(self):
-        self.fail()
+        self.api.update_received("", "1", "marie")

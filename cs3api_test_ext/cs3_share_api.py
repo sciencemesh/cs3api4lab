@@ -5,25 +5,22 @@ CS3 Share API for the JupyterLab Extension
 
 Authors:
 """
-import time
+
 import grpc
 import logging
 import cs3.gateway.v1beta1.gateway_api_pb2 as gateway
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
 import cs3.sharing.collaboration.v1beta1.resources_pb2 as sharing_res
-import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2_grpc as sharing_grpc
 import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
 import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
-import cs3.identity.user.v1beta1.resources_pb2_grpc as identity_res_grpc
-
-from cs3api_test_ext.cs3_file_api import Cs3FileApi
 
 
 # todo refactor
 class Cs3ShareApi:
     gateway_stub = None
+    log = None
     config = {
         "revahost": "127.0.0.1:19000",
         "authtokenvalidity": 3600,
@@ -31,7 +28,6 @@ class Cs3ShareApi:
         "endpoint": "/",
         "chunksize": 4194304
     }
-    log = None
 
     def __init__(self):
         channel = grpc.insecure_channel(self.config["revahost"])
@@ -43,7 +39,6 @@ class Cs3ShareApi:
         console_handler.setLevel(level=logging.DEBUG)
         log.addHandler(console_handler)
         self.log = log
-
         return
 
     def create(self, endpoint, fileid, userid, grantee, idp=None, role="viewer", grantee_type="user"):
@@ -61,7 +56,58 @@ class Cs3ShareApi:
         self.log.info(share_response)
         return
 
+    def list(self, userid):
+        # todo filters
+        list_req = sharing.ListSharesRequest()
+        list_res = self.gateway_stub.ListShares(request=list_req,
+                                                metadata=[('x-access-token', self._getToken(userid))])
+        self.log.info("List shares response for user: " + userid)
+        self.log.info(list_req)
+        return list_res
+
+    def remove(self, shareid, userid):
+        share_id_object = sharing_res.ShareId(opaque_id=shareid)
+        ref = sharing_res.ShareReference(id=share_id_object)
+        remove_req = sharing.RemoveShareRequest(ref=ref)
+        remove_res = self.gateway_stub.RemoveShare(request=remove_req,
+                                                   metadata=[('x-access-token', self._getToken(userid))])
+        self.log.info("Removing share " + shareid + " from: " + userid)
+        return remove_res
+
+    def update(self, endpoint, shareid, userid, role="viewer"):
+        # todo check role
+        share_permissions = self._getSharePermissions(role)
+        share_id_object = sharing_res.ShareId(opaque_id=shareid)
+        ref = sharing_res.ShareReference(id=share_id_object)
+        update_req = sharing.UpdateShareRequest(ref=ref,
+                                                field=sharing.UpdateShareRequest.UpdateField(
+                                                    permissions=share_permissions))
+        update_res = self.gateway_stub.UpdateShare(request=update_req,
+                                                   metadata=[('x-access-token', self._getToken(userid))])
+        return update_res
+
+    def list_received(self, userid):
+        list_req = sharing.ListReceivedSharesRequest()
+        list_res = self.gateway_stub.ListReceivedShares(request=list_req,
+                                                        metadata=[('x-access-token', self._getToken(userid))])
+        self.log.info("List received shares response for user: " + userid)
+        self.log.info(list_res)
+        return
+
+    def update_received(self, endpoint, shareid, userid, state="pending"):
+        # todo validate flags + tuple
+        share_id_object = sharing_res.ShareId(opaque_id=shareid)
+        ref = sharing_res.ShareReference(id=share_id_object)
+        share_state = self._getShareState(state)
+        update_req = sharing.UpdateReceivedShareRequest(ref=ref,
+                                                        field=sharing.UpdateReceivedShareRequest.UpdateField(
+                                                            state=share_state))
+        update_res = self.gateway_stub.UpdateReceivedShare(request=update_req,
+                                                           metadata=[('x-access-token', self._getToken(userid))])
+        return update_res
+
     def _getToken(self, userid):
+        # todo export
         auth_req = gateway.AuthenticateRequest(type='basic', client_id='einstein', client_secret='relativity')
         return self.gateway_stub.Authenticate(auth_req).token
 
@@ -108,37 +154,17 @@ class Cs3ShareApi:
         else:
             raise Exception("Invalid role")
 
-    def list(self, userid):
-        # todo filters
-        list_req = sharing.ListSharesRequest()
-        list_res = self.gateway_stub.ListShares(request=list_req,
-                                                metadata=[('x-access-token', self._getToken(userid))])
-        self.log.info("List shares response for user: " + userid)
-        self.log.info(list_req)
-        return list_res
-
-    def remove(self, shareid, userid):
-        share_id_object = sharing_res.ShareId(opaque_id=shareid)
-        ref = sharing_res.ShareReference(id=share_id_object)
-        remove_req = sharing.RemoveShareRequest(ref=ref)
-        remove_res = self.gateway_stub.RemoveShare(request=remove_req,
-                                                   metadata=[('x-access-token', self._getToken(userid))])
-        self.log.info("Removing share " + shareid + " from: " + userid)
-        return remove_res
-
-    def update(self, endpoint, shareid, userid, role="viewer"):
-        return
-
-    def list_received(self, userid):
-        list_req = sharing.ListReceivedSharesRequest()
-        list_res = self.gateway_stub.ListReceivedShares(request=list_req,
-                                                        metadata=[('x-access-token', self._getToken(userid))])
-        self.log.info("List received shares response for user: " + userid)
-        self.log.info(list_res)
-        return
-
-    def update_received(self, endpoint, shareid, userid, state="pending"):
-        return
+    def _getShareState(self, state):
+        if state is "pending":
+            return sharing_res.SHARE_STATE_PENDING
+        elif state is "accepted":
+            return sharing_res.SHARE_STATE_ACCEPTED
+        elif state is "rejected":
+            return sharing_res.SHARE_STATE_REJECTED
+        elif state is "invalid":
+            return sharing_res.SHARE_STATE_INVALID
+        else:
+            raise Exception("Unknown share state")
 
     def _getReference(self, endpoint, fileid):
         if endpoint == 'default':
