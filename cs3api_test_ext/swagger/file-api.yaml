@@ -1,0 +1,150 @@
+swagger: "2.0"
+info:
+  description: "Initial version of share API. Development in progress. Use 'einstein' username."
+  version: "-1.0.0"
+  title: "Share API"
+# host: ""
+basePath: "/api/cs3test"
+
+tags:
+- name: "shares"
+  description: "Share operations"
+
+paths:
+  /shares:
+    post:
+      tags:
+      - "shares"
+      summary: "create a share"
+      description: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "endpoint"
+        description: "endpoint path"
+        required: true
+      - in: "query"
+        name: "fileid"
+        description: "file id"
+        required: true
+      - in: "query"
+        name: "userid"
+        description: "Username"
+        required: true
+      - in: "query"
+        name: "grantee"
+        description: "Share receiver username"
+        required: true
+      - in: "query"
+        name: "idp"
+        description: "ID provider address"
+        required: true
+      - in: "query"
+        name: "role"
+        description: "role of a share receiver"
+        required: true
+        items:
+          type: "string"
+          enum:
+          - "viewer"
+          - "editor"
+      - in: "query"
+        name: "grantee_type"
+        description: ""
+        required: true
+        items:
+          type: "string"
+          enum:
+          - "user"
+          - "group"
+      responses:
+        "200":
+          description: "OK"
+        "405":
+          description: "Invalid input"
+
+    put:
+      tags:
+      - "shares"
+      summary: "update a share"
+      description: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "endpoint"
+        description: "endpoint path"
+        required: true
+      - in: "query"
+        name: "userid"
+        description: "Username"
+        required: true
+      - in: "query"
+        name: "shareid"
+        description: "ID of a share"
+        required: true
+      - in: "query"
+        name: "grantee_type"
+        description: ""
+        required: true
+        items:
+          type: "string"
+          enum:
+          - "user"
+          # - "group"
+
+    delete:
+      tags:
+      - "shares"
+      summary: "delete a share"
+      description: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "userid"
+        description: "Username"
+        required: true
+      - in: "query"
+        name: "shareid"
+        description: "ID of a share"
+        required: true
+
+  /shares/list:
+    get:
+      tags:
+      - "shares"
+      summary: "Get all given shares"
+      description: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "userid"
+        description: "Username"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+        "405":
+          description: "Invalid input"
+
+  /shares/list-received:
+    get:
+      tags:
+      - "shares"
+      summary: "Get all received shares"
+      description: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "userid"
+        description: "Username"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+        "405":
+          description: "Invalid input"
