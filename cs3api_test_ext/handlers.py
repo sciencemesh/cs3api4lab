@@ -169,6 +169,5 @@ handlers = [
     (r"/api/cs3test/shares", ShareHandle),
     (r"/api/cs3test/shares/list", ListSharesHandler),
     (r"/api/cs3test/shares/list-received", ListReceivedSharesHandler),
-    (r"/api/cs3test/shares/create", CreateShareHandler),
     (r"/api/cs3test/ocmshares", OcmShareHandle),
 ]
