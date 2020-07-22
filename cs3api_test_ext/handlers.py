@@ -8,6 +8,7 @@ import json
 from cs3api_test_ext import CS3APIsManager
 from cs3api_test_ext.cs3_share_api import Cs3ShareApi
 
+
 class HelloWorldHandle(APIHandler):
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
@@ -106,12 +107,44 @@ class ShareHandle(APIHandler):
 
     @web.authenticated
     @gen.coroutine
-    def get(self, path=''):
-        response = Cs3ShareApi.list()
-        # output = {
-        #     'share': 'hello share'
-        # }
+    def post(self, endpoint, fileid, userid, grantee, idp=None, role="viewer", grantee_type="user"):
+        response = Cs3ShareApi.create(endpoint, fileid, userid, grantee, idp, role, grantee_type)
         self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
+        self.finish(json.dumps(response))
+
+    @web.authenticated
+    @gen.coroutine
+    def delete(self, shareid, userid):
+        response = Cs3ShareApi.remove(shareid, userid)
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
+        self.finish(json.dumps(response))
+
+    def put(self, endpoint, shareid, userid, role="viewver"):
+        response = Cs3ShareApi.update(endpoint, shareid, userid, role)
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
+        self.finish(json.dumps(response))
+
+
+class ListSharesHandler(APIHandler):
+    @web.authenticated
+    @gen.coroutine
+    def get(self, userid):
+        response = Cs3ShareApi.list(userid=userid)
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
+        self.finish(json.dumps(response))
+
+
+class ListReceivedSharesHandler(APIHandler):
+    @web.authenticated
+    @gen.coroutine
+    def get(self, userid):
+        response = Cs3ShareApi.list_received(userid=userid)
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
         self.finish(json.dumps(response))
 
 
@@ -134,5 +167,8 @@ handlers = [
     (r"/api/cs3test/helloworld", HelloWorldHandle),
     (r"/api/cs3test/files", FilesHandle),
     (r"/api/cs3test/shares", ShareHandle),
+    (r"/api/cs3test/shares/list", ListSharesHandler),
+    (r"/api/cs3test/shares/list-received", ListReceivedSharesHandler),
+    (r"/api/cs3test/shares/create", CreateShareHandler),
     (r"/api/cs3test/ocmshares", OcmShareHandle),
 ]
