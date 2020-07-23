@@ -58,6 +58,10 @@ class Cs3FileApi:
 		return self.tokens[userid]['tok']
 
 	def __cs3_reference(self, endpoint, fileid):
+
+		if endpoint == 'default':
+			raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
+
 		if fileid[0] == '/':
 			# assume this is a filepath
 			ref = cs3spr.Reference(path=fileid)
@@ -73,10 +77,6 @@ class Cs3FileApi:
 		Note that endpoint here means the storage id. Note that fileid can be either a path (which MUST begin with /), or an id (which MUST NOT
 		start with a /).
 		"""
-
-		if endpoint == 'default':
-			raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
-
 		tstart = time.time()
 
 		ref = self.__cs3_reference(endpoint, fileid)
@@ -207,17 +207,9 @@ class Cs3FileApi:
 
 		if file_get.status_code != http.HTTPStatus.OK:
 			self.ctx['log'].error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (file_get.status_code, file_get.reason))
-			print("->>>>>> CS3APIsManager read_file error: ")
-			print(file_get)
-			print(data)
-			print(self.ctx['log'])
 			yield IOError(file_get.reason)
 		else:
 			self.ctx['log'].info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
-			print("->>>>>> CS3APIsManager read_file OK: ")
-			print(file_get)
-			print(data)
-			print(self.ctx['log'])
 			for i in range(0, len(data), self.ctx['chunksize']):
 				yield data[i:i + self.ctx['chunksize']]
 
@@ -284,3 +276,29 @@ class Cs3FileApi:
 			raise IOError(res.status.message)
 
 		self.ctx['log'].debug('msg="Invoked removefile" result="%s"' % res)
+
+	def read_directory(self, endpoint, filepath, userid):
+
+		"""
+		Read a directory.
+		"""
+
+		tstart = time.time()
+
+		reference = self.__cs3_reference(endpoint, filepath)
+
+		req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
+		res = self.ctx['cs3stub'].ListContainer(request=req, metadata=[('x-access-token', self.__authenticate(userid))])
+
+		if res.status.code != cs3code.CODE_OK:
+			self.ctx['log'].warning('msg="Failed to read container" filepath="%s" reason="%s"' % (filepath, res.status.message))
+			raise IOError(res.status.message)
+
+		tend = time.time()
+		self.ctx['log'].info('msg="Invoked read container" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
+
+		out = []
+		for info in res.infos:
+			out.append(info)
+
+		return out

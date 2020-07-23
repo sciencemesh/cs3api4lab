@@ -79,9 +79,40 @@ pip uninstall cs3api_test_ext
 jupyter labextension uninstall @JarCz/cs3api_test_ext
 ```
 
+### Setup env 
+
+Windows console:
+```
+mkdir c:\var\tmp
+pip install cs3apis grpcio grpcio-tools
+```
+
+JupyterLab console:
+```
+pip install cs3apis grpcio grpcio-tools
+```
+
+Replace notebook File Content Manager class
+
+Create config:
+```
+jupyter notebook --generate-config
+```
+
+Enable CS3 File Content Manager
+Replace in file HOME_FOLDER/.jupyter/jupyter_notebook_config.py line 
+
+```
+c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemanager.LargeFileManager'
+```
+
+to
+
+```
+c.NotebookApp.contents_manager_class = 'cs3api_test_ext.CS3APIsManager'
+```
 
 ### Quick build
-
 ```bash
 pip install -e .
 jupyter serverextension enable --py cs3api_test_ext --sys-prefix
@@ -94,8 +125,8 @@ jupyter lab
 
 ```
 
-### Add dependecy
-At JupyterLab console
-```
-pip install cs3apis grpcio grpcio-tools
+### Quick build python
+```bash
+jupyter labextension install .
+jupyter lab
 ```
