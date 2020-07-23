@@ -3,7 +3,7 @@ import React from 'react';
 
 import Main from "./Main";
 import { Contents } from '@jupyterlab/services';
-//
+
 type WidgetProps = {
     fileInfo: Contents.IModel,
 }
@@ -14,7 +14,7 @@ type WidgetProps = {
 export class Widget extends ReactWidget {
     private readonly fileInfo: Contents.IModel;
 
-    constructor(props :WidgetProps) {
+    public constructor(props :WidgetProps) {
         super();
         this.addClass('jp-ReactWidget');
         this.fileInfo = props.fileInfo;
