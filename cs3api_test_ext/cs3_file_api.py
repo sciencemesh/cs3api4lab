@@ -207,17 +207,9 @@ class Cs3FileApi:
 
 		if file_get.status_code != http.HTTPStatus.OK:
 			self.ctx['log'].error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (file_get.status_code, file_get.reason))
-			print("->>>>>> CS3APIsManager read_file error: ")
-			print(file_get)
-			print(data)
-			print(self.ctx['log'])
 			yield IOError(file_get.reason)
 		else:
 			self.ctx['log'].info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
-			print("->>>>>> CS3APIsManager read_file OK: ")
-			print(file_get)
-			print(data)
-			print(self.ctx['log'])
 			for i in range(0, len(data), self.ctx['chunksize']):
 				yield data[i:i + self.ctx['chunksize']]
 
