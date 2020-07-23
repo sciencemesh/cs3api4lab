@@ -1,3 +1,4 @@
+import itertools
 import logging
 import mimetypes
 import os
@@ -16,6 +17,7 @@ from base64 import encodebytes, decodebytes
 
 from cs3api_test_ext.cs3_file_api import Cs3FileApi
 
+from nbformat.v4 import new_notebook
 
 class CS3APIsManager(ContentsManager):
 
@@ -84,7 +86,31 @@ class CS3APIsManager(ContentsManager):
 
         print("---> CS3APIsManager::dir_exists(): ", "path:", path)
 
-        raise NotImplementedError('cs3: missing')
+        if path == '/' or path == "" or path is None:
+            return True
+
+        directories = path.rsplit('/')
+        directories.reverse()
+
+        if directories[0] != '':
+            parent_path = self._replace_last(str(path), directories[0])
+        else:
+            parent_path = path
+
+        print("---> CS3APIsManager::dir_exists(): ", "parent_path:", parent_path)
+
+        cs3_file_api = self._cs3_file_api()
+        cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], parent_path, self.cs3_user_id)
+
+        for cs3_model in cs3_container:
+            if cs3_model.type == self.TYPE_DIRECTORY and cs3_model.path == path:
+                print("DIRECTORY exits: ", cs3_model.type, cs3_model.path)
+                return True
+
+        print("DIRECTORY not exits: ", path)
+
+        return False
+
 
     def is_hidden(self, path):
         """Is path a hidden directory or file?
@@ -101,7 +127,7 @@ class CS3APIsManager(ContentsManager):
 
         print("---> CS3APIsManager::is_hidden(): ", "path:", path)
 
-        raise NotImplementedError('cs3: missing')
+        return False
 
     def file_exists(self, path=''):
         """Does a file exist at the given path?
@@ -121,16 +147,21 @@ class CS3APIsManager(ContentsManager):
 
         directories = path.rsplit('/')
         directories.reverse()
-        parent_path = self._replace_last(str(path), directories[0])
+
+        if directories[0] != '':
+            parent_path = self._replace_last(str(path), directories[0])
+        else:
+            parent_path = path
 
         cs3_file_api = self._cs3_file_api()
         cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], parent_path, self.cs3_user_id)
 
         for cs3_model in cs3_container:
             if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
-                print("IS_FILE: ", cs3_model.type, cs3_model.path)
+                print("FILE is exits: ", cs3_model.type, cs3_model.path)
                 return True
 
+        print("FILE not exits: ", path)
         return False
 
     def get(self, path, content=True, type=None, format=None):
@@ -234,6 +265,37 @@ class CS3APIsManager(ContentsManager):
         print("---> CS3APIsManager::rename_file(): ", "old_path:", old_path, "new_path:", new_path)
 
         raise NotImplementedError('cs3: missing')
+
+    def new(self, model=None, path=''):
+
+        print("---> CS3APIsManager::new(): ", "model:", model, "path:", path)
+
+        path = path.strip('/')
+        if model is None:
+            model = {}
+
+        if path.endswith('.ipynb'):
+            model.setdefault('type', 'notebook')
+        else:
+            model.setdefault('type', 'file')
+
+        # no content, not a directory, so fill out new-file model
+        if 'content' not in model and model['type'] != 'directory':
+            if model['type'] == 'notebook':
+                model['content'] = new_notebook()
+                model['format'] = 'json'
+            else:
+                model['content'] = ''
+                model['type'] = 'file'
+                model['format'] = 'text'
+
+        model = self.save(model, path)
+
+        # ToDo: Fix writable flag - based on container status
+        model['writable'] = True
+
+        return model
+
 
     def _dir_model(self, path, content):
 
@@ -440,8 +502,6 @@ class CS3APIsManager(ContentsManager):
         return model
 
     def _is_dir(self, path):
-
-        print("ISDIR: ",path)
 
         if path == '/' or path == '' or path is None:
             return True
