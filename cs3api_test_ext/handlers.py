@@ -6,6 +6,7 @@ from tornado import gen, web
 import json
 
 from cs3api_test_ext import CS3APIsManager
+from cs3api_test_ext.cs3_share_api import Cs3ShareApi
 
 
 class HelloWorldHandle(APIHandler):
@@ -58,8 +59,8 @@ class FilesHandle(APIHandler):
 
         cs3manager = self.cs3api_manager
         model = yield maybe_future(
-                cs3manager.get(path=path, type=type, format=format, content=content)
-            )
+            cs3manager.get(path=path, type=type, format=format, content=content)
+        )
 
         # print("-------------------> FilesHandle::get():")
 
@@ -147,6 +148,7 @@ class FilesHandle(APIHandler):
 
         self.finish(json.dumps(model))
 
+
 class ShareHandle(APIHandler):
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
@@ -154,12 +156,45 @@ class ShareHandle(APIHandler):
 
     @web.authenticated
     @gen.coroutine
-    def get(self):
-        output = {
-            'share': 'hello share'
-        }
+    def post(self, endpoint, fileid, userid, grantee, idp=None, role="viewer", grantee_type="user"):
+        response = Cs3ShareApi.create(endpoint, fileid, userid, grantee, idp, role, grantee_type)
         self.set_header('Content-Type', 'application/json')
-        self.finish(json.dumps(output))
+        self.set_status(200)
+        self.finish(json.dumps(response))
+
+    @web.authenticated
+    @gen.coroutine
+    def delete(self, shareid, userid):
+        response = Cs3ShareApi.remove(shareid, userid)
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
+        self.finish(json.dumps(response))
+
+    def put(self, endpoint, shareid, userid, role="viewver"):
+        response = Cs3ShareApi.update(endpoint, shareid, userid, role)
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
+        self.finish(json.dumps(response))
+
+
+class ListSharesHandler(APIHandler):
+    @web.authenticated
+    @gen.coroutine
+    def get(self, userid):
+        response = Cs3ShareApi.list(userid=userid)
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
+        self.finish(json.dumps(response))
+
+
+class ListReceivedSharesHandler(APIHandler):
+    @web.authenticated
+    @gen.coroutine
+    def get(self, userid):
+        response = Cs3ShareApi.list_received(userid=userid)
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
+        self.finish(json.dumps(response))
 
 
 class OcmShareHandle(APIHandler):
@@ -181,5 +216,7 @@ handlers = [
     (r"/api/cs3test/helloworld", HelloWorldHandle),
     (r"/api/cs3test/files", FilesHandle),
     (r"/api/cs3test/shares", ShareHandle),
+    (r"/api/cs3test/shares/list", ListSharesHandler),
+    (r"/api/cs3test/shares/list-received", ListReceivedSharesHandler),
     (r"/api/cs3test/ocmshares", OcmShareHandle),
 ]
