@@ -1,35 +1,61 @@
-import React, {useState} from 'react';
+import React from 'react';
+import Menu from '../components/Menu';
+import Content from "../components/Content";
+import Header from "../components/Header";
+import {Contents} from "@jupyterlab/services";
 
 // Services
-import {requestAPI} from "../services/requestAPI";
+// import {requestAPI} from "../services/requestAPI";
 
-// components
-import ControlPanel from "../components/ControlPanel";
-import Results from "../components/Results";
+type MainProps = {
+    fileInfo: Contents.IModel
+}
 
 /**
  * Main container.
  *
  * @constructor
  */
-const Main = (): JSX.Element => {
-    const [message, setMessage] = useState(null);
+class Main extends React.Component<any, any> {
+    public state = {
+        activeTab: 'info'
+    }
 
-    return (<>
-        <ControlPanel makeRequest={async ()=> {
-            try {
-                const data = await requestAPI<any>('/api/cs3test/helloworld', {
-                    method: 'GET'
-                });
+    /**
+     * Main component constructor.
+     *
+     * @param props
+     */
+    public constructor(props: MainProps) {
+        super(props);
+        this.setState({
+            ...this.state,
+            props
+        });
+    }
 
-                setMessage(JSON.stringify(data));
-            } catch (e) {
-                console.log('request errors', e);
-            }
-        }}/>
+    /**
+     * Switch between views on file properties.
+     *
+     * @param tabname
+     */
+    protected switchTabs = (tabname :string) :void => {
+        this.setState({
+            activeTab: tabname
+        });
+    }
 
-        <Results message={message} />
-    </>);
-};
+    public render() {
+
+
+        return (
+            <div className='jp-file-info'>
+                <Header fileInfo={this.props.fileInfo}/>
+                <Menu tabHandler={this.switchTabs}/>
+                <Content contentType={this.state.activeTab} content={this.props.fileInfo} />
+            </div>
+        );
+    }
+}
 
 export default Main;
