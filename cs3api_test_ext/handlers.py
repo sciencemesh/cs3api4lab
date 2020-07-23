@@ -43,8 +43,8 @@ class FilesHandle(APIHandler):
         if self.get_query_argument('path', default="") != "":
             path = self.get_query_argument('path', default="")
 
-        print("-------------------> FilesHandle::get():")
-        print("path: ", path, "content: ", content, "type: ", type, "format: ", format)
+        # print("-------------------> FilesHandle::get():")
+        # print("path: ", path, "content: ", content, "type: ", type, "format: ", format)
 
         if type not in {None, 'directory', 'file', 'notebook'}:
             raise web.HTTPError(400, u'Type %r is invalid' % type)
@@ -61,7 +61,7 @@ class FilesHandle(APIHandler):
                 cs3manager.get(path=path, type=type, format=format, content=content)
             )
 
-        print("-------------------> FilesHandle::get():")
+        # print("-------------------> FilesHandle::get():")
 
         self._finish_model(model)
 
@@ -72,12 +72,58 @@ class FilesHandle(APIHandler):
         Create a new file in the specified path.
         """
 
+        print("-------------------> FilesHandle::post():")
+        print("path: ", path)
+
+        # cm = self.contents_manager
+        #
+        # file_exists = yield maybe_future(cm.file_exists(path))
+        # if file_exists:
+        #     raise web.HTTPError(400, "Cannot POST to files, use PUT instead.")
+        #
+        # dir_exists = yield maybe_future(cm.dir_exists(path))
+        # if not dir_exists:
+        #     raise web.HTTPError(404, "No such directory: %s" % path)
+        #
+        # model = self.get_json_body()
+        #
+        # if model is not None:
+        #     copy_from = model.get('copy_from')
+        #     ext = model.get('ext', '')
+        #     type = model.get('type', '')
+        #     if copy_from:
+        #         yield self._copy(copy_from, path)
+        #     else:
+        #         yield self._new_untitled(path, type=type, ext=ext)
+        # else:
+        #     yield self._new_untitled(path)
+
+        print("-------------------> FilesHandle::post():")
+
     @web.authenticated
     @gen.coroutine
     def put(self, path=''):
         """
         Saves the file in the location specified by name and path.
         """
+        print("-------------------> FilesHandle::put():")
+        print("path: ", path)
+
+        model = self.get_json_body()
+
+        print("model:", model)
+        # if model:
+        #     if model.get('copy_from'):
+        #         raise web.HTTPError(400, "Cannot copy with PUT, only POST")
+        #     exists = yield maybe_future(self.contents_manager.file_exists(path))
+        #     if exists:
+        #         yield maybe_future(self._save(model, path))
+        #     else:
+        #         yield maybe_future(self._upload(model, path))
+        # else:
+        #     yield maybe_future(self._new_untitled(path))
+
+        print("-------------------> FilesHandle::put():")
 
     @web.authenticated
     @gen.coroutine
@@ -85,6 +131,9 @@ class FilesHandle(APIHandler):
         """
         Delete a file in the given path
         """
+        print("-------------------> FilesHandle::delete():")
+        print("path: ", path)
+        print("-------------------> FilesHandle::delete():")
 
     def _finish_model(self, model, location=True):
 
