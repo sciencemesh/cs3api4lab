@@ -84,7 +84,7 @@ class Cs3FileApi:
 
         return self.tokens[userid]['tok']
 
-    def _cs3_reference(self, endpoint, fileid):
+    def _cs3_reference(self, fileid, endpoint=None):
 
         if fileid[0] == '/':
             # assume this is a filepath
@@ -96,7 +96,7 @@ class Cs3FileApi:
         # assume we have an opaque fileid
         return cs3spr.Reference(id=cs3spr.ResourceId(storage_id=endpoint, opaque_id=fileid))
 
-    def stat(self, endpoint, fileid, userid):
+    def stat(self, fileid, userid, endpoint=None):
 
         """
         Stat a file and returns (size, mtime) as well as other extended info using the given userid as access token.
@@ -106,7 +106,7 @@ class Cs3FileApi:
 
         time_start = time.time()
 
-        ref = self._cs3_reference(endpoint, fileid)
+        ref = self._cs3_reference(fileid, endpoint)
 
         stat_info = self.cs3_stub.Stat(request=cs3sp.StatRequest(ref=ref), metadata=[('x-access-token', self._authenticate(userid))])
 
@@ -126,7 +126,7 @@ class Cs3FileApi:
         self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (fileid, stat_info.status.message))
         raise IOError(stat_info.status.message)
 
-    def read_file(self, endpoint, filepath, userid):
+    def read_file(self, filepath, userid, endpoint=None):
         """
         Read a file using the given userid as access token.
         """
@@ -136,7 +136,7 @@ class Cs3FileApi:
         #
         # Prepare endpoint
         #
-        reference = self._cs3_reference(endpoint, filepath)
+        reference = self._cs3_reference(filepath, endpoint)
 
         req = cs3sp.InitiateFileDownloadRequest(ref=reference)
 
@@ -173,7 +173,7 @@ class Cs3FileApi:
             for i in range(0, len(data), self.chunksize):
                 yield data[i:i + self.chunksize]
 
-    def write_file(self, endpoint, filepath, userid, content):
+    def write_file(self, filepath, userid, content, endpoint=None):
         """
         Write a file using the given userid as access token. The entire content is written
         and any pre-existing file is deleted (or moved to the previous version if supported).
@@ -184,7 +184,7 @@ class Cs3FileApi:
         #
         time_start = time.time()
 
-        reference = self._cs3_reference(endpoint, filepath)
+        reference = self._cs3_reference(filepath, endpoint)
 
         req = cs3sp.InitiateFileUploadRequest(ref=reference)
         initfileuploadres = self.cs3_stub.InitiateFileUpload(request=req, metadata=[('x-access-token', self._authenticate(userid))])
@@ -219,12 +219,12 @@ class Cs3FileApi:
 
         self.log.info('msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (filepath, (time_end - time_start) * 1000))
 
-    def remove(self, endpoint, filepath, userid):
+    def remove(self, filepath, userid, endpoint=None):
         """
         Remove a file or container using the given userid as access token.
         """
 
-        reference = self._cs3_reference(endpoint, filepath)
+        reference = self._cs3_reference(filepath, endpoint)
 
         req = cs3sp.DeleteRequest(ref=reference)
         res = self.cs3_stub.Delete(request=req, metadata=[('x-access-token', self._authenticate(userid))])

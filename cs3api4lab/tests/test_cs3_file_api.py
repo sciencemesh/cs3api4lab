@@ -55,19 +55,19 @@ class TestCs3FileApi(TestCase):
         fileid = "/test.txt"
         message = "Lorem ipsum dolor sit amet..."
 
-        self.storage.write_file(self.endpoint, fileid, self.userid, message)
+        self.storage.write_file(fileid, self.userid, message, self.endpoint)
 
-        stat_info = self.storage.stat(self.endpoint, fileid, self.userid)
+        stat_info = self.storage.stat(fileid, self.userid, self.endpoint)
 
         self.assertIsInstance(stat_info, dict)
         self.assertTrue('mtime' in stat_info, 'Missing mtime from stat output')
         self.assertTrue('size' in stat_info, 'Missing size from stat output')
 
-        self.storage.remove(self.endpoint, fileid, self.userid)
+        self.storage.remove(fileid, self.userid, self.endpoint)
 
     def test_stat_no_file(self):
         with self.assertRaises(IOError, msg='No such file or directory'):
-            self.storage.stat(self.endpoint, '/hopefullynotexisting', self.userid)
+            self.storage.stat('/hopefullynotexisting', self.userid, self.endpoint)
 
     def test_read_file(self):
 
@@ -75,16 +75,16 @@ class TestCs3FileApi(TestCase):
         content_check = 'bla\n'
         file_patch = "/test_read.txt"
 
-        self.storage.write_file(self.endpoint, file_patch, self.userid, content_to_write)
+        self.storage.write_file(file_patch, self.userid, content_to_write, self.endpoint)
         content = ''
 
-        for chunk in self.storage.read_file(self.endpoint, file_patch, self.userid):
+        for chunk in self.storage.read_file(file_patch, self.userid, self.endpoint):
             self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
             content += chunk.decode('utf-8')
 
         self.assertEqual(content, content_check, 'File ' + file_patch + ' should contain the string: ' + content_check)
 
-        self.storage.remove(self.endpoint, file_patch, self.userid)
+        self.storage.remove(file_patch, self.userid, self.endpoint)
 
     def test_read_file_no_file(self):
 
@@ -92,7 +92,7 @@ class TestCs3FileApi(TestCase):
         content = ''
 
         with self.assertRaises(IOError, msg='No such file or directory'):
-            for chunk in self.storage.read_file(self.endpoint, file_patch, self.userid):
+            for chunk in self.storage.read_file(file_patch, self.userid, self.endpoint):
                 content += chunk.decode('utf-8')
 
     def test_write_file(self):
@@ -100,25 +100,25 @@ class TestCs3FileApi(TestCase):
         buffer = b"Testu form cs3 Api"
         fileid = "/testfile.txt"
 
-        self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
-        stat_info = self.storage.stat(self.endpoint, fileid, self.userid)
+        stat_info = self.storage.stat(fileid, self.userid, self.endpoint)
         self.assertIsInstance(stat_info, dict)
 
-        self.storage.remove(self.endpoint, fileid, self.userid)
+        self.storage.remove(fileid, self.userid, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(self.endpoint, fileid, self.userid)
+            self.storage.stat(fileid, self.userid, self.endpoint)
 
 
     def test_write_example(self):
 
         buffer = b"Example from cs3 API"
         fileid = "/example1.txt"
-        self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
         buffer = b"Example2 from cs3 API"
         fileid = "/example2.txt"
-        self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
         buffer = b'{\
 					"cells": [\
@@ -153,17 +153,17 @@ class TestCs3FileApi(TestCase):
 					"nbformat_minor": 4\
 					}'
         fileid = "/note1.ipynb"
-        self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
     def test_remove_file(self):
         fileid = "/file_to_remove.txt"
         buffer = b"ebe5tresbsrdthbrdhvdtr"
 
-        self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
-        self.storage.remove(self.endpoint, fileid, self.userid)
+        self.storage.remove(fileid, self.userid, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(self.endpoint, fileid, self.userid)
+            self.storage.stat(fileid, self.userid, self.endpoint)
 
 
 if __name__ == '__main__':
