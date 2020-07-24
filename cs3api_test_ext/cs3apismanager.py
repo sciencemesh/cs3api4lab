@@ -169,6 +169,9 @@ class CS3APIsManager(ContentsManager):
 
         # print("---> CS3APIsManager::get(): ", "path:", path, "content:", content, "type:", type, "format:", format)
 
+        if path[0] != '/':
+            path = '/' + path
+
         #
         # ToDo: Get user info/token from jupyter session
         #
@@ -264,7 +267,26 @@ class CS3APIsManager(ContentsManager):
 
         print("---> CS3APIsManager::rename_file(): ", "old_path:", old_path, "new_path:", new_path)
 
-        raise NotImplementedError('cs3: missing')
+        if new_path == old_path:
+            return
+
+        #
+        # ToDo: Implements validate file like: notebook/services/contents/filemanager.py:587 using Reva API
+        #
+        if old_path[0] != '/':
+            old_path = '/' + old_path
+
+        if new_path[0] != '/':
+            new_path = '/' + new_path
+
+        # Move the file
+        try:
+            cs3_file_api = self._cs3_file_api()
+            cs3_file_api.move(self.cs3_config['endpoint'], old_path, new_path, self.cs3_user_id)
+        except web.HTTPError:
+            raise
+        except Exception as e:
+            raise web.HTTPError(500, u'Unknown error renaming file: %s %s' % (old_path, e))
 
     def new(self, model=None, path=''):
 
