@@ -148,6 +148,16 @@ class ListReceivedSharesHandler(APIHandler):
         self.finish(json.dumps(response))
 
 
+class ListSharesForFile(APIHandler):
+    @web.authenticated
+    @gen.coroutine
+    def get(self, file_id):
+        response = Cs3ShareApi.list_grantees_for_file(file_id)
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(200)
+        self.finish(json.dumps(response))
+
+
 class OcmShareHandle(APIHandler):
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
@@ -169,5 +179,6 @@ handlers = [
     (r"/api/cs3test/shares", ShareHandle),
     (r"/api/cs3test/shares/list", ListSharesHandler),
     (r"/api/cs3test/shares/list-received", ListReceivedSharesHandler),
+    (r"/api/cs3test/shares/file", ListSharesForFile),
     (r"/api/cs3test/ocmshares", OcmShareHandle),
 ]
