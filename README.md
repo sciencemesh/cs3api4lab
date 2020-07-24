@@ -78,3 +78,54 @@ Now every change will be built locally and bundled into JupyterLab. Be sure to r
 pip uninstall cs3api4lab
 jupyter labextension uninstall @sciencemesh/cs3api4lab
 ```
+
+### Setup env for integration testing
+
+#### Create local IOP instance 
+Follow the first 3 steps from this tutorial https://reva.link/docs/tutorials/share-tutorial/
+or create with commands: 
+
+```bash
+git clone https://github.com/cs3org/reva
+cd reva
+make deps
+make
+cd examples/ocmd/ && mkdir -p /tmp/reva && && mkdir -p /var/tmp/reva 
+```
+
+Change config file, reconfigure http.services.dataprovider and grpc.services.storageprovider in examples/ocmd/ocmd-server-1.toml with disable_tus = true.
+It will look like this
+
+```ini
+...
+[http.services.dataprovider]
+...
+disable_tus = true
+
+```
+
+and
+
+```ini
+[grpc.services.storageprovider]
+...
+disable_tus = true
+
+```
+
+#### Run test
+
+Add dependency for project:
+```bash
+pip install -r requirements.txt
+```
+
+Goto test folder:
+```bash
+cd cs3api4lab/tests
+```
+
+Run cs3 API connector test:
+```bash
+python test_cs3_file_api.py
+```
