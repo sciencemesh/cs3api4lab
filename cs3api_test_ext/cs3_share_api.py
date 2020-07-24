@@ -65,6 +65,25 @@ class Cs3ShareApi:
         self.log.info(list_req)
         return list_res
 
+    def list_grantees_for_file(self, file_id):
+        list_res = self.list("marie")
+
+        shares = []
+        for share in list_res.shares:
+            if file_id in share.resource_id.opaque_id.replace("fileid-", "").replace('%2F', '/'):
+                shares.append(share)
+
+        shares_dict = {}
+        for share in list_res.shares:
+            permissions = "write" if share.permissions.permissions.delete is True and share.permissions.permissions.move is True else "read"
+            # share_info = {'file': share.resource_id.opaque_id,
+            #               'permissions': permissions}
+            # share_info = {'permissions': permissions}
+            grantee_username = share.grantee.id.opaque_id
+            shares_dict[grantee_username] = permissions
+
+        return shares_dict
+
     def remove(self, shareid, userid):
         share_id_object = sharing_res.ShareId(opaque_id=shareid)
         ref = sharing_res.ShareReference(id=share_id_object)
@@ -108,7 +127,7 @@ class Cs3ShareApi:
 
     def _getToken(self, userid):
         # todo export
-        auth_req = gateway.AuthenticateRequest(type='basic', client_id='einstein', client_secret='relativity')
+        auth_req = gateway.AuthenticateRequest(type='basic', client_id='marie', client_secret='radioactivity')
         return self.gateway_stub.Authenticate(auth_req).token
 
     def _getResourceInfo(self, endpoint, fileid, userid):
