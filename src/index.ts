@@ -7,22 +7,11 @@ import { showDialog, Dialog, ICommandPalette } from '@jupyterlab/apputils';
 import {each} from "@lumino/algorithm";
 import {Widget} from "./containers/Widget";
 
-// import { showErrorMessage } from "@jupyterlab/apputils";
-
-// import {IFileBrowserFactory} from '@jupyterlab/filebrowser';
-
-// import {toArray} from '@lumino/algorithm';
-
-// import {reactIcon} from '@jupyterlab/ui-components';
-//components
-// import {Widget} from "./containers/Widget";
-
 /**
  * The command IDs used by the react-widget plugin.
  */
 namespace CommandIDs {
   export const share = 'filebrowser:cs3-share';
-  export const duplicate = 'filebrowser:duplicate';
 }
 
 /**
@@ -34,8 +23,8 @@ const extension: JupyterFrontEndPlugin<void> = {
   requires: [IFileBrowserFactory, ISettingRegistry, ICommandPalette],
   optional: [ILauncher],
   activate: async (app: JupyterFrontEnd, factory: IFileBrowserFactory) => {
-    const {commands} = app;
-    const {tracker} = factory;
+    const { commands } = app;
+    const { tracker } = factory;
 
     app.contextMenu.addItem({
       command: CommandIDs.share,
