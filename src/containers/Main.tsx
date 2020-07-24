@@ -46,8 +46,6 @@ class Main extends React.Component<any, any> {
     }
 
     public render() {
-
-
         return (
             <div className='jp-file-info'>
                 <Header fileInfo={this.props.fileInfo}/>

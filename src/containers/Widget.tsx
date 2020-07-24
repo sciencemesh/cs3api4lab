@@ -22,7 +22,7 @@ export class Widget extends ReactWidget {
 
     protected render(): JSX.Element {
       return (
-          <Main fileInfo={this.fileInfo}/>
+          <Main fileInfo={this.fileInfo} />
       )
     }
 }
