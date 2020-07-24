@@ -125,6 +125,7 @@ class CS3APIsManager(ContentsManager):
             Whether the path is hidden.
         """
 
+        # ToDo: Get file/directory attribute from Reva permission
         print("---> CS3APIsManager::is_hidden(): ", "path:", path)
 
         return False
@@ -260,7 +261,14 @@ class CS3APIsManager(ContentsManager):
 
         print("---> CS3APIsManager::delete_file(): ", "path:", path)
 
-        raise NotImplementedError('cs3: missing')
+        if path[0] != '/':
+            path = '/' + path
+
+        try:
+            cs3_file_api = self._cs3_file_api()
+            cs3_file_api.remove_file(self.cs3_config['endpoint'], path, self.cs3_user_id)
+        except Exception as e:
+            raise web.HTTPError(500, u'Unknown error renaming file: %s %s' % (path, e))
 
     def rename_file(self, old_path, new_path):
         """Rename a file or directory."""
