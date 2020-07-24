@@ -1,15 +1,91 @@
-.jp-ReactWidget {
+.jp-file-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 350px;
+    height: 250px;
+
     background: var(--jp-layout-color1);
     color: var(--jp-ui-font-color1);
+}
+
+.jp-file-info-header {
+    margin-bottom: 15px;
+}
+
+.jp-file-info-header .jp-file-info-header-icon {
+    flex-grow: 0;
+    width: 64px;
+    height: 64px;
+}
+
+.jp-file-info-header .jp-file-info-header-icon svg{
+    width: 64px;
+    height: 64px;
+}
+
+.jp-file-info-header .file-info-header-title {
+    margin-left: 5px;
+    display: flex;
+    flex-grow: 1;
+    vertical-align: middle;
+    align-items: center;
+
+    font-weight: bold;
+    font-size: var(--jp-ui-font-size2);
+}
+
+.jp-file-info-header {
+    display: flex;
+    flex-direction: row;
+}
+
+.jp-file-info-menu {
     display: flex;
 }
 
-.jp-ReactWidget .controlPanel {
-    width: 50%;
-    float: left;
+.jp-file-info-menu ul {
+    display: flex;
+    list-style-type: none;
+    width: 100%;
+    padding: 0;
+    margin: 0;
 }
 
-.jp-ReactWidget .resultWindow {
-    width: 50%;
-    float: right;
+.jp-file-info-menu li {
+    flex: 3;
+    cursor: pointer;
+    background: var(--jp-layout-color1);
+    padding: 7px;
+    text-align: center;
+}
+
+.jp-file-info li.active {
+    background: var(--jp-layout-color2);
+    border-radius: 6px 6px 0 0;
+    font-weight: bold;
+    font-size: var(--jp-ui-font-size1);
+}
+
+.jp-file-info-menu-separator {
+    display: flex;
+    margin: 0;
+    padding: 0;
+
+    width: 100%;
+    height: 2px;
+
+    background: var(--jp-layout-color2);
+    border: 0;
+}
+
+.jp-file-info-content {
+    display: flex;
+    margin: 5px 25px 5px 5px;
+
+    font-size: var(--jp-ui-font-size0);
+    font-family: var(--jp-ui-font-family);
+}
+
+.jp-file-info-content th {
+    text-align: left;
 }

@@ -2,19 +2,27 @@ import { ReactWidget } from '@jupyterlab/apputils';
 import React from 'react';
 
 import Main from "./Main";
+import { Contents } from '@jupyterlab/services';
+
+type WidgetProps = {
+    fileInfo: Contents.IModel,
+}
 
 /**
  * Widget container.
  */
 export class Widget extends ReactWidget {
-    constructor() {
+    private readonly fileInfo: Contents.IModel;
+
+    public constructor(props :WidgetProps) {
         super();
         this.addClass('jp-ReactWidget');
+        this.fileInfo = props.fileInfo;
     }
 
     protected render(): JSX.Element {
       return (
-          <Main />
+          <Main fileInfo={this.fileInfo} />
       )
     }
 }
