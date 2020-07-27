@@ -163,6 +163,13 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
         with self.assertRaises(IOError):
             self.storage.stat(dest_id, self.client_id, self.endpoint)
 
+    def test_read_directory(self):
+
+        fileid = "/"
+        read_directory = self.storage.read_directory(fileid, self.userid, self.endpoint)
+        self.assertIsNotNone(read_directory[0])
+        self.assertIsNotNone(read_directory[0].path)
+
 
 if __name__ == '__main__':
     unittest.main()
