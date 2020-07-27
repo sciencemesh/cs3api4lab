@@ -37,7 +37,7 @@ class Cs3FileApi:
         self.chunksize = int(config['chunksize'])
         self.authtokenvalidity = int(config['authtokenvalidity'])
 
-        secure_channel = config['secure_channel']
+        secure_channel = bool(config['secure_channel'])
         reva_host = config['revahost']
 
         self.client_id = config['client_id']
@@ -234,3 +234,29 @@ class Cs3FileApi:
             raise IOError(res.status.message)
 
         self.log.debug('msg="Invoked remove" result="%s"' % res)
+
+    def read_directory(self, path, userid, endpoint=None):
+
+        """
+        Read a directory.
+        """
+
+        tstart = time.time()
+
+        reference = self._cs3_reference(path, endpoint)
+
+        req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
+        res = self.cs3_stub.ListContainer(request=req, metadata=[('x-access-token', self._authenticate(userid))])
+
+        if res.status.code != cs3code.CODE_OK:
+            self.log.warning('msg="Failed to read container" filepath="%s" reason="%s"' % (path, res.status.message))
+            raise IOError(res.status.message)
+
+        tend = time.time()
+        self.log.debug('msg="Invoked read container" filepath="%s" elapsedTimems="%.1f"' % (path, (tend - tstart) * 1000))
+
+        out = []
+        for info in res.infos:
+            out.append(info)
+
+        return out
