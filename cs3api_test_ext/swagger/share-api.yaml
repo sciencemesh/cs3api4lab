@@ -130,6 +130,25 @@ paths:
         "405":
           description: "Invalid input"
 
+  /shares/file:
+    get:
+      tags:
+        - "shares"
+      summary: "Return grantees for file"
+      description: ""
+      produces:
+        - "application/json"
+      parameters:
+        - in: "query"
+          name: "file_id"
+          description: "Filename with path, e.g. '/home/test.txt'"
+          required: true
+      responses:
+        "200":
+          description: "OK"
+        "405":
+          description: "Invalid input"
+
   /shares/list-received:
     get:
       tags:

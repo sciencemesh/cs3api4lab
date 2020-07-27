@@ -62,7 +62,7 @@ class Cs3FileApi:
 		if endpoint == 'default':
 			raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
 
-		if fileid[0] == '/':
+		if len(fileid) > 0 and fileid[0] == '/':
 			# assume this is a filepath
 			ref = cs3spr.Reference(path=fileid)
 		else:
@@ -258,7 +258,7 @@ class Cs3FileApi:
 			self.ctx['log'].error('msg="Error uploading file to Reva" code="%d" reason="%s"' % (putres.status_code, putres.reason))
 			raise IOError(putres.reason)
 
-		self.ctx['log'].info('msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
+		self.ctx['log'].debug('msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
 
 	def remove_file(self, endpoint, filepath, userid, force=0):
 		"""
@@ -295,10 +295,36 @@ class Cs3FileApi:
 			raise IOError(res.status.message)
 
 		tend = time.time()
-		self.ctx['log'].info('msg="Invoked read container" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
+		self.ctx['log'].debug('msg="Invoked read container" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
 
 		out = []
 		for info in res.infos:
 			out.append(info)
 
 		return out
+
+	def move(self, endpoint, source_path, destination_path, userid):
+
+		tstart = time.time()
+
+		src_reference = self.__cs3_reference(endpoint, source_path)
+		dest_reference = self.__cs3_reference(endpoint, destination_path)
+
+		print(src_reference)
+		print(dest_reference)
+
+		req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
+
+		print(req)
+
+		res = self.ctx['cs3stub'].Move(request=req, metadata=[('x-access-token', self.__authenticate(userid))])
+
+		print(res)
+
+		if res.status.code != cs3code.CODE_OK:
+			self.ctx['log'].warning(
+				'msg="Failed to read container" source="%s" destination="%s" reason="%s"' % (source_path, destination_path, res.status.message))
+			raise IOError(res.status.message)
+
+		tend = time.time()
+		self.ctx['log'].debug('msg="Invoked move" source="%s" destination="%s" elapsedTimems="%.1f"' % (source_path, destination_path, (tend - tstart) * 1000))
