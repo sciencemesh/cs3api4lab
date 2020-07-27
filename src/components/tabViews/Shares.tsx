@@ -9,11 +9,17 @@ const Shares = () :JSX.Element => {
 
 
     return (
-        <table>
-            <tbody>
-            <tr><td>SHARES</td></tr>
-            </tbody>
-        </table>
+        <div>
+            <div>
+                <input type='text'/>
+            </div>
+
+            <table>
+                <tbody>
+                <tr><td>SHARES</td></tr>
+                </tbody>
+            </table>
+        </div>
     );
 }
 
