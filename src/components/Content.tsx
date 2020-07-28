@@ -18,9 +18,11 @@ const Content = (props: ContentProps): JSX.Element => {
             elementToDisplay = Info({ content: props.content});
     }
 
-    return (<div className='jp-file-info-content'>
-        {elementToDisplay}
-    </div>);
+    return (
+        <div className='jp-file-info-content'>
+            {elementToDisplay}
+        </div>
+    );
 }
 
 export default Content;
