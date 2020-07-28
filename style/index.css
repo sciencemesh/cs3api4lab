@@ -1,5 +1,8 @@
-.jp-file-info {
+.jp-file-info div {
     display: flex;
+}
+
+.jp-file-info {
     flex-direction: column;
     min-width: 350px;
     min-height: 250px;
@@ -25,7 +28,6 @@
 
 .jp-file-info-header .file-info-header-title {
     margin-left: 5px;
-    display: flex;
     flex-grow: 1;
     vertical-align: middle;
     align-items: center;
@@ -35,12 +37,7 @@
 }
 
 .jp-file-info-header {
-    display: flex;
     flex-direction: row;
-}
-
-.jp-file-info-menu {
-    display: flex;
 }
 
 .jp-file-info-menu ul {
@@ -67,7 +64,6 @@
 }
 
 .jp-file-info-menu-separator {
-    display: flex;
     margin: 0;
     padding: 0;
 
@@ -79,8 +75,7 @@
 }
 
 .jp-file-info-content {
-    display: flex;
-    margin: 5px 25px 5px 5px;
+    margin: 5px 5px 5px 5px;
 
     font-size: var(--jp-ui-font-size1);
     font-family: var(--jp-ui-font-family);
@@ -88,4 +83,28 @@
 
 .jp-file-info-content th {
     text-align: left;
+}
+
+.jp-shares {
+    width: 100%;
+    flex-direction: column;
+}
+
+.jp-shares-search-container {
+    width: 100%;
+    justify-content: center;
+}
+
+.jp-shares-search {
+    width: 96%;
+    border: 1px solid;
+    border-color: var(--jp-layout-color2);
+    padding: 7px;
+    background-image: var(--jp-icon-search);
+    background-repeat: no-repeat;
+    background-position: 97%;
+}
+
+.jp-shares-list-container {
+    width: 100%;
 }

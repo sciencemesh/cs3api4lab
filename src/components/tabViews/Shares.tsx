@@ -1,24 +1,47 @@
 import React from 'react';
+// import searchIcon from '@jupyterlab/ui-components';
 
-// type SharesProps = {
-//     person: string,
+// import {requestAPI} from "../../services/requestAPI";
+
+// const getShares = async () => {
+//     let data :Promise<object> = null;
+//     try {
+//         data = await requestAPI<any>('/api/cs3test/shares/file?file_id=test.txt', {
+//             method: 'GET',
+//         });
+//     } catch (error) {
+//         console.log(error);
+//     }
+//
+//     return data;
 // }
 
 const Shares = () :JSX.Element => {
-    // let content :JSX.Element;
+    // const [personList, setPersonList] = useState({});
+    // setPersonList({
+    //     test: 'test'
+    // });
 
+
+    // shares.then( (value :any) => {
+    //     // setPersonList(value);
+    //     console.log(value);
+    // });
+    // console.log(personList);
 
     return (
-        <div>
-            <div>
-                <input type='text'/>
+        <div className='jp-shares'>
+            <div className='jp-shares-search-container'>
+                <input type='text' className='jp-shares-search'/>
             </div>
 
-            <table>
-                <tbody>
-                <tr><td>SHARES</td></tr>
-                </tbody>
-            </table>
+            <div className='jp-shares-list-container'>
+                <table>
+                    <tbody>
+                    <tr><td>{}</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
