@@ -198,10 +198,18 @@ class ListReceivedSharesHandler(APIHandler):
 
 
 class ListSharesForFile(APIHandler):
+    @property
+    def share_api(self):
+        return Cs3ShareApi()
+
     @web.authenticated
     @gen.coroutine
-    def get(self, file_id):
-        response = Cs3ShareApi.list_grantees_for_file(file_id)
+    def get(self):
+        print("Listing shares for file")
+        file_id = self.get_query_argument('file_id', default=None)
+        print("FILE_ID is " + file_id)
+        # response = Cs3ShareApi.list_grantees_for_file(file_id)
+        response = self.share_api.list_grantees_for_file(file_id)
         self.set_header('Content-Type', 'application/json')
         self.set_status(200)
         self.finish(json.dumps(response))
