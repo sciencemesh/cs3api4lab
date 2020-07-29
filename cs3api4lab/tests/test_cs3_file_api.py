@@ -170,6 +170,19 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
         self.assertIsNotNone(read_directory[0])
         self.assertIsNotNone(read_directory[0].path)
 
+    def test_move_file(self):
+
+        src_id = "/file_to_rename.txt"
+        buffer = b"ebe5tresbsrdthbrdhvdtr"
+
+        dest_id = "/file_after_rename.txt"
+
+        self.storage.write_file(src_id, self.userid, buffer, self.endpoint)
+        self.storage.move(src_id, dest_id, self.userid, self.endpoint)
+
+        self.storage.remove(dest_id, self.userid, self.endpoint)
+        with self.assertRaises(IOError):
+            self.storage.stat(dest_id, self.userid, self.endpoint)
 
 if __name__ == '__main__':
     unittest.main()
