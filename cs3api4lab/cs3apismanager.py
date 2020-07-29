@@ -1,5 +1,7 @@
+from base64 import decodebytes
 from datetime import datetime
 
+import nbformat
 from jupyter_core.paths import jupyter_config_path
 from notebook.services.config import ConfigManager
 from notebook.services.contents.manager import ContentsManager
@@ -86,7 +88,16 @@ class CS3APIsManager(ContentsManager):
         exists : bool
             Whether the file exists.
         """
-        raise NotImplementedError('cs3: missing')
+
+        parent_path = self._get_parent_path(path)
+
+        cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+
+        for cs3_model in cs3_container:
+            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
+                return True
+
+        return False
 
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
@@ -96,7 +107,7 @@ class CS3APIsManager(ContentsManager):
         if type in (None, 'directory') and self._is_dir(path):
             model = self._dir_model(path, content=content)
         elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
-            raise NotImplementedError('cs3: missing')
+            model = self._notebook_model(path, content=content)
         else:
             if type == 'directory':
                 raise web.HTTPError(400, u'%s is a directory' % path, reason='bad type')
@@ -111,7 +122,65 @@ class CS3APIsManager(ContentsManager):
         should call self.run_pre_save_hook(model=model, path=path) prior to
         writing any data.
         """
-        raise NotImplementedError('cs3: missing')
+
+        path = self._normalize_path(path)
+
+        if 'type' not in model:
+            raise web.HTTPError(400, u'No file type provided')
+        if 'content' not in model and model['type'] != 'directory':
+            raise web.HTTPError(400, u'No file content provided')
+
+        self.log.debug("Saving %s", path)
+
+        # ToDo: Implements run_pre_save_hook and run_post_save_hook
+        # self.run_pre_save_hook(model=model, path=path)
+
+        try:
+            if model['type'] == 'notebook':
+
+                nb = nbformat.from_dict(model['content'])
+                self.check_and_sign(nb, path)
+                self._save_notebook(path, nb)
+
+                # ToDo: Implements save to checkpoint
+                # if not self.checkpoints.list_checkpoints(path):
+                #     self.create_checkpoint(path)
+
+            elif model['type'] == 'file':
+                self._save_file(path, model['content'], model['format'])
+
+            elif model['type'] == 'directory':
+
+                # ToDo: implements create directory
+                # self._save_directory(os_path, model, path)
+                raise NotImplementedError('cs3: save directory')
+
+            else:
+                raise web.HTTPError(400, "Unhandled contents type: %s" % model['type'])
+
+        except web.HTTPError:
+            raise
+
+        except Exception as e:
+            self.log.error(u'Error while saving file: %s %s', path, e, exc_info=True)
+            raise web.HTTPError(500, u'Unexpected error while saving file: %s %s' % (path, e))
+
+        validation_message = None
+
+        if model['type'] == 'notebook':
+            self.validate_notebook_model(model)
+            validation_message = model.get('message', None)
+            model = self._notebook_model(path, content=False)
+
+        elif model['type'] == 'file':
+            model = self._file_model(path, content=False, format=None)
+
+        if validation_message:
+            model['message'] = validation_message
+
+        # self.run_post_save_hook(model=model, os_path=path)
+
+        return model
 
     def delete_file(self, path):
         """Delete the file or directory at path."""
@@ -134,8 +203,11 @@ class CS3APIsManager(ContentsManager):
 
         directories = path.rsplit('/')
         directories.reverse()
-        parent_path = self._replace_last(str(path), directories[0])
-        return parent_path
+
+        if directories[0] != '':
+            return self._replace_last(str(path), directories[0])
+
+        return path
 
     def _replace_last(self, source_string, replace_what, replace_with=""):
 
@@ -181,6 +253,22 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
+
+    def _notebook_model(self, path, content):
+
+        model, tmp_model = self._create_base_model_from_cs3_container(path)
+        model['type'] = 'notebook'
+
+        if content:
+            file_content = self._read_file(tmp_model.path)
+            nb = nbformat.reads(file_content, as_version=4)
+            self.mark_trusted_cells(nb, path)
+            model['content'] = nb
+            model['format'] = 'json'
+            self.validate_notebook_model(model)
+
+        return model
+
     def _is_dir(self, path):
 
         if path == '/' or path == '' or path is None:
@@ -208,7 +296,7 @@ class CS3APIsManager(ContentsManager):
         parent_path = self._get_parent_path(path)
 
         cs3_file_api = self._cs3_file_api()
-        cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], parent_path, self.cs3_user_id)
+        cs3_container = cs3_file_api.read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
 
         cs3_model = None
         for cs3_tmp_model in cs3_container:
@@ -311,3 +399,31 @@ class CS3APIsManager(ContentsManager):
         model['mimetype'] = mimetypes.guess_type(cs3_model.path)[0]
 
         return model
+
+    def _save_file(self, path, content, format):
+
+        if format not in {'text', 'base64'}:
+            raise web.HTTPError(400, "Must specify format of file contents as 'text' or 'base64'", )
+
+        try:
+            if format == 'text':
+                bcontent = content.encode('utf8')
+            else:
+                b64_bytes = content.encode('ascii')
+                bcontent = decodebytes(b64_bytes)
+
+            cs3_file_api = self._cs3_file_api()
+            cs3_file_api.write_file(path, self.cs3_user_id, bcontent, self.cs3_endpoint)
+
+        except Exception as e:
+            raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
+
+    def _save_notebook(self, path, nb):
+
+        nb_content = nbformat.writes(nb)
+        try:
+            cs3_file_api = self._cs3_file_api()
+            cs3_file_api.write_file(path, self.cs3_user_id, nb_content, self.cs3_endpoint)
+
+        except Exception as e:
+            raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
