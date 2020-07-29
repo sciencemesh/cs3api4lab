@@ -10,6 +10,7 @@ from tornado import web
 from cs3api4lab.cs3_file_api import Cs3FileApi
 from notebook import _tz as tz
 import mimetypes
+from nbformat.v4 import new_notebook
 
 class CS3APIsManager(ContentsManager):
     cs3_config_dir = ""
@@ -219,6 +220,34 @@ class CS3APIsManager(ContentsManager):
         except Exception as e:
             self.log.error(u'Error renaming file: %s %s', old_path, e)
             raise web.HTTPError(500, u'Error renaming file: %s %s' % (old_path, e))
+
+    def new(self, model=None, path=''):
+
+        path = path.strip('/')
+        if model is None:
+            model = {}
+
+        if path.endswith('.ipynb'):
+            model.setdefault('type', 'notebook')
+        else:
+            model.setdefault('type', 'file')
+
+        # no content, not a directory, so fill out new-file model
+        if 'content' not in model and model['type'] != 'directory':
+            if model['type'] == 'notebook':
+                model['content'] = new_notebook()
+                model['format'] = 'json'
+            else:
+                model['content'] = ''
+                model['type'] = 'file'
+                model['format'] = 'text'
+
+        model = self.save(model, path)
+
+        # ToDo: Fix writable flag - based on container status
+        model['writable'] = True
+
+        return model
 
     def _cs3_file_api(self):
         return Cs3FileApi(self.cs3_config, self.log)
