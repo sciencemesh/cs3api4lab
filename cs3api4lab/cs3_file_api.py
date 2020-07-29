@@ -260,3 +260,24 @@ class Cs3FileApi:
             out.append(info)
 
         return out
+
+    def move(self, source_path, destination_path, userid, endpoint=None):
+
+        """
+        Move a file or container.
+        """
+
+        tstart = time.time()
+
+        src_reference = self._cs3_reference(source_path, endpoint)
+        dest_reference = self._cs3_reference(destination_path, endpoint)
+
+        req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
+        res = self.cs3_stub.Move(request=req, metadata=[('x-access-token', self._authenticate(userid))])
+
+        if res.status.code != cs3code.CODE_OK:
+            self.log.error('msg="Failed to move" source="%s" destination="%s" reason="%s"' % (source_path, destination_path, res.status.message))
+            raise IOError(res.status.message)
+
+        tend = time.time()
+        self.log.debug('msg="Invoked move" source="%s" destination="%s" elapsedTimems="%.1f"' % (source_path, destination_path, (tend - tstart) * 1000))

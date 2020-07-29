@@ -59,7 +59,8 @@ class CS3APIsManager(ContentsManager):
         exists : bool
             Whether the path does indeed exist.
         """
-        raise NotImplementedError('cs3: missing')
+
+        return self._is_dir(path)
 
     def is_hidden(self, path):
         """Is path a hidden directory or file?
@@ -73,7 +74,9 @@ class CS3APIsManager(ContentsManager):
         hidden : bool
             Whether the path is hidden.
         """
-        raise NotImplementedError('cs3: missing')
+
+        # ToDo: Get file/directory attribute from Reva permission
+        return False
 
     def file_exists(self, path=''):
         """Does a file exist at the given path?
@@ -91,7 +94,11 @@ class CS3APIsManager(ContentsManager):
 
         parent_path = self._get_parent_path(path)
 
-        cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+        try:
+            cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+        except Exception as ex:
+            self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
+            raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
 
         for cs3_model in cs3_container:
             if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
@@ -184,11 +191,34 @@ class CS3APIsManager(ContentsManager):
 
     def delete_file(self, path):
         """Delete the file or directory at path."""
-        raise NotImplementedError('cs3: missing')
+
+        path = self._normalize_path(path)
+
+        try:
+            self._cs3_file_api().remove(path, self.cs3_user_id, self.cs3_endpoint)
+        except Exception as e:
+            self.log.error(u'Unknown error delete file: %s %s', path, e, exc_info=True)
+            raise web.HTTPError(500, u'Unknown error delete file: %s %s' % (path, e))
 
     def rename_file(self, old_path, new_path):
         """Rename a file or directory."""
-        raise NotImplementedError('cs3: missing')
+
+        if new_path == old_path:
+            return
+
+        #
+        # ToDo: Implements validate file like: notebook/services/contents/filemanager.py:587 using Reva API
+        #
+        old_path = self._normalize_path(old_path)
+        new_path = self._normalize_path(new_path)
+
+        # Move the file
+        try:
+            cs3_file_api = self._cs3_file_api()
+            cs3_file_api.move(old_path, new_path, self.cs3_user_id, self.cs3_endpoint)
+        except Exception as e:
+            self.log.error(u'Error renaming file: %s %s', old_path, e)
+            raise web.HTTPError(500, u'Error renaming file: %s %s' % (old_path, e))
 
     def _cs3_file_api(self):
         return Cs3FileApi(self.cs3_config, self.log)
@@ -229,7 +259,6 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
-
     def _file_model(self, path, content, format):
 
         model, tmp_model = self._create_base_model_from_cs3_container(path)
@@ -252,7 +281,6 @@ class CS3APIsManager(ContentsManager):
             )
 
         return model
-
 
     def _notebook_model(self, path, content):
 
@@ -416,6 +444,7 @@ class CS3APIsManager(ContentsManager):
             cs3_file_api.write_file(path, self.cs3_user_id, bcontent, self.cs3_endpoint)
 
         except Exception as e:
+            self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
 
     def _save_notebook(self, path, nb):
@@ -426,4 +455,5 @@ class CS3APIsManager(ContentsManager):
             cs3_file_api.write_file(path, self.cs3_user_id, nb_content, self.cs3_endpoint)
 
         except Exception as e:
+            self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
