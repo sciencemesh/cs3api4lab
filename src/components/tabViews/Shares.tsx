@@ -36,11 +36,19 @@ const Shares = () :JSX.Element => {
             </div>
 
             <div className='jp-shares-list-container'>
-                <table>
-                    <tbody>
-                    <tr><td>{}</td></tr>
-                    </tbody>
-                </table>
+                <div className='jp-shares-element'>
+                    <div className='jp-shares-owner'>Uzytkownik jeden</div>
+                    <div className='jp-shares-label'>
+                        <span className='label write-label'>Editor</span>
+                    </div>
+                </div>
+
+                <div className='jp-shares-element'>
+                    <div className='jp-shares-owner'>Uzytkownik dwa</div>
+                    <div className='jp-shares-label'>
+                        <span className='label read-label'>Viewer</span>
+                    </div>
+                </div>
             </div>
         </div>
     );
