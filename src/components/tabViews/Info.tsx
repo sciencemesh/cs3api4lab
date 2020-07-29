@@ -7,21 +7,26 @@ type InfoProps = {
 }
 
 const Info = (props :InfoProps) :JSX.Element => {
+    console.log(props.content);
     return (
-        <table>
+        <table className='jp-file-detail'>
             <tbody>
-            <tr>
-                <th>Format:</th>
-                <td>{props.content.format}</td>
-            </tr>
-            <tr>
-                <th>Mimetype:</th>
-                <td>{props.content.mimetype}</td>
-            </tr>
-            <tr>
-                <th>Size:</th>
-                <td>{props.content.size}</td>
-            </tr>
+            { props.content.mimetype ?
+                (
+                    <tr>
+                        <th>Mimetype:</th>
+                        <td>{props.content.mimetype}</td>
+                    </tr>
+                ) : ''
+            }
+            { props.content.size ?
+                (
+                    <tr>
+                        <th>Size:</th>
+                        <td>{props.content.size} Bytes</td>
+                    </tr>
+                ) : ''
+            }
             <tr>
                 <th>Type:</th>
                 <td>{props.content.type}</td>
@@ -40,7 +45,7 @@ const Info = (props :InfoProps) :JSX.Element => {
             </tr>
             </tbody>
         </table>
-    )
+    );
 }
 
 export default Info;
