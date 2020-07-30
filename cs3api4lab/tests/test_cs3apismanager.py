@@ -3,6 +3,8 @@ from unittest import TestCase
 import logging
 import configparser
 
+from tornado import web
+
 from cs3api4lab import CS3APIsManager
 from cs3api4lab.cs3_file_api import Cs3FileApi
 
@@ -144,6 +146,22 @@ class TestCS3APIsManager(TestCase):
     def test_save_notebook_model(self):
 
         file_id = "/test_save_notebook_model.ipynb"
+        model = self._create_notebook_model()
+
+        save_model = self.contents_manager.save(model, file_id)
+
+        self.assertEqual(save_model["name"], "test_save_notebook_model.ipynb")
+        self.assertEqual(save_model["path"], file_id)
+        self.assertEqual(save_model["content"], None)
+        self.assertEqual(save_model["format"], None)
+        self.assertEqual(save_model["mimetype"], None)
+        self.assertEqual(save_model["size"], 521)
+        self.assertEqual(save_model["writable"], False)
+        self.assertEqual(save_model["type"], "notebook")
+
+        self.storage.remove(file_id, self.userid, self.endpoint)
+
+    def _create_notebook_model(self):
         model = {
             "type": "notebook",
             "format": None,
@@ -179,16 +197,87 @@ class TestCS3APIsManager(TestCase):
                 },
             },
         }
+        return model
 
-        save_model = self.contents_manager.save(model, file_id)
+    def test_delete_file(self):
 
-        self.assertEqual(save_model["name"], "test_save_notebook_model.ipynb")
-        self.assertEqual(save_model["path"], file_id)
+        file_path = "/test_delete_exits_file.txt"
+        message = "Lorem ipsum dolor sit amet..."
+        self.storage.write_file(file_path, self.userid, message, self.endpoint)
+
+        self.contents_manager.delete_file(file_path)
+
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path, self.userid, self.endpoint)
+
+    def test_delete_non_exits_file(self):
+
+        file_path = "/test_delete_non_exits_file.txt"
+
+        with self.assertRaises(web.HTTPError):
+            self.contents_manager.delete_file(file_path)
+
+    def test_rename_file(self):
+
+        file_path = "/test_rename_file.txt"
+        message = "Lorem ipsum dolor sit amet..."
+        self.storage.write_file(file_path, self.userid, message, self.endpoint)
+
+        file_dest = "/test_after_rename_file.txt"
+
+        self.contents_manager.rename_file(file_path, file_dest)
+
+        stat_info = self.storage.stat(file_dest, self.userid, self.endpoint)
+        self.assertIsInstance(stat_info, dict)
+
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path, self.userid, self.endpoint)
+
+    def test_rename_file_non_exits_file(self):
+
+        file_path = "/test_rename_file.txt"
+        file_dest = "/test_after_rename_file.txt"
+
+        with self.assertRaises(web.HTTPError):
+            self.contents_manager.rename_file(file_path, file_dest)
+
+    def test_new_file_model(self):
+
+        file_path = "/test_new_file_model.txt"
+        model = {
+            "type": "file",
+            "format": "text",
+            "content": "Test content",
+        }
+
+        self.contents_manager.new(model, file_path)
+
+        model = self.contents_manager.get(file_path, True, None)
+        self.assertEqual(model["name"], "test_new_file_model.txt")
+        self.assertEqual(model["path"], file_path)
+        self.assertEqual(model["content"], "Test content")
+        self.assertEqual(model["format"], None)
+        self.assertEqual(model["mimetype"], "text/plain")
+        self.assertEqual(model["size"], 12)
+        self.assertEqual(model["writable"], False)
+        self.assertEqual(model["type"], "file")
+
+        self.storage.remove(file_path, self.userid, self.endpoint)
+
+    def test_new_notebook_model(self):
+
+        file_path = "/test_new_notebook_model.ipynb"
+        model = self._create_notebook_model()
+
+        save_model = self.contents_manager.new(model, file_path)
+
+        self.assertEqual(save_model["name"], "test_new_notebook_model.ipynb")
+        self.assertEqual(save_model["path"], file_path)
         self.assertEqual(save_model["content"], None)
         self.assertEqual(save_model["format"], None)
         self.assertEqual(save_model["mimetype"], None)
         self.assertEqual(save_model["size"], 521)
-        self.assertEqual(save_model["writable"], False)
+        self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "notebook")
 
-        self.storage.remove(file_id, self.userid, self.endpoint)
+        self.storage.remove(file_path, self.userid, self.endpoint)
