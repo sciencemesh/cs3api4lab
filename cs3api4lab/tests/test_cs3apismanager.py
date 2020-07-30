@@ -281,3 +281,20 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["type"], "notebook")
 
         self.storage.remove(file_path, self.userid, self.endpoint)
+
+
+    def test_file_exits(self):
+
+        file_path = "/test_file_exits.txt"
+        message = "Lorem ipsum dolor sit amet..."
+        self.storage.write_file(file_path, self.userid, message, self.endpoint)
+
+        file_exists = self.contents_manager.file_exists(file_path)
+        self.assertTrue(file_exists)
+
+        self.storage.remove(file_path, self.userid, self.endpoint)
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path, self.userid, self.endpoint)
+
+        file_exists = self.contents_manager.file_exists(file_path)
+        self.assertFalse(file_exists)
