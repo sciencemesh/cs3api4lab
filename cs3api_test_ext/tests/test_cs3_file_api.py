@@ -6,163 +6,120 @@ import configparser
 
 from cs3api_test_ext.cs3_file_api import Cs3FileApi
 
-
 class TestCs3FileApi(TestCase):
-	userid = None
-	endpoint = None
-	storagetype = None
 
-	def setUp(self):
+    userid = None
+    endpoint = None
 
-		log_handler = logging.FileHandler('/var/tmp/cs3api.log')
-		log_handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(name)s[%(process)d] %(levelname)-8s %(message)s',
-												   datefmt='%Y-%m-%dT%H:%M:%S'))
-		log = logging.getLogger('cs3api.test')
-		log.addHandler(log_handler)
-		log.setLevel(logging.DEBUG)
+    def setUp(self):
 
-		config_parser = configparser.ConfigParser()
+        log_handler = logging.FileHandler('/var/tmp/cs3api.log')
+        log_handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(name)s[%(process)d] %(levelname)-8s %(message)s',
+                                                   datefmt='%Y-%m-%dT%H:%M:%S'))
+        log = logging.getLogger('cs3api.test')
+        log.addHandler(log_handler)
+        log.setLevel(logging.DEBUG)
 
-		try:
-			with open('test.conf') as fdconf:
-				config_parser.read_file(fdconf)
-			self.userid = config_parser.get('cs3', 'userid')
-			self.endpoint = config_parser.get('cs3', 'endpoint')
-		except (KeyError, configparser.NoOptionError):
-			print("Missing option or missing configuration, check the test.conf file")
-			raise
+        config_parser = configparser.ConfigParser()
 
-		config = {
-			"revahost": config_parser.get('cs3', 'revahost'),
-			"authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
-			"userid": config_parser.get('cs3', 'userid'),
-			"endpoint": config_parser.get('cs3', 'endpoint'),
-			"chunksize": config_parser.get('io', 'chunksize')
-		}
+        try:
+            with open('test.conf') as fdconf:
+                config_parser.read_file(fdconf)
 
-		self.storage = Cs3FileApi(config, log)
+            self.userid = config_parser.get('cs3', 'userid')
+            self.endpoint = config_parser.get('cs3', 'endpoint')
 
-	def test_stat(self):
+            config = {
+                "revahost": config_parser.get('cs3', 'revahost'),
+                "authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
+                "userid": config_parser.get('cs3', 'userid'),
+                "endpoint": config_parser.get('cs3', 'endpoint'),
+                "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
+                "client_cert": config_parser.get('cs3', 'client_cert'),
+                "client_key": config_parser.get('cs3', 'client_key'),
+                "ca_cert": config_parser.get('cs3', 'ca_cert'),
+                "chunksize": config_parser.get('io', 'chunksize'),
+                "client_id": config_parser.get('cs3', 'client_id'),
+                "client_secret": config_parser.get('cs3', 'client_secret'),
+            }
 
-		fileid = "/test.txt"
-		message = "Lorem ipsum dolor sit amet..."
+            self.storage = Cs3FileApi(config, log)
 
-		self.storage.write_file(self.endpoint, fileid, self.userid, message)
+        except (KeyError, configparser.NoOptionError):
+            print("Missing option or missing configuration, check the test.conf file")
+            raise
 
-		stat_info = self.storage.stat(self.endpoint, fileid, self.userid)
+    def test_stat(self):
 
-		self.assertIsInstance(stat_info, dict)
-		self.assertTrue('mtime' in stat_info, 'Missing mtime from stat output')
-		self.assertTrue('size' in stat_info, 'Missing size from stat output')
+        fileid = "/test.txt"
+        message = "Lorem ipsum dolor sit amet..."
 
-		self.storage.remove_file(self.endpoint, fileid, self.userid)
+        self.storage.write_file(fileid, self.userid, message, self.endpoint)
 
-	def test_stat_x(self):
-		buf = b'bla\n'
-		file_path = '/test.txt'
+        stat_info = self.storage.stat(fileid, self.userid, self.endpoint)
 
-		self.storage.write_file(self.endpoint, file_path, self.userid, buf)
-		stat_info = self.storage.stat_x(self.endpoint, file_path, self.userid)
-		self.assertIsInstance(stat_info, dict)
+        self.assertIsInstance(stat_info, dict)
+        self.assertTrue('mtime' in stat_info, 'Missing mtime from stat output')
+        self.assertTrue('size' in stat_info, 'Missing size from stat output')
 
-		fileid = stat_info['inode'].split(':')
-		self.assertEqual(len(fileid), 2, 'This storage interface does not support stat by fileid')
+        self.storage.remove(fileid, self.userid, self.endpoint)
 
-		stat_info = self.storage.stat_x(fileid[0], fileid[1], self.userid)
+    def test_stat_no_file(self):
+        with self.assertRaises(IOError, msg='No such file or directory'):
+            self.storage.stat('/hopefullynotexisting', self.userid, self.endpoint)
 
-		self.assertIsInstance(stat_info, dict)
+    def test_read_file(self):
 
-		self.assertEqual(stat_info['filepath'], file_path, 'Filepath should be ' + file_path)
-		self.storage.remove_file(self.endpoint, file_path, self.userid)
+        content_to_write = b'bla\n'
+        content_check = 'bla\n'
+        file_patch = "/test_read.txt"
 
-	def test_stat_no_file(self):
-		with self.assertRaises(IOError, msg='No such file or directory'):
-			self.storage.stat(self.endpoint, '/hopefullynotexisting', self.userid)
+        self.storage.write_file(file_patch, self.userid, content_to_write, self.endpoint)
+        content = ''
 
-	def test_stat_x_no_file(self):
-		with self.assertRaises(IOError, msg='No such file or directory'):
-			self.storage.stat_x(self.endpoint, '/hopefullynotexisting', self.userid)
+        for chunk in self.storage.read_file(file_patch, self.userid, self.endpoint):
+            self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
+            content += chunk.decode('utf-8')
 
-	def test_operation_on_x_attr(self):
+        self.assertEqual(content, content_check, 'File ' + file_patch + ' should contain the string: ' + content_check)
 
-		buf = b'bla\n'
-		file_path = '/testxattr.txt'
+        self.storage.remove(file_patch, self.userid, self.endpoint)
 
-		self.storage.write_file(self.endpoint, file_path, self.userid, buf)
-		self.storage.set_x_attr(self.endpoint, file_path, self.userid, 'testkey', 123)
+    def test_read_file_no_file(self):
 
-		v = self.storage.get_x_attr(self.endpoint, file_path, self.userid, 'testkey')
-		self.assertEqual(v, '123')
+        file_patch = "/test_read_no_existing_file.txt"
+        content = ''
 
-		self.storage.remove_x_attr(self.endpoint, file_path, self.userid, 'testkey')
-		v = self.storage.get_x_attr(self.endpoint, file_path, self.userid, 'testkey')
-		self.assertEqual(v, None)
+        with self.assertRaises(IOError, msg='No such file or directory'):
+            for chunk in self.storage.read_file(file_patch, self.userid, self.endpoint):
+                content += chunk.decode('utf-8')
 
-		self.storage.remove_file(self.endpoint, file_path, self.userid)
+    def test_write_file(self):
 
-	def test_read_file(self):
+        buffer = b"Testu form cs3 Api"
+        fileid = "/testfile.txt"
 
-		content_to_write = b'bla\n'
-		content_check = 'bla\n'
-		filepatch = "/test_read.txt"
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
-		self.storage.write_file(self.endpoint, filepatch, self.userid, content_to_write)
-		content = ''
+        stat_info = self.storage.stat(fileid, self.userid, self.endpoint)
+        self.assertIsInstance(stat_info, dict)
 
-		for chunk in self.storage.read_file(self.endpoint, filepatch, self.userid):
-			self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
-			content += chunk.decode('utf-8')
-
-		self.assertEqual(content, content_check, 'File ' + filepatch + ' should contain the string: ' + content_check)
-
-		self.storage.remove_file(self.endpoint, filepatch, self.userid)
-
-	def test_write_file(self):
-
-		buffer = b"Testu form cs3 Api"
-		fileid = "/testfile.txt"
-
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
-
-		stat_info = self.storage.stat(self.endpoint, fileid, self.userid)
-		self.assertIsInstance(stat_info, dict)
-
-		self.storage.remove_file(self.endpoint, fileid, self.userid)
-		with self.assertRaises(IOError):
-			self.storage.stat(self.endpoint, fileid, self.userid)
+        self.storage.remove(fileid, self.userid, self.endpoint)
+        with self.assertRaises(IOError):
+            self.storage.stat(fileid, self.userid, self.endpoint)
 
 
-	def test_write_example(self):
+    def test_write_example(self):
 
-		buffer = b"Example from cs3 API"
-		fileid = "/example1.txt"
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+        buffer = b"Example from cs3 API"
+        fileid = "/example1.txt"
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
-		buffer = b"Example2 from cs3 API"
-		fileid = "/example2.txt"
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+        buffer = b"Example2 from cs3 API"
+        fileid = "/example2.txt"
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
-		buffer = b"Example3 from cs3 API"
-		fileid = "/example3.txt"
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
-
-		buffer = b"Example4 from cs3 API"
-		fileid = "/example4.txt"
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
-
-		buffer = b"Example5 from cs3 API"
-		fileid = "/example5.txt"
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
-
-		buffer = b"Example6 from cs3 API"
-		fileid = "/example6.txt"
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
-
-		buffer = b"Example7 from cs3 API"
-		fileid = "/example7.txt"
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
-
-		buffer = b'{\
+        buffer = b'{\
 					"cells": [\
 						{\
 							"cell_type": "markdown",\
@@ -194,97 +151,39 @@ class TestCs3FileApi(TestCase):
 					"nbformat": 4,\
 					"nbformat_minor": 4\
 					}'
-		fileid = "/note1.ipynb"
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+        fileid = "/note1.ipynb"
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
-	def test_remove_file(self):
-		fileid = "/file_to_remove.txt"
-		buffer = b"ebe5tresbsrdthbrdhvdtr"
+    def test_remove_file(self):
+        fileid = "/file_to_remove.txt"
+        buffer = b"ebe5tresbsrdthbrdhvdtr"
 
-		self.storage.write_file(self.endpoint, fileid, self.userid, buffer)
+        self.storage.write_file(fileid, self.userid, buffer, self.endpoint)
 
-		self.storage.remove_file(self.endpoint, fileid, self.userid)
-		with self.assertRaises(IOError):
-			self.storage.stat(self.endpoint, fileid, self.userid)
+        self.storage.remove(fileid, self.userid, self.endpoint)
+        with self.assertRaises(IOError):
+            self.storage.stat(fileid, self.userid, self.endpoint)
 
-	def test_read_directory(self):
+    def test_read_directory(self):
 
-		"""
-		[type: RESOURCE_TYPE_FILE
-		id {
-			storage_id: "123e4567-e89b-12d3-a456-426655440000"
-			opaque_id: "fileid-%2Fexample1.txt"
-		}
-		etag: "\"433b3efae4d700628204b60fb7207787\""
-		mime_type: "text/plain; charset=utf-8"
-		mtime {
-			seconds: 1594195752
-		}
-		path: "/example1.txt"
-		permission_set {
-			create_container: true
-			list_container: true
-		}
-		size: 20
-		owner {
-			idp: "http://cernbox.cern.ch"
-			opaque_id: "4c510ada-c86b-4815-8820-42cdf82c3d51"
-		}
-		arbitrary_metadata {
-						   }
-		, ......			   }
-		, type: RESOURCE_TYPE_CONTAINER
-		id {
-			storage_id: "123e4567-e89b-12d3-a456-426655440000"
-			opaque_id: "fileid-%2Fhome%2FMyShares"
-		}
-		etag: "\"56fb030b7dc4dfbf9e87fc4ed1ddb14d\""
-		mime_type: "httpd/unix-directory"
-		mtime {
-			seconds: 1593606956
-		}
-		path: "/home/MyShares"
-		permission_set {
-			create_container: true
-			list_container: true
-		}
-		size: 512
-		owner {
-			idp: "http://cernbox.cern.ch"
-			opaque_id: "4c510ada-c86b-4815-8820-42cdf82c3d51"
-		}
-		arbitrary_metadata {
-		}
-		]
-		"""
-		fileid = "/"
-		read_directory = self.storage.read_directory(self.endpoint, fileid, self.userid)
-		self.assertIsNotNone(read_directory[0])
-		self.assertIsNotNone(read_directory[0].path)
+        fileid = "/"
+        read_directory = self.storage.read_directory(fileid, self.userid, self.endpoint)
+        self.assertIsNotNone(read_directory[0])
+        self.assertIsNotNone(read_directory[0].path)
 
-	#
-	# def test_read_directory_my_share(self):
-	# 	fileid = "/home/MyShares"
-	# 	read_directory = self.storage.read_directory(self.endpoint, fileid, self.userid)
-	# 	print(read_directory)
-	# 	# self.assertIsNotNone(read_directory[0])
-	# 	# self.assertIsNotNone(read_directory[0].path)
-	#
+    def test_move_file(self):
 
-	def test_rename_file(self):
+        src_id = "/file_to_rename.txt"
+        buffer = b"ebe5tresbsrdthbrdhvdtr"
 
-		src_id = "/file_to_rename.txt"
-		buffer = b"ebe5tresbsrdthbrdhvdtr"
+        dest_id = "/file_after_rename.txt"
 
-		dest_id = "/file_after_rename.txt"
+        self.storage.write_file(src_id, self.userid, buffer, self.endpoint)
+        self.storage.move(src_id, dest_id, self.userid, self.endpoint)
 
-		self.storage.write_file(self.endpoint, src_id, self.userid, buffer)
-		self.storage.move(self.endpoint, src_id, dest_id, self.userid)
-
-		self.storage.remove_file(self.endpoint, dest_id, self.userid)
-		with self.assertRaises(IOError):
-			self.storage.stat(self.endpoint, dest_id, self.userid)
-
+        self.storage.remove(dest_id, self.userid, self.endpoint)
+        with self.assertRaises(IOError):
+            self.storage.stat(dest_id, self.userid, self.endpoint)
 
 if __name__ == '__main__':
-	unittest.main()
+    unittest.main()

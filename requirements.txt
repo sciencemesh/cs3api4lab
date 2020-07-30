@@ -1,3 +1,0 @@
-cs3apis
-grpcio
-grpcio-tools
