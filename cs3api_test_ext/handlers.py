@@ -174,17 +174,20 @@ class ShareHandle(APIHandler):
 
     @web.authenticated
     @gen.coroutine
-    def delete(self, shareid):
-        response = Cs3ShareApi.remove(shareid)
+    def delete(self):
+        share_id = self.get_query_argument('share_id')
+        self.share_api.remove(share_id)
         self.set_header('Content-Type', 'application/json')
         self.set_status(200)
-        self.finish(json.dumps(response))
+        self.finish()
 
-    def put(self, endpoint, shareid, userid, role="viewver"):
-        response = Cs3ShareApi.update(endpoint, shareid, userid, role)
+    def put(self):
+        share_id = self.get_query_argument('share_id')
+        role = self.get_query_argument('role')
+        self.share_api.update(share_id, role)
         self.set_header('Content-Type', 'application/json')
         self.set_status(200)
-        self.finish(json.dumps(response))
+        self.finish()
 
 
 class ListSharesHandler(APIHandler):
