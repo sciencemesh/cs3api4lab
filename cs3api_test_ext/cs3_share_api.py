@@ -56,7 +56,7 @@ class Cs3ShareApi:
                                                        metadata=[('x-access-token', token)])
         self.log.info("Share created")
         self.log.info(share_response)
-        return self._map_given_shares()
+        return self._map_given_share(share_response.share)
 
     def list(self):
         # todo filters
@@ -84,26 +84,26 @@ class Cs3ShareApi:
 
         return shares_dict
 
-    def remove(self, shareid):
-        share_id_object = sharing_res.ShareId(opaque_id=shareid)
+    def remove(self, share_id):
+        share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
         remove_req = sharing.RemoveShareRequest(ref=ref)
         remove_res = self.gateway_stub.RemoveShare(request=remove_req,
                                                    metadata=[('x-access-token', self._getToken())])
-        self.log.info("Removing share " + shareid)
-        return remove_res
+        self.log.info("Removing share " + share_id)
+        return
 
-    def update(self, endpoint, shareid, userid, role="viewer"):
+    def update(self, share_id, role):
         # todo check role
         share_permissions = self._getSharePermissions(role)
-        share_id_object = sharing_res.ShareId(opaque_id=shareid)
+        share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
         update_req = sharing.UpdateShareRequest(ref=ref,
                                                 field=sharing.UpdateShareRequest.UpdateField(
                                                     permissions=share_permissions))
         update_res = self.gateway_stub.UpdateShare(request=update_req,
                                                    metadata=[('x-access-token', self._getToken())])
-        return update_res
+        return
 
     def list_received(self):
         list_req = sharing.ListReceivedSharesRequest()
@@ -141,10 +141,8 @@ class Cs3ShareApi:
 
         return shares
 
-    def _map_given_shares(self, list_res):
-        shares = []
-        for share in list_res.shares:
-            shares.append({
+    def _map_given_share(self, share):
+        share_mapped = {
                 "opaque_id": share.id.opaque_id,
                 "id": {
                     "storage_id": share.resource_id.storage_id,
@@ -165,8 +163,13 @@ class Cs3ShareApi:
                     "opaque_id": share.creator.opaque_id
                 },
                 # "state": share.state
-            })
+            }
+        return share_mapped
 
+    def _map_given_shares(self, list_res):
+        shares = []
+        for share in list_res.shares:
+            shares.append(self._map_given_share(share))
         return shares
 
     def update_received(self, endpoint, shareid, userid, state="pending"):
