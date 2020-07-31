@@ -1,17 +1,20 @@
-import {JupyterFrontEnd, JupyterFrontEndPlugin} from '@jupyterlab/application';
-import {ILauncher} from '@jupyterlab/launcher';
-import {IFileBrowserFactory} from "@jupyterlab/filebrowser";
-import {ISettingRegistry} from '@jupyterlab/settingregistry';
-import { showDialog, Dialog, ICommandPalette } from '@jupyterlab/apputils';
+import {
+  JupyterFrontEnd,
+  JupyterFrontEndPlugin
+} from '@jupyterlab/application';
 
-import {each} from "@lumino/algorithm";
+import { MainAreaWidget } from '@jupyterlab/apputils';
+import { ILauncher } from '@jupyterlab/launcher';
+import { reactIcon } from '@jupyterlab/ui-components';
+
+//components
 import {Widget} from "./containers/Widget";
 
 /**
  * The command IDs used by the react-widget plugin.
  */
 namespace CommandIDs {
-  export const share = 'filebrowser:cs3-share';
+  export const create = 'create-react-widget';
 }
 
 /**
@@ -20,38 +23,28 @@ namespace CommandIDs {
 const extension: JupyterFrontEndPlugin<void> = {
   id: 'cs3api_test_ext',
   autoStart: true,
-  requires: [IFileBrowserFactory, ISettingRegistry, ICommandPalette],
   optional: [ILauncher],
-  activate: async (app: JupyterFrontEnd, factory: IFileBrowserFactory) => {
+  activate: async (app: JupyterFrontEnd, launcher: ILauncher)=> {
     const { commands } = app;
-    const { tracker } = factory;
+    const command = CommandIDs.create;
 
-    app.contextMenu.addItem({
-      command: CommandIDs.share,
-      selector: '.jp-DirListing-item', // show only for file/directory items.
-      rank: 3
-    });
-
-    // Add the CS3 share to file browser context menu
-    commands.addCommand(CommandIDs.share, {
+    commands.addCommand(command, {
+      caption: 'CS3 API Test',
+      label: 'CS3 API',
+      icon: args => (args['isPalette'] ? null : reactIcon),
       execute: () => {
-        const widget = tracker.currentWidget;
-        if (widget) {
-          each(widget.selectedItems(), fileInfo => {
-            showDialog({
-              body: new Widget({
-                fileInfo: fileInfo
-              }),
-              buttons: [Dialog.okButton({label: 'Close'})]
-            });
-          });
-        }
-      },
-      iconClass: () => "jp-MaterialIcon jp-FileUploadIcon",
-      label: () => {
-        return "CS3 share";
+        const content = new Widget();
+        const widget = new MainAreaWidget<Widget>({ content });
+        widget.title.label = 'CS3 API';
+        app.shell.add(widget, 'main');
       }
     });
+
+    if (launcher) {
+      launcher.add({
+        command
+      });
+    }
   }
 };
 
