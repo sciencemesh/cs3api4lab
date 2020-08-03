@@ -8,6 +8,10 @@ from tornado import web
 from cs3api_test_ext import CS3APIsManager
 from cs3api_test_ext.cs3_file_api import Cs3FileApi
 
+# ToDo: Fix error at create subdirectory
+# ToDo: Fix error at create file in directory
+# ToDo: Fix 400 error on Duplicate action
+# ToDo: Fix 400 error on Paste action
 
 class TestCS3APIsManager(TestCase):
     userid = None
@@ -332,3 +336,26 @@ class TestCS3APIsManager(TestCase):
         file_path = "/root_dir/test_dir/file.txt"
         is_hidden = self.contents_manager.is_hidden(file_path)
         self.assertFalse(is_hidden)
+
+    def test_create_directory(self):
+
+        file_path = "/test_create_directory"
+        self.storage.create_directory(file_path, self.userid, self.endpoint)
+
+        self.contents_manager.delete_file(file_path)
+
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path, self.userid, self.endpoint)
+
+    def test_recreate_directory(self):
+
+        file_path = "/test_recreate_directory"
+        self.storage.create_directory(file_path, self.userid, self.endpoint)
+
+        with self.assertRaises(IOError):
+            self.storage.create_directory(file_path, self.userid, self.endpoint)
+
+        self.contents_manager.delete_file(file_path)
+
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path, self.userid, self.endpoint)

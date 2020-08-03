@@ -86,7 +86,7 @@ class Cs3FileApi:
 
     def _cs3_reference(self, fileid, endpoint=None):
 
-        if fileid[0] == '/':
+        if len(fileid) > 0 and fileid[0] == '/':
             # assume this is a filepath
             return cs3spr.Reference(path=fileid)
 
@@ -281,3 +281,24 @@ class Cs3FileApi:
 
         tend = time.time()
         self.log.debug('msg="Invoked move" source="%s" destination="%s" elapsedTimems="%.1f"' % (source_path, destination_path, (tend - tstart) * 1000))
+
+
+    def create_directory(self, path, userid, endpoint=None):
+
+        """
+        Create a directory.
+        """
+
+        tstart = time.time()
+
+        reference = self._cs3_reference(path, endpoint)
+
+        req = cs3sp.CreateContainerRequest(ref=reference)
+        res = self.cs3_stub.CreateContainer(request=req, metadata=[('x-access-token', self._authenticate(userid))])
+
+        if res.status.code != cs3code.CODE_OK:
+            self.log.warning('msg="Failed to create container" filepath="%s" reason="%s"' % (path, res.status.message))
+            raise IOError(res.status.message)
+
+        tend = time.time()
+        self.log.debug('msg="Invoked create container" filepath="%s" elapsedTimems="%.1f"' % (path, (tend - tstart) * 1000))
