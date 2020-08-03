@@ -165,10 +165,7 @@ class CS3APIsManager(ContentsManager):
                 self._save_file(path, model['content'], model['format'])
 
             elif model['type'] == 'directory':
-
-                # ToDo: implements create directory
-                # self._save_directory(os_path, model, path)
-                raise NotImplementedError('cs3: save directory')
+                self._save_directory(path)
 
             else:
                 raise web.HTTPError(400, "Unhandled contents type: %s" % model['type'])
@@ -261,8 +258,10 @@ class CS3APIsManager(ContentsManager):
 
     def _normalize_path(self, path):
 
-        if path[0] != '/':
+        if len(path) > 0 and path[0] != '/':
             path = '/' + path
+        elif path == '' or path is None:
+            path = '/'
         return path
 
     def _get_parent_path(self, path):
@@ -271,9 +270,9 @@ class CS3APIsManager(ContentsManager):
         directories.reverse()
 
         if directories[0] != '':
-            return self._replace_last(str(path), directories[0])
+            path = self._replace_last(str(path), directories[0])
 
-        return path
+        return self._normalize_path(path)
 
     def _replace_last(self, source_string, replace_what, replace_with=""):
 
@@ -493,3 +492,16 @@ class CS3APIsManager(ContentsManager):
         except Exception as e:
             self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
+
+    def _save_directory(self, path):
+
+        if self.is_hidden(path) and not self.allow_hidden:
+            raise web.HTTPError(400, u'Cannot create hidden directory %s' % path)
+
+        if self._is_dir(path):
+            raise web.HTTPError(400, u'Directory %r already exists %s' % path)
+
+        if self.file_exists(path):
+            raise web.HTTPError(400, u'Not a directory %s' % path)
+
+        self._cs3_file_api().create_directory(path, self.cs3_user_id, self.cs3_endpoint)
