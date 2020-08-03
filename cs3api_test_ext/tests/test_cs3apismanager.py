@@ -298,3 +298,37 @@ class TestCS3APIsManager(TestCase):
 
         file_exists = self.contents_manager.file_exists(file_path)
         self.assertFalse(file_exists)
+
+    def test_is_hidden(self):
+
+        file_path = "/.test_hidden_file3.txt"
+        is_hidden = self.contents_manager.is_hidden(file_path)
+        self.assertTrue(is_hidden)
+
+        file_path = "/test_dir/.test_hidden_file3.txt"
+        is_hidden = self.contents_manager.is_hidden(file_path)
+        self.assertTrue(is_hidden)
+
+        file_path = "/.test_dir/file.txt"
+        is_hidden = self.contents_manager.is_hidden(file_path)
+        self.assertTrue(is_hidden)
+
+        file_path = "/root_dir/.test_dir/file.txt"
+        is_hidden = self.contents_manager.is_hidden(file_path)
+        self.assertTrue(is_hidden)
+
+        file_path = "/test_normal_file.txt"
+        is_hidden = self.contents_manager.is_hidden(file_path)
+        self.assertFalse(is_hidden)
+
+        file_path = "/test_dir/test_normal_file.txt"
+        is_hidden = self.contents_manager.is_hidden(file_path)
+        self.assertFalse(is_hidden)
+
+        file_path = "/test_dir/file.txt"
+        is_hidden = self.contents_manager.is_hidden(file_path)
+        self.assertFalse(is_hidden)
+
+        file_path = "/root_dir/test_dir/file.txt"
+        is_hidden = self.contents_manager.is_hidden(file_path)
+        self.assertFalse(is_hidden)
