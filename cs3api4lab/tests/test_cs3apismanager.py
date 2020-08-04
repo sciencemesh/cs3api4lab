@@ -233,6 +233,11 @@ class TestCS3APIsManager(TestCase):
         with self.assertRaises(IOError):
             self.storage.stat(file_path, self.userid, self.endpoint)
 
+        self.storage.remove(file_dest, self.userid, self.endpoint)
+        with self.assertRaises(IOError):
+            self.storage.stat(file_dest, self.userid, self.endpoint)
+
+
     def test_rename_file_non_exits_file(self):
 
         file_path = "/test_rename_file.txt"
@@ -353,5 +358,22 @@ class TestCS3APIsManager(TestCase):
 
         self.contents_manager.delete_file(file_path)
 
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path, self.userid, self.endpoint)
+
+
+    def test_create_subdirectory(self):
+
+        file_path = "/test_create_directory"
+        self.storage.create_directory(file_path, self.userid, self.endpoint)
+
+        file_path2 = "/test_create_directory/test_subdir"
+        self.storage.create_directory(file_path2, self.userid, self.endpoint)
+
+        self.contents_manager.delete_file(file_path2)
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path2, self.userid, self.endpoint)
+
+        self.contents_manager.delete_file(file_path)
         with self.assertRaises(IOError):
             self.storage.stat(file_path, self.userid, self.endpoint)

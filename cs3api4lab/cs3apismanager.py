@@ -101,6 +101,7 @@ class CS3APIsManager(ContentsManager):
         """
 
         parent_path = self._get_parent_path(path)
+        path = self._normalize_path(path)
 
         try:
             cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
@@ -338,6 +339,7 @@ class CS3APIsManager(ContentsManager):
             return True
 
         parent_path = self._get_parent_path(path)
+        path = self._normalize_path(path)
 
         try:
             cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
@@ -347,10 +349,10 @@ class CS3APIsManager(ContentsManager):
 
         for cs3_model in cs3_container:
 
-            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
-                return False
             if cs3_model.type == self.TYPE_DIRECTORY and cs3_model.path == path:
                 return True
+            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
+                return False
 
         return False
 
