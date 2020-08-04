@@ -388,12 +388,8 @@ class CS3APIsManager(ContentsManager):
                 created = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
                 last_modified = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
 
-        # ToDo: Implement file writable permission from Riva
-        # try:
-        #     model['writable'] = os.access(os_path, os.W_OK)
-        # except OSError:
-        #     self.log.error("Failed to check write permissions on %s", os_path)
-        #     model['writable'] = False
+                if str(cs3_model.permission_set.create_container).lower() == "true":
+                    writable = True
 
         #
         # Create the base model

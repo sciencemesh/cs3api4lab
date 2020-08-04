@@ -65,7 +65,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["format"], None)
         self.assertEqual(model["mimetype"], "text/plain")
         self.assertEqual(model["size"], 29)
-        self.assertEqual(model["writable"], False)
+        self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "file")
 
         self.storage.remove(file_id, self.userid, self.endpoint)
@@ -116,7 +116,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["format"], "json")
         self.assertEqual(model["mimetype"], None)
         self.assertEqual(model["size"], 637)
-        self.assertEqual(model["writable"], False)
+        self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "notebook")
 
         self.storage.remove(file_id, self.userid, self.endpoint)
@@ -138,7 +138,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["format"], None)
         self.assertEqual(save_model["mimetype"], "text/plain")
         self.assertEqual(save_model["size"], 12)
-        self.assertEqual(save_model["writable"], False)
+        self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "file")
 
         self.storage.remove(file_id, self.userid, self.endpoint)
@@ -156,7 +156,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["format"], None)
         self.assertEqual(save_model["mimetype"], None)
         self.assertEqual(save_model["size"], 521)
-        self.assertEqual(save_model["writable"], False)
+        self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "notebook")
 
         self.storage.remove(file_id, self.userid, self.endpoint)
@@ -259,7 +259,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["format"], None)
         self.assertEqual(model["mimetype"], "text/plain")
         self.assertEqual(model["size"], 12)
-        self.assertEqual(model["writable"], False)
+        self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "file")
 
         self.storage.remove(file_path, self.userid, self.endpoint)
