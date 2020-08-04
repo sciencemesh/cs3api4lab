@@ -14,11 +14,7 @@ class TestCs3FileApi(TestCase):
 
     def setUp(self):
 
-        log_handler = logging.FileHandler('/var/tmp/cs3api.log')
-        log_handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(name)s[%(process)d] %(levelname)-8s %(message)s',
-                                                   datefmt='%Y-%m-%dT%H:%M:%S'))
         log = logging.getLogger('cs3api.test')
-        log.addHandler(log_handler)
         log.setLevel(logging.DEBUG)
 
         config_parser = configparser.ConfigParser()
