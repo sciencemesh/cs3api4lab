@@ -37,14 +37,12 @@ class CS3APIsManager(ContentsManager):
             config_path.insert(0, self.cs3_config_dir)
         cm = ConfigManager(read_config_path=config_path)
 
-        cs3_config = cm.get('jupyter_cs3_config')
+        cs3_config_file = cm.get('jupyter_cs3_config')
+        self.cs3_config = cs3_config_file.get("cs3")
 
-        self.cs3_config = cs3_config.get("cs3", {
-            "revahost": "127.0.0.1:19000",
-            "endpoint": "/",
-            "authtokenvalidity": "3600",
-            "chunksize": "4194304"
-        })
+        if self.cs3_config is None:
+            log.error(u'Error while reading cs3 config file')
+            raise IOError(u'Error while reading cs3 config file')
 
         self.cs3_endpoint = self.cs3_config["endpoint"]
         self.log = log

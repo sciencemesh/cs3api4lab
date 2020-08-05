@@ -129,3 +129,50 @@ Run cs3 API connector test:
 ```bash
 python test_cs3_file_api.py
 ```
+
+### Setup env 
+
+Create config:
+```
+jupyter notebook --generate-config
+```
+
+Enable CS3 File Content Manager
+Replace in file HOME_FOLDER/.jupyter/jupyter_notebook_config.py line 
+
+```
+c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemanager.LargeFileManager'
+```
+
+to
+
+```
+c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
+```
+
+### CS3 config file
+Copy cs3 example config file from "jupyter-config/jupyter_cs3_config.json"
+to:
+* Windows: 
+```C:\Users\{USER_PROFILE}\.jupyter\```
+* Linux:
+ ```HOME_FOLDER/.jupyter/```
+
+### Quick build
+```bash
+pip install -e .
+jupyter serverextension enable --py cs3api_test_ext --sys-prefix
+jlpm
+jlpm build
+jupyter labextension install .
+jlpm build
+jupyter lab build
+jupyter lab 
+
+```
+
+### Quick build python
+```bash
+jupyter labextension install .
+jupyter lab
+```
