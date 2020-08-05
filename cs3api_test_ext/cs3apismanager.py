@@ -78,7 +78,12 @@ class CS3APIsManager(ContentsManager):
             Whether the path is hidden.
         """
 
-        # ToDo: Get file/directory attribute from Reva permission
+        path = self._normalize_path(path)
+
+        parts = path.split('/')
+        if any(part.startswith('.') for part in parts):
+            return True
+
         return False
 
     def file_exists(self, path=''):

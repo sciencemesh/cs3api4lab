@@ -150,48 +150,69 @@ class FilesHandle(APIHandler):
 
 
 class ShareHandle(APIHandler):
+    @property
+    def share_api(self):
+        return Cs3ShareApi()
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
 
     @web.authenticated
     @gen.coroutine
-    def post(self, endpoint, fileid, userid, grantee, idp=None, role="viewer", grantee_type="user"):
-        response = Cs3ShareApi.create(endpoint, fileid, userid, grantee, idp, role, grantee_type)
+    def post(self):
+        endpoint = self.get_query_argument('endpoint')
+        fileid = self.get_query_argument('fileid')
+        grantee = self.get_query_argument('grantee')
+        idp = self.get_query_argument('idp')
+        role = self.get_query_argument('role')
+        grantee_type = self.get_query_argument('grantee_type')
+
+        response = self.share_api.create(endpoint, fileid, grantee, idp, role, grantee_type)
         self.set_header('Content-Type', 'application/json')
         self.set_status(200)
         self.finish(json.dumps(response))
 
     @web.authenticated
     @gen.coroutine
-    def delete(self, shareid, userid):
-        response = Cs3ShareApi.remove(shareid, userid)
+    def delete(self):
+        share_id = self.get_query_argument('share_id')
+        self.share_api.remove(share_id)
         self.set_header('Content-Type', 'application/json')
         self.set_status(200)
-        self.finish(json.dumps(response))
+        self.finish()
 
-    def put(self, endpoint, shareid, userid, role="viewver"):
-        response = Cs3ShareApi.update(endpoint, shareid, userid, role)
+    def put(self):
+        share_id = self.get_query_argument('share_id')
+        role = self.get_query_argument('role')
+        self.share_api.update(share_id, role)
         self.set_header('Content-Type', 'application/json')
         self.set_status(200)
-        self.finish(json.dumps(response))
+        self.finish()
 
 
 class ListSharesHandler(APIHandler):
+    @property
+    def share_api(self):
+        return Cs3ShareApi()
+
     @web.authenticated
     @gen.coroutine
-    def get(self, userid):
-        response = Cs3ShareApi.list(userid=userid)
+    def get(self):
+        response = self.share_api.list()
         self.set_header('Content-Type', 'application/json')
         self.set_status(200)
         self.finish(json.dumps(response))
 
 
 class ListReceivedSharesHandler(APIHandler):
+    @property
+    def share_api(self):
+        return Cs3ShareApi()
+
     @web.authenticated
     @gen.coroutine
-    def get(self, userid):
-        response = Cs3ShareApi.list_received(userid=userid)
+    def get(self):
+        response = self.share_api.list_received()
         self.set_header('Content-Type', 'application/json')
         self.set_status(200)
         self.finish(json.dumps(response))

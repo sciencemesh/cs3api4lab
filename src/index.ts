@@ -22,6 +22,7 @@ namespace CommandIDs {
  * The JupyterLab plugin for the Google Drive Filebrowser.
  */
 const extension: JupyterFrontEndPlugin<void> = {
+
     id: 'cs3_api_filemanager',
     requires: [
         ICommandPalette,
@@ -59,7 +60,6 @@ const extension: JupyterFrontEndPlugin<void> = {
                 void commands.execute(CommandIDs.showBrowser, void 0);
             }
         });
-
         console.log('render filebrowser');
     },
     autoStart: true

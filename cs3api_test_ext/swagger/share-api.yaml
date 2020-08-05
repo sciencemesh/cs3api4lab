@@ -22,19 +22,15 @@ paths:
       parameters:
       - in: "query"
         name: "endpoint"
-        description: "endpoint path"
+        description: "endpoint path, default /"
         required: true
       - in: "query"
         name: "fileid"
-        description: "file id"
-        required: true
-      - in: "query"
-        name: "userid"
-        description: "Username"
+        description: "filename with path, e.g. /test.yml"
         required: true
       - in: "query"
         name: "grantee"
-        description: "Share receiver username"
+        description: "Share receiver's opaque_id"
         required: true
       - in: "query"
         name: "idp"
@@ -103,11 +99,7 @@ paths:
       - "application/json"
       parameters:
       - in: "query"
-        name: "userid"
-        description: "Username"
-        required: true
-      - in: "query"
-        name: "shareid"
+        name: "share_id"
         description: "ID of a share"
         required: true
 
