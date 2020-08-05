@@ -188,6 +188,9 @@ class CS3APIsManager(ContentsManager):
         elif model['type'] == 'file':
             model = self._file_model(path, content=False, format=None)
 
+        elif model['type'] == 'directory':
+            model = self._dir_model(path, content=False)
+
         if validation_message:
             model['message'] = validation_message
 
