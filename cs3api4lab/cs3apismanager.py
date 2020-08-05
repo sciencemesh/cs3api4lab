@@ -307,6 +307,9 @@ class CS3APIsManager(ContentsManager):
         if content:
             content = self._read_file(tmp_model.path)
 
+            if format is None:
+                format = "text"
+
             if model['mimetype'] is None:
                 default_mime = {
                     'text': 'text/plain',
