@@ -111,3 +111,4 @@ dmypy.json
 /yarn.lock
 *.iml
 .idea/
+yarn-error.log
