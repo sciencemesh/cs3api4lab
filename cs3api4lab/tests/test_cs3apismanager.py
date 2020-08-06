@@ -49,7 +49,7 @@ class TestCS3APIsManager(TestCase):
             log.error("Missing option or missing configuration, check the test.conf file")
             raise
 
-        self.contents_manager = CS3APIsManager(self, log)
+        self.contents_manager = CS3APIsManager(self, log, config)
 
     def test_get_text_file(self):
 

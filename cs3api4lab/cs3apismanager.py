@@ -26,23 +26,27 @@ class CS3APIsManager(ContentsManager):
     log = None
     cs3_endpoint = None
 
-    def __init__(self, parent, log):
+    def __init__(self, parent, log, external_config=None):
 
         #
         # Get config from jupyter_cs3_config.json file
         #
-        config_path = jupyter_config_path()
-        if self.cs3_config_dir not in config_path:
-            # add self.config_dir to the front, if set manually
-            config_path.insert(0, self.cs3_config_dir)
-        cm = ConfigManager(read_config_path=config_path)
+        if external_config is None:
+            config_path = jupyter_config_path()
+            if self.cs3_config_dir not in config_path:
+                # add self.config_dir to the front, if set manually
+                config_path.insert(0, self.cs3_config_dir)
+            cm = ConfigManager(read_config_path=config_path)
 
-        cs3_config_file = cm.get('jupyter_cs3_config')
-        self.cs3_config = cs3_config_file.get("cs3")
+            cs3_config_file = cm.get('jupyter_cs3_config')
+            self.cs3_config = cs3_config_file.get("cs3")
 
-        if self.cs3_config is None:
-            log.error(u'Error while reading cs3 config file')
-            raise IOError(u'Error while reading cs3 config file')
+            if self.cs3_config is None:
+                log.error(u'Error while reading cs3 config file')
+                raise IOError(u'Error while reading cs3 config file')
+        else:
+
+            self.cs3_config = external_config
 
         self.cs3_endpoint = self.cs3_config["endpoint"]
         self.log = log
