@@ -1,10 +1,12 @@
-import {ILabShell, ILayoutRestorer, JupyterFrontEnd, JupyterFrontEndPlugin,} from '@jupyterlab/application';
+import {ILabShell, ILayoutRestorer, IRouter, JupyterFrontEnd, JupyterFrontEndPlugin,} from '@jupyterlab/application';
 
-import {IFileBrowserFactory} from "@jupyterlab/filebrowser";
+import {FileBrowser, FileBrowserModel, IFileBrowserFactory} from "@jupyterlab/filebrowser";
 import {ISettingRegistry} from '@jupyterlab/settingregistry';
-import {ICommandPalette} from '@jupyterlab/apputils';
+import {ICommandPalette, WidgetTracker} from '@jupyterlab/apputils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
 import {IMainMenu} from '@jupyterlab/mainmenu';
+import {IStateDB} from '@jupyterlab/statedb';
+
 // import {LabIcon} from "@jupyterlab/ui-components";
 
 // import {each} from "@lumino/algorithm";
@@ -21,7 +23,7 @@ namespace CommandIDs {
 /**
  * The JupyterLab plugin for the Google Drive Filebrowser.
  */
-const extension: JupyterFrontEndPlugin<void> = {
+const browser: JupyterFrontEndPlugin<void> = {
     id: 'cs3_api_filemanager',
     requires: [
         ICommandPalette,
@@ -37,34 +39,103 @@ const extension: JupyterFrontEndPlugin<void> = {
              restorer: ILayoutRestorer,
              labShell: ILabShell,
     ): void {
-        console.log(app, docManager, factory, restorer, labShell);
         const browser = Object.assign({}, factory.defaultBrowser);
-        browser.addClass('cs3_test_filebrowser');
-
         console.log(browser);
-        const {commands} = app;
+        // browser.addClass('cs3_test_filebrowser');
+        //
+        // console.log(browser);
+        // const {commands} = app;
 
         // restorer.add(browser, 'cs3_file_browser');
-        browser.title.label = 'test';
+        // browser.title.label = 'test';
         // browser.title.icon =  LabIcon.resolve({
         //     icon: 'ui-components:file'
         // });
 
-        // labShell.add(browser, 'left', {rank: 100});
+        labShell.add(browser, 'left', {rank: 100});
 
         // If the layout is a fresh session without saved data, open file browser.
-        void labShell.restored.then(layout => {
-            if (layout.fresh) {
-                console.log('restore filebrwoser');
-                void commands.execute(CommandIDs.showBrowser, void 0);
-            }
-        });
-
-        console.log('render filebrowser');
+        // void labShell.restored.then(layout => {
+        //     if (layout.fresh) {
+        //         console.log('restore filebrwoser');
+        //         void commands.execute(CommandIDs.showBrowser, void 0);
+        //     }
+        // });
     },
     autoStart: true
 }
-export default extension;
+
+
+/**
+ * The default file browser factory provider.
+ */
+const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
+        id: 'cs3_test_factory',
+        provides: IFileBrowserFactory,
+        requires: [IDocumentManager],
+        optional: [IStateDB, IRouter, JupyterFrontEnd.ITreeResolver],
+        activate: (
+            app: JupyterFrontEnd,
+            docManager: IDocumentManager,
+            state: IStateDB | null,
+            router: IRouter | null,
+            tree: JupyterFrontEnd.ITreeResolver | null
+        ): any => {
+            // const { commands } = app;
+            const tracker = new WidgetTracker<FileBrowser>({namespace: 'cs3_test'});
+            const createFileBrowser = (
+                id: string,
+                options: IFileBrowserFactory.IOptions = {}
+            ) => {
+                const model = new FileBrowserModel({
+                    auto: options.auto ?? true,
+                    manager: docManager,
+                    driveName: options.driveName || '',
+                    refreshInterval: options.refreshInterval,
+                    state:
+                        options.state === null ? undefined : options.state || state || undefined
+                });
+                const restore = options.restore;
+                const widget = new FileBrowser({id, model, restore});
+
+                // Add a launcher toolbar item.
+                // const launcher = new ToolbarButton({
+                //     icon: addIcon,
+                //     onClick: () => {
+                //         if (commands.hasCommand('launcher:create')) {
+                //             return Private.createLauncher(commands, widget);
+                //         }
+                //     },
+                //     tooltip: 'New Launcher'
+                // });
+                // widget.toolbar.insertItem(0, 'launch', launcher);
+
+                // Track the newly created file browser.
+                void tracker.add(widget);
+
+                return widget;
+            };
+
+// Manually restore and load the default file browser.
+            const defaultBrowser = createFileBrowser('filebrowser', {
+                auto: false,
+                restore: false
+            });
+// void Private.restoreBrowser(defaultBrowser, commands, router, tree);
+
+            return {createFileBrowser, defaultBrowser, tracker};
+        }
+    }
+;
+
+/**
+ * Export the plugins as default.
+ */
+const plugins: JupyterFrontEndPlugin<any>[] = [
+    factory,
+    browser
+];
+export default plugins;
 
 /**
  * Initialization data for the cs3api4lab extension.
