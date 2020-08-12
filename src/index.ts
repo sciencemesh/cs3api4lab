@@ -2,10 +2,11 @@ import {ILabShell, ILayoutRestorer, IRouter, JupyterFrontEnd, JupyterFrontEndPlu
 
 import {FileBrowser, FileBrowserModel, IFileBrowserFactory} from "@jupyterlab/filebrowser";
 import {ISettingRegistry} from '@jupyterlab/settingregistry';
-import {ICommandPalette, WidgetTracker} from '@jupyterlab/apputils';
+import {Toolbar, ToolbarButton, WidgetTracker} from '@jupyterlab/apputils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
 import {IMainMenu} from '@jupyterlab/mainmenu';
 import {IStateDB} from '@jupyterlab/statedb';
+import {pythonIcon} from '@jupyterlab/ui-components';
 
 // import {LabIcon} from "@jupyterlab/ui-components";
 
@@ -15,10 +16,10 @@ import {IStateDB} from '@jupyterlab/statedb';
 /**
  * The command IDs used by the react-widget plugin.
  */
-namespace CommandIDs {
-    export const share = 'filebrowser:cs3-share';
-    export const showBrowser = 'filebrowser:showBrowser';
-}
+// namespace CommandIDs {
+//     export const share = 'filebrowser:cs3-share';
+//     export const showBrowser = 'filebrowser:showBrowser';
+// }
 
 /**
  * The JupyterLab plugin for the Google Drive Filebrowser.
@@ -26,12 +27,12 @@ namespace CommandIDs {
 const browser: JupyterFrontEndPlugin<void> = {
     id: 'cs3_api_filemanager',
     requires: [
-        ICommandPalette,
         IDocumentManager,
         IFileBrowserFactory,
         ILayoutRestorer,
         IMainMenu,
-        ISettingRegistry
+        ISettingRegistry,
+        ILabShell
     ],
     activate(app: JupyterFrontEnd,
              docManager: IDocumentManager,
@@ -40,10 +41,19 @@ const browser: JupyterFrontEndPlugin<void> = {
              labShell: ILabShell,
     ): void {
         const browser = Object.assign({}, factory.defaultBrowser);
+
         console.log(browser);
-        // browser.addClass('cs3_test_filebrowser');
-        //
-        // console.log(browser);
+        // browser.toolbar.addItem('cs3_tabbar',);
+        browser.toolbar.addItem('cs3_item',new ToolbarButton({
+            onClick: () => {
+                console.log('testing cs3 item');
+            },
+            icon: pythonIcon,
+            tooltip: `cs3 item`,
+            iconClass: 'cs3-item jp-Icon jp-Icon-16'
+        }));
+        // labShell.currentWidget.addClass('testing');
+
         // const {commands} = app;
 
         // restorer.add(browser, 'cs3_file_browser');
@@ -51,8 +61,6 @@ const browser: JupyterFrontEndPlugin<void> = {
         // browser.title.icon =  LabIcon.resolve({
         //     icon: 'ui-components:file'
         // });
-
-        labShell.add(browser, 'left', {rank: 100});
 
         // If the layout is a fresh session without saved data, open file browser.
         // void labShell.restored.then(layout => {
@@ -97,6 +105,19 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
                 });
                 const restore = options.restore;
                 const widget = new FileBrowser({id, model, restore});
+
+                const cs3toolbar = new Toolbar();
+                // cs3toolbar.addClass('cs3_tab_toolbar');
+                cs3toolbar.insertBefore('launch', 'cs3_new_toolbar', new ToolbarButton({
+                        label: 'Files',
+                        icon: pythonIcon,
+                        onClick: () => {
+                            console.log('testing new button');
+                        }
+                    }
+                ));
+                console.log(widget.toolbar.insertItem(0, 'cs3_test', cs3toolbar));
+
 
                 // Add a launcher toolbar item.
                 // const launcher = new ToolbarButton({
