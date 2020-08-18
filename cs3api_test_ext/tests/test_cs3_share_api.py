@@ -20,7 +20,7 @@ class TestCs3ShareApi(TestCase):
         self.api.list("einstein")
 
     def test_list_grantees_for_file(self):
-        self.api.list_grantees_for_file("/home/test.txt")
+        self.api.list_grantees_for_file("/home/test1.txt")
 
     def test_remove(self):
         self.api.remove("1", "einstein")

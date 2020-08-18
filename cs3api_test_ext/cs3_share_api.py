@@ -18,7 +18,6 @@ import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 
 
-# todo refactor
 class Cs3ShareApi:
     tokens = {}
     gateway_stub = None
@@ -46,12 +45,12 @@ class Cs3ShareApi:
     def create(self, endpoint, fileid, grantee, idp=None, role="viewer", grantee_type="user"):
         if grantee is None:
             raise Exception("Grantee was not provided")
-        share_permissions = self._getSharePermissions(role)
-        grantee_type_enum = self._getGranteeType(grantee_type)
-        share_grant = self._getShareGrant(grantee_type_enum, share_permissions, idp, grantee)
-        resource_info = self._getResourceInfo(endpoint, fileid)
+        share_permissions = self._get_share_permissions(role)
+        grantee_type_enum = self._get_grantee_type(grantee_type)
+        share_grant = self._get_share_grant(grantee_type_enum, share_permissions, idp, grantee)
+        resource_info = self._get_resource_info(endpoint, fileid)
         share_request = sharing.CreateShareRequest(resource_info=resource_info, grant=share_grant)
-        token = self._getToken()
+        token = self._get_token()
         share_response = self.gateway_stub.CreateShare(request=share_request,
                                                        metadata=[('x-access-token', token)])
         self.log.info("Share created")
@@ -62,25 +61,25 @@ class Cs3ShareApi:
         # todo filters
         list_req = sharing.ListSharesRequest()
         list_res = self.gateway_stub.ListShares(request=list_req,
-                                                metadata=[('x-access-token', self._getToken())])
+                                                metadata=[('x-access-token', self._get_token())])
         self.log.info("List shares response for user: einstein")
         self.log.info(list_req)
         return self._map_given_shares(list_res)
 
     def list_grantees_for_file(self, file_id):
-        list_res = self.list("einstein")
+        shares_res = self.list()
 
         shares = []
-        for share in list_res.shares:
+        for share in shares_res:
             # todo regex
-            if file_id == share.resource_id.opaque_id.replace("fileid-einstein", "").replace('%2F', '/'):
+            if file_id == share['id']['opaque_id'].replace("fileid-einstein", "").replace('%2F', '/'):
                 shares.append(share)
 
         shares_dict = {}
         for share in shares:
-            permissions = self._resolveSharePermissions(share)
-            grantee_username = share.grantee.id.opaque_id
-            shares_dict[grantee_username] = permissions
+            # permissions = self._resolveSharePermissions(share)
+            opaque_id = share['grantee']['opaque_id']
+            shares_dict[opaque_id] = share['permissions']
 
         return shares_dict
 
@@ -89,26 +88,26 @@ class Cs3ShareApi:
         ref = sharing_res.ShareReference(id=share_id_object)
         remove_req = sharing.RemoveShareRequest(ref=ref)
         remove_res = self.gateway_stub.RemoveShare(request=remove_req,
-                                                   metadata=[('x-access-token', self._getToken())])
+                                                   metadata=[('x-access-token', self._get_token())])
         self.log.info("Removing share " + share_id)
         return
 
     def update(self, share_id, role):
         # todo check role
-        share_permissions = self._getSharePermissions(role)
+        share_permissions = self._get_share_permissions(role)
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
         update_req = sharing.UpdateShareRequest(ref=ref,
                                                 field=sharing.UpdateShareRequest.UpdateField(
                                                     permissions=share_permissions))
         update_res = self.gateway_stub.UpdateShare(request=update_req,
-                                                   metadata=[('x-access-token', self._getToken())])
+                                                   metadata=[('x-access-token', self._get_token())])
         return
 
     def list_received(self):
         list_req = sharing.ListReceivedSharesRequest()
         list_res = self.gateway_stub.ListReceivedShares(request=list_req,
-                                                        metadata=[('x-access-token', self._getToken())])
+                                                        metadata=[('x-access-token', self._get_token())])
         self.log.info("List received shares response for user: " + 'einstein')
         self.log.info(list_res)
         return self._map_received_shares(list_res)
@@ -122,7 +121,7 @@ class Cs3ShareApi:
                     "storage_id": share.share.resource_id.storage_id,
                     "opaque_id": share.share.resource_id.opaque_id,
                 },
-                "permissions": self._resolveSharePermissions(share.share),
+                "permissions": self._resolve_share_permissions(share.share),
                 "grantee": {
                     "type": share.share.grantee.type,
                     "opaque_id": share.share.grantee.id.opaque_id,
@@ -148,7 +147,7 @@ class Cs3ShareApi:
                     "storage_id": share.resource_id.storage_id,
                     "opaque_id": share.resource_id.opaque_id,
                 },
-                "permissions": self._resolveSharePermissions(share),
+                "permissions": self._resolve_share_permissions(share),
                 "grantee": {
                     "type": share.grantee.type,
                     "opaque_id": share.grantee.id.opaque_id,
@@ -172,23 +171,23 @@ class Cs3ShareApi:
             shares.append(self._map_given_share(share))
         return shares
 
-    def update_received(self, endpoint, shareid, userid, state="pending"):
+    def update_received(self, share_id, state="pending"):
         # todo validate flags + tuple
-        share_id_object = sharing_res.ShareId(opaque_id=shareid)
+        share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
-        share_state = self._getShareState(state)
+        share_state = self._get_share_state(state)
         update_req = sharing.UpdateReceivedShareRequest(ref=ref,
                                                         field=sharing.UpdateReceivedShareRequest.UpdateField(
                                                             state=share_state))
         update_res = self.gateway_stub.UpdateReceivedShare(request=update_req,
-                                                           metadata=[('x-access-token', self._getToken())])
+                                                           metadata=[('x-access-token', self._get_token())])
         return update_res
 
-    def _resolveSharePermissions(self, share):
-        return "editor" if share.permissions.permissions.delete is True \
-                           and share.permissions.permissions.move is True else "viewer"
+    def _resolve_share_permissions(self, share):
+        return "editor" if share.permissions.permissions.move is True else "viewer" \
+                           and share.permissions.permissions.delete is True
 
-    def _getToken(self):
+    def _get_token(self):
         # todo export
         userid = "einstein"
         auth_req = gateway.AuthenticateRequest(type='basic', client_id='einstein', client_secret='relativity')
@@ -198,26 +197,26 @@ class Cs3ShareApi:
         # return self.gateway_stub.Authenticate(auth_req).token
         return self.tokens[userid]['token']
 
-    def _getResourceInfo(self, endpoint, fileid):
-        ref = self._getReference(endpoint, fileid)
-        token = self._getToken()
+    def _get_resource_info(self, endpoint, fileid):
+        ref = self._get_reference(endpoint, fileid)
+        token = self._get_token()
         stat_info = self.gateway_stub.Stat(request=storage_provider.StatRequest(ref=ref),
                                            metadata=[('x-access-token', token)])
         return stat_info.info
 
-    def _getShareGrant(self, grantee_type, share_permissions, idp, grantee):
+    def _get_share_grant(self, grantee_type, share_permissions, idp, grantee):
         user_id = identity_res.UserId(idp=idp, opaque_id=grantee)
         resources_grantee = storage_resources.Grantee(id=user_id, type=grantee_type)
         return sharing_res.ShareGrant(permissions=share_permissions, grantee=resources_grantee)
 
-    def _getGranteeType(self, grantee_type):
+    def _get_grantee_type(self, grantee_type):
         if grantee_type == "user":
             return storage_resources.GranteeType.GRANTEE_TYPE_USER
         if grantee_type == "group":
             return storage_resources.GranteeType.GRANTEE_TYPE_GROUP
         raise Exception("Invalid grantee type")
 
-    def _getSharePermissions(self, role):
+    def _get_share_permissions(self, role):
         if role == "viewer":
             permissions = storage_resources.ResourcePermissions(get_path=True,
                                                                 initiate_file_download=True,
@@ -240,7 +239,7 @@ class Cs3ShareApi:
         else:
             raise Exception("Invalid role")
 
-    def _getShareState(self, state):
+    def _get_share_state(self, state):
         if state == "pending":
             return sharing_res.SHARE_STATE_PENDING
         elif state == "accepted":
@@ -252,7 +251,7 @@ class Cs3ShareApi:
         else:
             raise Exception("Unknown share state")
 
-    def _getReference(self, endpoint, fileid):
+    def _get_reference(self, endpoint, fileid):
         if endpoint == 'default':
             raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
         if fileid[0] == '/':
