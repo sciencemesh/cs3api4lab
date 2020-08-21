@@ -15,18 +15,19 @@ import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 import cs3.storage.provider.v1beta1.resources_pb2 as cs3spr
+import cs3.types.v1beta1.types_pb2 as types
 import grpc
 import requests
 
 
 class Cs3FileApi:
-
     tokens = {}  # map userid [string] to {authentication token, token expiration time}
 
     log = None
     chunksize = 4194304
     authtokenvalidity = 3600
     cs3_stub = None
+    home_dir = ""
 
     client_id = None
     client_secret = None
@@ -42,6 +43,7 @@ class Cs3FileApi:
 
         self.client_id = config['client_id']
         self.client_secret = config['client_secret']
+        self.home_dir = config['home_dir']
 
         # prepare the gRPC connection
 
@@ -87,8 +89,13 @@ class Cs3FileApi:
     def _cs3_reference(self, fileid, endpoint=None):
 
         if len(fileid) > 0 and fileid[0] == '/':
+
             # assume this is a filepath
-            return cs3spr.Reference(path=fileid)
+            if len(self.home_dir) > 0 and not fileid.startswith(self.home_dir):
+                fileid = self.home_dir + fileid
+
+            file = cs3spr.Reference(path=fileid)
+            return file
 
         if endpoint == 'default' or endpoint is None:
             raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
@@ -186,26 +193,35 @@ class Cs3FileApi:
 
         reference = self._cs3_reference(filepath, endpoint)
 
-        req = cs3sp.InitiateFileUploadRequest(ref=reference)
-        initfileuploadres = self.cs3_stub.InitiateFileUpload(request=req, metadata=[('x-access-token', self._authenticate(userid))])
+        if isinstance(content, str):
+            content_size = str(len(content))
+        else:
+            content_size = str(len(content.decode('utf-8')))
 
-        if initfileuploadres.status.code != cs3code.CODE_OK:
+        meta_data = types.Opaque(map={"Upload-Length": types.OpaqueEntry(decoder="plain", value=str.encode(content_size))})
+
+        req = cs3sp.InitiateFileUploadRequest(ref=reference, opaque=meta_data)
+        init_file_upload_res = self.cs3_stub.InitiateFileUpload(request=req, metadata=[('x-access-token', self._authenticate(userid))])
+
+        if init_file_upload_res.status.code != cs3code.CODE_OK:
             self.log.debug('msg="Failed to initiateFileUpload on write" filepath="%s" reason="%s"' % \
-                                  (filepath, initfileuploadres.status.message))
-            raise IOError(initfileuploadres.status.message)
+                           (filepath, init_file_upload_res.status.message))
+            raise IOError(init_file_upload_res.status.message)
 
-        self.log.debug('msg="writefile: InitiateFileUploadRes returned" endpoint="%s"' % initfileuploadres.upload_endpoint)
+        self.log.debug('msg="writefile: InitiateFileUploadRes returned" endpoint="%s"' % init_file_upload_res.upload_endpoint)
 
         #
         # Upload
         #
         try:
-            # TODO: Use tus client instead of PUT
             headers = {
                 'Tus-Resumable': '1.0.0',
-                'x-access-token': self._authenticate(userid)
+                'File-Path': filepath,
+                'File-Size': content_size,
+                'x-access-token': self._authenticate(userid),
+                'X-Reva-Transfer': init_file_upload_res.token
             }
-            putres = requests.put(url=initfileuploadres.upload_endpoint, data=content, headers=headers)
+            put_res = requests.put(url=init_file_upload_res.upload_endpoint, data=content, headers=headers)
 
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when uploading file to Reva" reason="%s"' % e)
@@ -213,9 +229,9 @@ class Cs3FileApi:
 
         time_end = time.time()
 
-        if putres.status_code != http.HTTPStatus.OK:
-            self.log.error('msg="Error uploading file to Reva" code="%d" reason="%s"' % (putres.status_code, putres.reason))
-            raise IOError(putres.reason)
+        if put_res.status_code != http.HTTPStatus.OK:
+            self.log.error('msg="Error uploading file to Reva" code="%d" reason="%s"' % (put_res.status_code, put_res.reason))
+            raise IOError(put_res.reason)
 
         self.log.info('msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (filepath, (time_end - time_start) * 1000))
 
@@ -257,6 +273,10 @@ class Cs3FileApi:
 
         out = []
         for info in res.infos:
+
+            if len(self.home_dir) > 0 and info.path.startswith(self.home_dir):
+                info.path = info.path.rsplit(self.home_dir)[-1]
+
             out.append(info)
 
         return out
@@ -281,7 +301,6 @@ class Cs3FileApi:
 
         tend = time.time()
         self.log.debug('msg="Invoked move" source="%s" destination="%s" elapsedTimems="%.1f"' % (source_path, destination_path, (tend - tstart) * 1000))
-
 
     def create_directory(self, path, userid, endpoint=None):
 
