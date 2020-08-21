@@ -34,6 +34,7 @@ class TestCS3APIsManager(TestCase):
                 "authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
                 "userid": config_parser.get('cs3', 'userid'),
                 "endpoint": config_parser.get('cs3', 'endpoint'),
+                "home_dir": config_parser.get('cs3', 'home_dir'),
                 "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
                 "client_cert": config_parser.get('cs3', 'client_cert'),
                 "client_key": config_parser.get('cs3', 'client_key'),

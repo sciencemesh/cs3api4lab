@@ -95,11 +95,6 @@ cd examples/ocmd/ && mkdir -p /tmp/reva && && mkdir -p /var/tmp/reva
 
 #### Run test
 
-Add dependency for project:
-```bash
-pip install -r requirements.txt
-```
-
 Goto test folder:
 ```bash
 cd cs3api4lab/tests
@@ -108,6 +103,7 @@ cd cs3api4lab/tests
 Run cs3 API connector test:
 ```bash
 python test_cs3_file_api.py
+python test_cs3apismanager.py
 ```
 
 ### Setup env 
