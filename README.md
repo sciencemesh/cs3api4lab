@@ -93,26 +93,6 @@ make
 cd examples/ocmd/ && mkdir -p /tmp/reva && && mkdir -p /var/tmp/reva 
 ```
 
-Change config file, reconfigure http.services.dataprovider and grpc.services.storageprovider in examples/ocmd/ocmd-server-1.toml with disable_tus = true.
-It will look like this
-
-```ini
-...
-[http.services.dataprovider]
-...
-disable_tus = true
-
-```
-
-and
-
-```ini
-[grpc.services.storageprovider]
-...
-disable_tus = true
-
-```
-
 #### Run test
 
 Add dependency for project:
