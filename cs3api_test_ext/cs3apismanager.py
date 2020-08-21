@@ -26,25 +26,27 @@ class CS3APIsManager(ContentsManager):
     log = None
     cs3_endpoint = None
 
-    def __init__(self, parent, log):
+    def __init__(self, parent, log, external_config=None):
 
         #
         # Get config from jupyter_cs3_config.json file
         #
-        config_path = jupyter_config_path()
-        if self.cs3_config_dir not in config_path:
-            # add self.config_dir to the front, if set manually
-            config_path.insert(0, self.cs3_config_dir)
-        cm = ConfigManager(read_config_path=config_path)
+        if external_config is None:
+            config_path = jupyter_config_path()
+            if self.cs3_config_dir not in config_path:
+                # add self.config_dir to the front, if set manually
+                config_path.insert(0, self.cs3_config_dir)
+            cm = ConfigManager(read_config_path=config_path)
 
-        cs3_config = cm.get('jupyter_cs3_config')
+            cs3_config_file = cm.get('jupyter_cs3_config')
+            self.cs3_config = cs3_config_file.get("cs3")
 
-        self.cs3_config = cs3_config.get("cs3", {
-            "revahost": "127.0.0.1:19000",
-            "endpoint": "/",
-            "authtokenvalidity": "3600",
-            "chunksize": "4194304"
-        })
+            if self.cs3_config is None:
+                log.error(u'Error while reading cs3 config file')
+                raise IOError(u'Error while reading cs3 config file')
+        else:
+
+            self.cs3_config = external_config
 
         self.cs3_endpoint = self.cs3_config["endpoint"]
         self.log = log
@@ -101,6 +103,7 @@ class CS3APIsManager(ContentsManager):
         """
 
         parent_path = self._get_parent_path(path)
+        path = self._normalize_path(path)
 
         try:
             cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
@@ -186,7 +189,8 @@ class CS3APIsManager(ContentsManager):
 
         elif model['type'] == 'file':
             model = self._file_model(path, content=False, format=None)
-
+        elif model['type'] == 'directory':
+            model = self._dir_model(path, content=False)
         if validation_message:
             model['message'] = validation_message
 
@@ -303,6 +307,9 @@ class CS3APIsManager(ContentsManager):
         if content:
             content = self._read_file(tmp_model.path)
 
+            if format is None:
+                format = "text"
+
             if model['mimetype'] is None:
                 default_mime = {
                     'text': 'text/plain',
@@ -338,6 +345,7 @@ class CS3APIsManager(ContentsManager):
             return True
 
         parent_path = self._get_parent_path(path)
+        path = self._normalize_path(path)
 
         try:
             cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
@@ -347,10 +355,10 @@ class CS3APIsManager(ContentsManager):
 
         for cs3_model in cs3_container:
 
-            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
-                return False
             if cs3_model.type == self.TYPE_DIRECTORY and cs3_model.path == path:
                 return True
+            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
+                return False
 
         return False
 
@@ -388,12 +396,8 @@ class CS3APIsManager(ContentsManager):
                 created = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
                 last_modified = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
 
-        # ToDo: Implement file writable permission from Riva
-        # try:
-        #     model['writable'] = os.access(os_path, os.W_OK)
-        # except OSError:
-        #     self.log.error("Failed to check write permissions on %s", os_path)
-        #     model['writable'] = False
+                if str(cs3_model.permission_set.create_container).lower() == "true":
+                    writable = True
 
         #
         # Create the base model
