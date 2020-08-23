@@ -1,26 +1,20 @@
-import itertools
-import logging
-import mimetypes
-import os
-from datetime import date, datetime
-from pathlib import Path
+from base64 import decodebytes
+from datetime import datetime
 
+import nbformat
 from jupyter_core.paths import jupyter_config_path
 from notebook.services.config import ConfigManager
 from notebook.services.contents.manager import ContentsManager
 from tornado import web
+
 from notebook import _tz as tz
-
-import nbformat
-
-from base64 import encodebytes, decodebytes
+import mimetypes
+from nbformat.v4 import new_notebook
 
 from cs3api_test_ext.cs3_file_api import Cs3FileApi
 
-from nbformat.v4 import new_notebook
 
 class CS3APIsManager(ContentsManager):
-
     cs3_config_dir = ""
     cs3_config = {}
     cs3_user_id = "einstein"
@@ -29,10 +23,10 @@ class CS3APIsManager(ContentsManager):
     TYPE_FILE = 1
     TYPE_DIRECTORY = 2
 
-    def __init__(self, parent, log):
+    log = None
+    cs3_endpoint = None
 
-        # print("->>>>>>>>>>>>>> CS3APIsManager __init__")
-        # print(self, parent, log)
+    def __init__(self, parent, log):
 
         #
         # Get config from jupyter_cs3_config.json file
@@ -52,23 +46,8 @@ class CS3APIsManager(ContentsManager):
             "chunksize": "4194304"
         })
 
-        return
-
-    def _cs3_file_api(self):
-
-        #
-        # ToDo: Setup logger from jupyter logger
-        #
-
-        log_handler = logging.FileHandler('/var/tmp/cs3api.log')
-        log_handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(name)s[%(process)d] %(levelname)-8s %(message)s',
-                                                   datefmt='%Y-%m-%dT%H:%M:%S'))
-        log = logging.getLogger('cs3api.test')
-        log.addHandler(log_handler)
-        log.setLevel(logging.DEBUG)
-
-
-        return Cs3FileApi(self.cs3_config, log)
+        self.cs3_endpoint = self.cs3_config["endpoint"]
+        self.log = log
 
     def dir_exists(self, path):
         """Does a directory exist at the given path?
@@ -84,33 +63,7 @@ class CS3APIsManager(ContentsManager):
             Whether the path does indeed exist.
         """
 
-        print("---> CS3APIsManager::dir_exists(): ", "path:", path)
-
-        if path == '/' or path == "" or path is None:
-            return True
-
-        directories = path.rsplit('/')
-        directories.reverse()
-
-        if directories[0] != '':
-            parent_path = self._replace_last(str(path), directories[0])
-        else:
-            parent_path = path
-
-        print("---> CS3APIsManager::dir_exists(): ", "parent_path:", parent_path)
-
-        cs3_file_api = self._cs3_file_api()
-        cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], parent_path, self.cs3_user_id)
-
-        for cs3_model in cs3_container:
-            if cs3_model.type == self.TYPE_DIRECTORY and cs3_model.path == path:
-                print("DIRECTORY exits: ", cs3_model.type, cs3_model.path)
-                return True
-
-        print("DIRECTORY not exits: ", path)
-
-        return False
-
+        return self._is_dir(path)
 
     def is_hidden(self, path):
         """Is path a hidden directory or file?
@@ -125,8 +78,11 @@ class CS3APIsManager(ContentsManager):
             Whether the path is hidden.
         """
 
-        # ToDo: Get file/directory attribute from Reva permission
-        print("---> CS3APIsManager::is_hidden(): ", "path:", path)
+        path = self._normalize_path(path)
+
+        parts = path.split('/')
+        if any(part.startswith('.') for part in parts):
+            return True
 
         return False
 
@@ -144,38 +100,25 @@ class CS3APIsManager(ContentsManager):
             Whether the file exists.
         """
 
-        print("---> CS3APIsManager::file_exists(): ", "path:", path)
+        parent_path = self._get_parent_path(path)
 
-        directories = path.rsplit('/')
-        directories.reverse()
-
-        if directories[0] != '':
-            parent_path = self._replace_last(str(path), directories[0])
-        else:
-            parent_path = path
-
-        cs3_file_api = self._cs3_file_api()
-        cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], parent_path, self.cs3_user_id)
+        try:
+            cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+        except Exception as ex:
+            self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
+            raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
 
         for cs3_model in cs3_container:
             if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
-                print("FILE is exits: ", cs3_model.type, cs3_model.path)
                 return True
 
-        print("FILE not exits: ", path)
         return False
 
     def get(self, path, content=True, type=None, format=None):
-        """Get a file or directory model."""
+        """Get a file, notebook or directory model."""
 
-        # print("---> CS3APIsManager::get(): ", "path:", path, "content:", content, "type:", type, "format:", format)
+        path = self._normalize_path(path)
 
-        if path[0] != '/':
-            path = '/' + path
-
-        #
-        # ToDo: Get user info/token from jupyter session
-        #
         if type in (None, 'directory') and self._is_dir(path):
             model = self._dir_model(path, content=content)
         elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
@@ -183,23 +126,19 @@ class CS3APIsManager(ContentsManager):
         else:
             if type == 'directory':
                 raise web.HTTPError(400, u'%s is a directory' % path, reason='bad type')
-
             model = self._file_model(path, content=content, format=format)
-
-        # print("---> CS3APIsManager::get(): ")
 
         return model
 
     def save(self, model, path):
         """
         Save a file or directory model to path.
-        Should return the saved model with no content.
+        Should return the saved model with no content.  Save implementations
+        should call self.run_pre_save_hook(model=model, path=path) prior to
+        writing any data.
         """
 
-        if path[0] != '/':
-            path = '/' + path
-
-        print("---> CS3APIsManager::save(): ", "path:", path, "model:", model)
+        path = self._normalize_path(path)
 
         if 'type' not in model:
             raise web.HTTPError(400, u'No file type provided')
@@ -226,8 +165,7 @@ class CS3APIsManager(ContentsManager):
                 self._save_file(path, model['content'], model['format'])
 
             elif model['type'] == 'directory':
-                # self._save_directory(os_path, model, path)
-                raise NotImplementedError('cs3: save directory')
+                self._save_directory(path)
 
             else:
                 raise web.HTTPError(400, "Unhandled contents type: %s" % model['type'])
@@ -259,21 +197,16 @@ class CS3APIsManager(ContentsManager):
     def delete_file(self, path):
         """Delete the file or directory at path."""
 
-        print("---> CS3APIsManager::delete_file(): ", "path:", path)
-
-        if path[0] != '/':
-            path = '/' + path
+        path = self._normalize_path(path)
 
         try:
-            cs3_file_api = self._cs3_file_api()
-            cs3_file_api.remove_file(self.cs3_config['endpoint'], path, self.cs3_user_id)
+            self._cs3_file_api().remove(path, self.cs3_user_id, self.cs3_endpoint)
         except Exception as e:
-            raise web.HTTPError(500, u'Unknown error renaming file: %s %s' % (path, e))
+            self.log.error(u'Unknown error delete file: %s %s', path, e, exc_info=True)
+            raise web.HTTPError(500, u'Unknown error delete file: %s %s' % (path, e))
 
     def rename_file(self, old_path, new_path):
         """Rename a file or directory."""
-
-        print("---> CS3APIsManager::rename_file(): ", "old_path:", old_path, "new_path:", new_path)
 
         if new_path == old_path:
             return
@@ -281,24 +214,18 @@ class CS3APIsManager(ContentsManager):
         #
         # ToDo: Implements validate file like: notebook/services/contents/filemanager.py:587 using Reva API
         #
-        if old_path[0] != '/':
-            old_path = '/' + old_path
-
-        if new_path[0] != '/':
-            new_path = '/' + new_path
+        old_path = self._normalize_path(old_path)
+        new_path = self._normalize_path(new_path)
 
         # Move the file
         try:
             cs3_file_api = self._cs3_file_api()
-            cs3_file_api.move(self.cs3_config['endpoint'], old_path, new_path, self.cs3_user_id)
-        except web.HTTPError:
-            raise
+            cs3_file_api.move(old_path, new_path, self.cs3_user_id, self.cs3_endpoint)
         except Exception as e:
-            raise web.HTTPError(500, u'Unknown error renaming file: %s %s' % (old_path, e))
+            self.log.error(u'Error renaming file: %s %s', old_path, e)
+            raise web.HTTPError(500, u'Error renaming file: %s %s' % (old_path, e))
 
     def new(self, model=None, path=''):
-
-        print("---> CS3APIsManager::new(): ", "model:", model, "path:", path)
 
         path = path.strip('/')
         if model is None:
@@ -326,46 +253,55 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
+    def _cs3_file_api(self):
+        return Cs3FileApi(self.cs3_config, self.log)
+
+    def _normalize_path(self, path):
+
+        if len(path) > 0 and path[0] != '/':
+            path = '/' + path
+        elif path == '' or path is None:
+            path = '/'
+        return path
+
+    def _get_parent_path(self, path):
+
+        directories = path.rsplit('/')
+        directories.reverse()
+
+        if directories[0] != '':
+            path = self._replace_last(str(path), directories[0])
+
+        return self._normalize_path(path)
+
+    def _replace_last(self, source_string, replace_what, replace_with=""):
+
+        head, _sep, tail = source_string.rpartition(replace_what)
+        return head + replace_with + tail
+
+    def _read_file(self, path):
+
+        content = ''
+        for chunk in self._cs3_file_api().read_file(path, self.cs3_user_id, self.cs3_endpoint):
+            content += chunk.decode('utf-8')
+
+        return content
 
     def _dir_model(self, path, content):
 
-        # print("---> FileContentsManager::_dir_model(): ", "path: ", path, "content: ", content)
-
-        cs3_file_api = self._cs3_file_api()
-        cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], path, self.cs3_user_id)
+        cs3_container = self._cs3_file_api().read_directory(path, self.cs3_user_id, self.cs3_endpoint)
         model = self._convert_container_to_directory_model(path, cs3_container, content)
-
-        # print("---> FileContentsManager::_dir_model(): ", model)
-
-        return model
-
-    def _notebook_model(self, path, content):
-
-        model, tmp_model = self._create_base_model_from_cs3_container(path)
-        model['type'] = 'notebook'
-
-        if content:
-            file_content = self._read_file(tmp_model.path, format)
-            nb = nbformat.reads(file_content, as_version=4)
-            self.mark_trusted_cells(nb, path)
-            model['content'] = nb
-            model['format'] = 'json'
-            self.validate_notebook_model(model)
-
-        # print("---> FileContentsManager::_notebook_model(): ", "model: ", model)
 
         return model
 
     def _file_model(self, path, content, format):
-
-        print("---> FileContentsManager::_file_model(): ", "path:", path, "content: ", content)
 
         model, tmp_model = self._create_base_model_from_cs3_container(path)
         model['type'] = 'file'
         model['mimetype'] = mimetypes.guess_type(tmp_model.path)[0]
 
         if content:
-            content = self._read_file(tmp_model.path, format)
+            content = self._read_file(tmp_model.path)
 
             if model['mimetype'] is None:
                 default_mime = {
@@ -379,13 +315,64 @@ class CS3APIsManager(ContentsManager):
                 format=format,
             )
 
-        print("---> FileContentsManager::_file_model(): ", "model:", model)
+        return model
+
+    def _notebook_model(self, path, content):
+
+        model, tmp_model = self._create_base_model_from_cs3_container(path)
+        model['type'] = 'notebook'
+
+        if content:
+            file_content = self._read_file(tmp_model.path)
+            nb = nbformat.reads(file_content, as_version=4)
+            self.mark_trusted_cells(nb, path)
+            model['content'] = nb
+            model['format'] = 'json'
+            self.validate_notebook_model(model)
 
         return model
 
-    def _convert_container_to_base_model(self, path, cs3_container):
+    def _is_dir(self, path):
 
-        # print("---> FileContentsManager::_convert_container_to_base_model(): ", "path:", path)
+        if path == '/' or path == '' or path is None:
+            return True
+
+        parent_path = self._get_parent_path(path)
+
+        try:
+            cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+        except Exception as ex:
+            self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
+            raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
+
+        for cs3_model in cs3_container:
+
+            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
+                return False
+            if cs3_model.type == self.TYPE_DIRECTORY and cs3_model.path == path:
+                return True
+
+        return False
+
+    def _create_base_model_from_cs3_container(self, path):
+
+        parent_path = self._get_parent_path(path)
+
+        cs3_file_api = self._cs3_file_api()
+        cs3_container = cs3_file_api.read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+
+        cs3_model = None
+        for cs3_tmp_model in cs3_container:
+            if cs3_tmp_model.type == self.TYPE_FILE and cs3_tmp_model.path == path:
+                cs3_model = cs3_tmp_model
+
+        if cs3_model is None:
+            raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
+
+        model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
+        return model, cs3_model
+
+    def _convert_container_to_base_model(self, path, cs3_container):
 
         size = None
         writable = False
@@ -401,7 +388,7 @@ class CS3APIsManager(ContentsManager):
                 created = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
                 last_modified = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
 
-        # ToDo: Implement file writable permission
+        # ToDo: Implement file writable permission from Riva
         # try:
         #     model['writable'] = os.access(os_path, os.W_OK)
         # except OSError:
@@ -427,63 +414,6 @@ class CS3APIsManager(ContentsManager):
 
     def _convert_container_to_directory_model(self, path, cs3_container, content=True):
 
-        """
-        ------------------------------------------------
-        type: RESOURCE_TYPE_CONTAINER
-        id {
-          storage_id: "123e4567-e89b-12d3-a456-426655440000"
-          opaque_id: "fileid-%2Fhome%2FMyShares"
-        }
-        etag: "\"56fb030b7dc4dfbf9e87fc4ed1ddb14d\""
-        mime_type: "httpd/unix-directory"
-        mtime {
-          seconds: 1593606956
-        }
-        path: "/home/MyShares"
-        permission_set {
-          create_container: true
-          list_container: true
-        }
-        size: 512
-        owner {
-          idp: "http://cernbox.cern.ch"
-          opaque_id: "4c510ada-c86b-4815-8820-42cdf82c3d51"
-        }
-        arbitrary_metadata {
-        }
-
-        ------------------------------------------------
-
-        ------------------------------------------------
-        type: RESOURCE_TYPE_FILE
-        id {
-          storage_id: "123e4567-e89b-12d3-a456-426655440000"
-          opaque_id: "fileid-%2Fnote1.txt"
-        }
-        etag: "\"94847abca98c9b8c2f8620c1b4566ecf\""
-        mime_type: "text/plain; charset=utf-8"
-        mtime {
-          seconds: 1594107922
-        }
-        path: "/note1.txt"
-        permission_set {
-          create_container: true
-          list_container: true
-        }
-        size: 637
-        owner {
-          idp: "http://cernbox.cern.ch"
-          opaque_id: "4c510ada-c86b-4815-8820-42cdf82c3d51"
-        }
-        arbitrary_metadata {
-        }
-
-        ------------------------------------------------
-
-        """
-
-        # print("---> FileContentsManager::_convert_container_to_directory_model(): ", path)
-
         model = self._convert_container_to_base_model(path, cs3_container)
         model['size'] = None
         model['type'] = 'directory'
@@ -504,18 +434,20 @@ class CS3APIsManager(ContentsManager):
 
                     if type == 'notebook' or (type is None and path.endswith('.ipynb')):
                         contents.append(
-                            self._convert_container_to_notebook_model(cs3_model, cs3_container, content=content)
+                            self._convert_container_to_notebook_model(cs3_model, cs3_container)
                         )
                     else:
                         contents.append(
-                            self._convert_container_to_file_model(cs3_model, cs3_container, content=content, format=format)
+                            self._convert_container_to_file_model(cs3_model, cs3_container)
                         )
                 else:
-                    print("-> UNKNOWN TYPE: ", cs3_model.path, cs3_model.type)
+
+                    self.log.error(u'Unexpected type: %s %s', cs3_model.path, cs3_model.type)
+                    raise web.HTTPError(500, u'Unexpected type: %s %s' % (cs3_model.path, cs3_model.type))
 
         return model
 
-    def _convert_container_to_file_model(self, cs3_model, cs3_container, content, format):
+    def _convert_container_to_file_model(self, cs3_model, cs3_container):
 
         model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
         model['type'] = 'file'
@@ -523,63 +455,13 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
-    def _convert_container_to_notebook_model(self, cs3_model, cs3_container, content=True):
+    def _convert_container_to_notebook_model(self, cs3_model, cs3_container):
 
         model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
         model['type'] = 'notebook'
         model['mimetype'] = mimetypes.guess_type(cs3_model.path)[0]
 
         return model
-
-    def _is_dir(self, path):
-
-        if path == '/' or path == '' or path is None:
-            return True
-
-        cs3_file_api = self._cs3_file_api()
-        try:
-            cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], path, self.cs3_user_id)
-        except:
-            return False
-
-        for cs3_model in cs3_container:
-            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
-                # print("IS_FILE: ", cs3_model.type, cs3_model.path)
-                return False
-
-        return True
-
-    def _read_file(self, path, format):
-
-        content = ''
-        for chunk in self._cs3_file_api().read_file(self.cs3_config['endpoint'], path, self.cs3_user_id):
-            content += chunk.decode('utf-8')
-
-        return content
-
-    def _replace_last(self, source_string, replace_what, replace_with=""):
-        head, _sep, tail = source_string.rpartition(replace_what)
-        return head + replace_with + tail
-
-    def _create_base_model_from_cs3_container(self, path):
-
-        directories = path.rsplit('/')
-        directories.reverse()
-        parent_path = self._replace_last(str(path), directories[0])
-
-        cs3_file_api = self._cs3_file_api()
-        cs3_container = cs3_file_api.read_directory(self.cs3_config['endpoint'], parent_path, self.cs3_user_id)
-
-        cs3_model = None
-        for cs3_tmp_model in cs3_container:
-            if cs3_tmp_model.type == self.TYPE_FILE and cs3_tmp_model.path == path:
-                cs3_model = cs3_tmp_model
-
-        if cs3_model is None:
-            raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
-
-        model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
-        return model, cs3_model
 
     def _save_file(self, path, content, format):
 
@@ -594,17 +476,32 @@ class CS3APIsManager(ContentsManager):
                 bcontent = decodebytes(b64_bytes)
 
             cs3_file_api = self._cs3_file_api()
-            cs3_file_api.write_file(self.cs3_config['endpoint'], path, self.cs3_user_id, bcontent)
+            cs3_file_api.write_file(path, self.cs3_user_id, bcontent, self.cs3_endpoint)
 
         except Exception as e:
+            self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
 
     def _save_notebook(self, path, nb):
-        print("---> FileContentsManager::_save_notebook(): ", "path:", path, "nb: ", nb)
+
         nb_content = nbformat.writes(nb)
         try:
             cs3_file_api = self._cs3_file_api()
-            cs3_file_api.write_file(self.cs3_config['endpoint'], path, self.cs3_user_id, nb_content)
+            cs3_file_api.write_file(path, self.cs3_user_id, nb_content, self.cs3_endpoint)
 
         except Exception as e:
+            self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
+
+    def _save_directory(self, path):
+
+        if self.is_hidden(path) and not self.allow_hidden:
+            raise web.HTTPError(400, u'Cannot create hidden directory %s' % path)
+
+        if self._is_dir(path):
+            raise web.HTTPError(400, u'Directory %r already exists %s' % path)
+
+        if self.file_exists(path):
+            raise web.HTTPError(400, u'Not a directory %s' % path)
+
+        self._cs3_file_api().create_directory(path, self.cs3_user_id, self.cs3_endpoint)

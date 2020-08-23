@@ -7,6 +7,7 @@ Authors:
 """
 
 import http
+import sys
 import time
 
 import cs3.gateway.v1beta1.gateway_api_pb2 as cs3gw
@@ -19,312 +20,285 @@ import requests
 
 
 class Cs3FileApi:
-	ctx = {}  # "map" to store some module context: cf. init()
-	tokens = {}  # map userid [string] to {authentication token, token expiration time}
 
-	def __init__(self, config, log):
-		"""
-		Init module-level variables
-		"""
-		self.ctx['log'] = log
-		self.ctx['chunksize'] = int(config['chunksize'])
-		self.ctx['authtokenvalidity'] = int(config['authtokenvalidity'])
-
-		reva_host = config['revahost']
+    tokens = {}  # map userid [string] to {authentication token, token expiration time}
 
-		# prepare the gRPC connection
-		ch = grpc.insecure_channel(reva_host)
-		self.ctx['cs3stub'] = cs3gw_grpc.GatewayAPIStub(ch)
-		return
-
-	def __authenticate(self, userid):
-
-		"""
-		Obtain a token from Reva for the given userid
-		"""
-
-		# ToDo: use real authentication data
-		# authReq = cs3gw.AuthenticateRequest(type='bearer', client_secret=userid)
-		authReq = cs3gw.AuthenticateRequest(type='basic', client_id='einstein', client_secret='relativity')
-
-		if userid not in self.tokens or self.tokens[userid]['exp'] < time.time():
-			authRes = self.ctx['cs3stub'].Authenticate(authReq)
-			self.tokens[userid] = {'tok': authRes.token, 'exp': time.time() + self.ctx['authtokenvalidity']}
-
-		# piggy back on the opportunity to expire old tokens, but asynchronously
-		# as to not impact the current session: let's use python3.7's coroutines support
-		# asyncio.run(_async_cleanuptokens())
-
-		return self.tokens[userid]['tok']
-
-	def __cs3_reference(self, endpoint, fileid):
-
-		if endpoint == 'default':
-			raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
-
-		if len(fileid) > 0 and fileid[0] == '/':
-			# assume this is a filepath
-			ref = cs3spr.Reference(path=fileid)
-		else:
-			# assume we have an opaque fileid
-			ref = cs3spr.Reference(id=cs3spr.ResourceId(storage_id=endpoint, opaque_id=fileid))
-		return ref
-
-	def stat(self, endpoint, fileid, userid):
+    log = None
+    chunksize = 4194304
+    authtokenvalidity = 3600
+    cs3_stub = None
 
-		"""
-		Stat a file and returns (size, mtime) as well as other extended info using the given userid as access token.
-		Note that endpoint here means the storage id. Note that fileid can be either a path (which MUST begin with /), or an id (which MUST NOT
-		start with a /).
-		"""
-		tstart = time.time()
+    client_id = None
+    client_secret = None
 
-		ref = self.__cs3_reference(endpoint, fileid)
+    def __init__(self, config, log):
 
-		statInfo = self.ctx['cs3stub'].Stat(request=cs3sp.StatRequest(ref=ref),
-											metadata=[('x-access-token', self.__authenticate(userid))])
+        self.log = log
+        self.chunksize = int(config['chunksize'])
+        self.authtokenvalidity = int(config['authtokenvalidity'])
 
-		tend = time.time()
-		self.ctx['log'].info('msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (fileid, (tend - tstart) * 1000))
+        secure_channel = bool(config['secure_channel'])
+        reva_host = config['revahost']
 
-		if statInfo.status.code == cs3code.CODE_OK:
-			self.ctx['log'].debug('msg="Stat result" data="%s"' % statInfo)
-			return {
-				'inode': statInfo.info.id.storage_id + ':' + statInfo.info.id.opaque_id,
-				'filepath': statInfo.info.path,
-				'userid': statInfo.info.owner.opaque_id,
-				'size': statInfo.info.size,
-				'mtime': statInfo.info.mtime.seconds
-			}
+        self.client_id = config['client_id']
+        self.client_secret = config['client_secret']
 
-		self.ctx['log'].info('msg="Failed stat" fileid="%s" reason="%s"' % (fileid, statInfo.status.message))
-		raise IOError(statInfo.status.message)
+        # prepare the gRPC connection
 
-	def stat_x(self, endpoint, fileid, userid):
-		"""
-		Get extended stat info (inode, filepath, userid, size, mtime). Equivalent to stat.
-		"""
-
-		return self.stat(endpoint, fileid, userid)
+        if secure_channel:
 
-	def set_x_attr(self, endpoint, filepath, userid, key, value):
-		"""Set the extended attribute <key> to <value> using the given userid as access token"""
-
-		reference = self.__cs3_reference(endpoint, filepath)
-
-		arbitrary_metadata = cs3spr.ArbitraryMetadata()
-		arbitrary_metadata.metadata.update({key: str(value)})
-
-		req = cs3sp.SetArbitraryMetadataRequest(ref=reference, arbitrary_metadata=arbitrary_metadata)
-
-		res = self.ctx['cs3stub'].SetArbitraryMetadata(request=req,
-													   metadata=[('x-access-token', self.__authenticate(userid))])
-		if res.status.code != cs3code.CODE_OK:
-			self.ctx['log'].warning('msg="Failed to getxattr" filepath="%s" key="%s" reason="%s"' % (filepath, key, res.status.message))
-			raise IOError(res.status.message)
-
-	def get_x_attr(self, endpoint, filepath, userid, key):
-		"""
-		Get the extended attribute <key> using the given userid as access token. Do not raise exceptions
-		"""
-		tstart = time.time()
-		reference = self.__cs3_reference(endpoint, filepath)
-
-		statInfo = self.ctx['cs3stub'].Stat(request=cs3sp.StatRequest(ref=reference),
-											metadata=[('x-access-token', self.__authenticate(userid))])
-		tend = time.time()
-
-		if statInfo.status.code != cs3code.CODE_OK:
-			self.ctx['log'].warning('msg="Failed to stat" filepath="%s" key="%s" reason="%s"' % (filepath, key, statInfo.status.message))
-			raise IOError(statInfo.status.message)
-		try:
-			xattrvalue = statInfo.info.arbitrary_metadata.metadata[key]
-			if xattrvalue == '':
-				raise KeyError
-
-			self.ctx['log'].debug('msg="Invoked stat for getxattr" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
-			return xattrvalue
-
-		except KeyError:
-			self.ctx['log'].info('msg="Key not found in getxattr" filepath="%s" key="%s"' % (filepath, key))
-			return None
-
-	def remove_x_attr(self, endpoint, filepath, userid, key):
-		"""
-		Remove the extended attribute <key> using the given userid as access token
-		"""
-
-		reference = self.__cs3_reference(endpoint, filepath)
-
-		req = cs3sp.UnsetArbitraryMetadataRequest(ref=reference, arbitrary_metadata_keys=[key])
-		res = self.ctx['cs3stub'].UnsetArbitraryMetadata(request=req, metadata=[('x-access-token', self.__authenticate(userid))])
-
-		if res.status.code != cs3code.CODE_OK:
-			self.ctx['log'].warning('msg="Failed to rmxattr" filepath="%s" key="%s" exception="%s"' % (filepath, key, res.status.message))
-			raise IOError(res.status.message)
-
-		self.ctx['log'].debug('msg="Invoked rmxattr" result="%s"' % res)
-
-	def read_file(self, endpoint, filepath, userid):
-		"""
-		Read a file using the given userid as access token. Note that the function is a generator, managed by Flask.
-		"""
-
-		tstart = time.time()
-
-		#
-		# Prepare endpoint
-		#
-		reference = self.__cs3_reference(endpoint, filepath)
-
-		req = cs3sp.InitiateFileDownloadRequest(ref=reference)
-
-		initfiledownloadres = self.ctx['cs3stub'].InitiateFileDownload(request=req, metadata=[('x-access-token', self.__authenticate(userid))])
-
-		if initfiledownloadres.status.code == cs3code.CODE_NOT_FOUND:
-			self.ctx['log'].info('msg="File not found on read" filepath="%s"' % filepath)
-			yield IOError('No such file or directory')
-
-		elif initfiledownloadres.status.code != cs3code.CODE_OK:
-			self.ctx['log'].debug('msg="Failed to initiateFileDownload on read" filepath="%s" reason="%s"' % \
-								  (filepath, initfiledownloadres.status.message))
-			yield IOError(initfiledownloadres.status.message)
-
-		self.ctx['log'].debug('msg="readfile: InitiateFileDownloadRes returned" endpoint="%s"' % initfiledownloadres.download_endpoint)
+            try:
 
-		#
-		# Download
-		#
-		file_get = None
-		try:
-			file_get = requests.get(url=initfiledownloadres.download_endpoint, headers={'x-access-token': self.__authenticate(userid)})
-		except requests.exceptions.RequestException as e:
-			self.ctx['log'].error('msg="Exception when downloading file from Reva" reason="%s"' % e)
-			yield IOError(e)
+                cert = open(config['client_cert'], 'rb').read()
+                key = open(config['client_key'], 'rb').read()
 
-		tend = time.time()
-		data = file_get.content
+                ca_cert = open(config['ca_cert'], 'rb').read()
+                credentials = grpc.ssl_channel_credentials(ca_cert, key, cert)
 
-		if file_get.status_code != http.HTTPStatus.OK:
-			self.ctx['log'].error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (file_get.status_code, file_get.reason))
-			yield IOError(file_get.reason)
-		else:
-			self.ctx['log'].info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
-			for i in range(0, len(data), self.ctx['chunksize']):
-				yield data[i:i + self.ctx['chunksize']]
+                ch = grpc.secure_channel(reva_host, credentials)
 
-	def write_file(self, endpoint, filepath, userid, content, noversion=0):
-		"""
-		Write a file using the given userid as access token. The entire content is written
-		and any pre-existing file is deleted (or moved to the previous version if supported).
-		The noversion flag is currently not supported.
-		"""
+            except:
+                ex = sys.exc_info()[0]
+                self.log.error('msg="Error create secure channel" reason="%s"' % ex)
+                raise IOError(ex)
 
-		#
-		# Prepare endpoint
-		#
-		tstart = time.time()
+        else:
+            ch = grpc.insecure_channel(reva_host)
 
-		reference = self.__cs3_reference(endpoint, filepath)
+        self.cs3_stub = cs3gw_grpc.GatewayAPIStub(ch)
+        return
 
-		req = cs3sp.InitiateFileUploadRequest(ref=reference)
-		initfileuploadres = self.ctx['cs3stub'].InitiateFileUpload(request=req, metadata=[('x-access-token', self.__authenticate(userid))])
+    def _authenticate(self, userid):
 
-		if initfileuploadres.status.code != cs3code.CODE_OK:
-			self.ctx['log'].debug('msg="Failed to initiateFileUpload on write" filepath="%s" reason="%s"' % \
-								  (filepath, initfileuploadres.status.message))
-			raise IOError(initfileuploadres.status.message)
+        # ToDo: use real authentication data or get token from author provider
+        # authReq = cs3gw.AuthenticateRequest(type='bearer', client_secret=userid)
 
-		self.ctx['log'].debug('msg="writefile: InitiateFileUploadRes returned" endpoint="%s"' % initfileuploadres.upload_endpoint)
+        if userid not in self.tokens or self.tokens[userid]['exp'] < time.time():
+            auth_req = cs3gw.AuthenticateRequest(type='basic', client_id=self.client_id, client_secret=self.client_secret)
+            auth_res = self.cs3_stub.Authenticate(auth_req)
+            self.tokens[userid] = {'tok': auth_res.token, 'exp': time.time() + self.authtokenvalidity}
 
-		#
-		# Upload
-		#
-		try:
-			# TODO: Use tus client instead of PUT
-			headers = {
-				'Tus-Resumable': '1.0.0',
-				'x-access-token': self.__authenticate(userid)
-			}
-			putres = requests.put(url=initfileuploadres.upload_endpoint, data=content, headers=headers)
+        # piggy back on the opportunity to expire old tokens, but asynchronously
+        # as to not impact the current session: let's use python3.7's coroutines support
+        # asyncio.run(_async_cleanuptokens())
 
-		except requests.exceptions.RequestException as e:
-			self.ctx['log'].error('msg="Exception when uploading file to Reva" reason="%s"' % e)
-			raise IOError(e)
+        return self.tokens[userid]['tok']
 
-		tend = time.time()
+    def _cs3_reference(self, fileid, endpoint=None):
 
-		if putres.status_code != http.HTTPStatus.OK:
-			self.ctx['log'].error('msg="Error uploading file to Reva" code="%d" reason="%s"' % (putres.status_code, putres.reason))
-			raise IOError(putres.reason)
+        if len(fileid) > 0 and fileid[0] == '/':
+            # assume this is a filepath
+            return cs3spr.Reference(path=fileid)
 
-		self.ctx['log'].debug('msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
+        if endpoint == 'default' or endpoint is None:
+            raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
 
-	def remove_file(self, endpoint, filepath, userid, force=0):
-		"""
-		Remove a file using the given userid as access token.
-		The force argument is ignored for now for CS3 storage.
-		"""
+        # assume we have an opaque fileid
+        return cs3spr.Reference(id=cs3spr.ResourceId(storage_id=endpoint, opaque_id=fileid))
 
-		reference = self.__cs3_reference(endpoint, filepath)
+    def stat(self, fileid, userid, endpoint=None):
 
-		req = cs3sp.DeleteRequest(ref=reference)
-		res = self.ctx['cs3stub'].Delete(request=req, metadata=[('x-access-token', self.__authenticate(userid))])
+        """
+        Stat a file and returns (size, mtime) as well as other extended info using the given userid as access token.
+        Note that endpoint here means the storage id. Note that fileid can be either a path (which MUST begin with /), or an id (which MUST NOT
+        start with a /).
+        """
 
-		if res.status.code != cs3code.CODE_OK:
-			self.ctx['log'].warning('msg="Failed to remove file" filepath="%s" error="%s"' % (filepath, res))
-			raise IOError(res.status.message)
+        time_start = time.time()
 
-		self.ctx['log'].debug('msg="Invoked removefile" result="%s"' % res)
+        ref = self._cs3_reference(fileid, endpoint)
 
-	def read_directory(self, endpoint, filepath, userid):
+        stat_info = self.cs3_stub.Stat(request=cs3sp.StatRequest(ref=ref), metadata=[('x-access-token', self._authenticate(userid))])
 
-		"""
-		Read a directory.
-		"""
+        time_end = time.time()
+        self.log.info('msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (fileid, (time_end - time_start) * 1000))
 
-		tstart = time.time()
+        if stat_info.status.code == cs3code.CODE_OK:
+            self.log.debug('msg="Stat result" data="%s"' % stat_info)
+            return {
+                'inode': stat_info.info.id.storage_id + ':' + stat_info.info.id.opaque_id,
+                'filepath': stat_info.info.path,
+                'userid': stat_info.info.owner.opaque_id,
+                'size': stat_info.info.size,
+                'mtime': stat_info.info.mtime.seconds
+            }
+
+        self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (fileid, stat_info.status.message))
+        raise IOError(stat_info.status.message)
+
+    def read_file(self, filepath, userid, endpoint=None):
+        """
+        Read a file using the given userid as access token.
+        """
+
+        time_start = time.time()
+
+        #
+        # Prepare endpoint
+        #
+        reference = self._cs3_reference(filepath, endpoint)
 
-		reference = self.__cs3_reference(endpoint, filepath)
+        req = cs3sp.InitiateFileDownloadRequest(ref=reference)
 
-		req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
-		res = self.ctx['cs3stub'].ListContainer(request=req, metadata=[('x-access-token', self.__authenticate(userid))])
+        init_file_download = self.cs3_stub.InitiateFileDownload(request=req, metadata=[('x-access-token', self._authenticate(userid))])
 
-		if res.status.code != cs3code.CODE_OK:
-			self.ctx['log'].warning('msg="Failed to read container" filepath="%s" reason="%s"' % (filepath, res.status.message))
-			raise IOError(res.status.message)
+        if init_file_download.status.code == cs3code.CODE_NOT_FOUND:
+            self.log.info('msg="File not found on read" filepath="%s"' % filepath)
+            raise IOError('No such file or directory')
 
-		tend = time.time()
-		self.ctx['log'].debug('msg="Invoked read container" filepath="%s" elapsedTimems="%.1f"' % (filepath, (tend - tstart) * 1000))
+        elif init_file_download.status.code != cs3code.CODE_OK:
+            self.log.debug('msg="Failed to initiateFileDownload on read" filepath="%s" reason="%s"' % filepath, init_file_download.status.message)
+            raise IOError(init_file_download.status.message)
 
-		out = []
-		for info in res.infos:
-			out.append(info)
+        self.log.debug('msg="readfile: InitiateFileDownloadRes returned" endpoint="%s"' % init_file_download.download_endpoint)
 
-		return out
+        #
+        # Download
+        #
+        file_get = None
+        try:
+            file_get = requests.get(url=init_file_download.download_endpoint, headers={'x-access-token': self._authenticate(userid)})
+        except requests.exceptions.RequestException as e:
+            self.log.error('msg="Exception when downloading file from Reva" reason="%s"' % e)
+            raise IOError(e)
 
-	def move(self, endpoint, source_path, destination_path, userid):
+        time_end = time.time()
+        data = file_get.content
 
-		tstart = time.time()
+        if file_get.status_code != http.HTTPStatus.OK:
+            self.log.error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (file_get.status_code, file_get.reason))
+            raise IOError(file_get.reason)
+        else:
+            self.log.info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (filepath, (time_end - time_start) * 1000))
+            for i in range(0, len(data), self.chunksize):
+                yield data[i:i + self.chunksize]
 
-		src_reference = self.__cs3_reference(endpoint, source_path)
-		dest_reference = self.__cs3_reference(endpoint, destination_path)
+    def write_file(self, filepath, userid, content, endpoint=None):
+        """
+        Write a file using the given userid as access token. The entire content is written
+        and any pre-existing file is deleted (or moved to the previous version if supported).
+        """
 
-		print(src_reference)
-		print(dest_reference)
+        #
+        # Prepare endpoint
+        #
+        time_start = time.time()
 
-		req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
+        reference = self._cs3_reference(filepath, endpoint)
 
-		print(req)
+        req = cs3sp.InitiateFileUploadRequest(ref=reference)
+        initfileuploadres = self.cs3_stub.InitiateFileUpload(request=req, metadata=[('x-access-token', self._authenticate(userid))])
 
-		res = self.ctx['cs3stub'].Move(request=req, metadata=[('x-access-token', self.__authenticate(userid))])
+        if initfileuploadres.status.code != cs3code.CODE_OK:
+            self.log.debug('msg="Failed to initiateFileUpload on write" filepath="%s" reason="%s"' % \
+                                  (filepath, initfileuploadres.status.message))
+            raise IOError(initfileuploadres.status.message)
 
-		print(res)
+        self.log.debug('msg="writefile: InitiateFileUploadRes returned" endpoint="%s"' % initfileuploadres.upload_endpoint)
 
-		if res.status.code != cs3code.CODE_OK:
-			self.ctx['log'].warning(
-				'msg="Failed to read container" source="%s" destination="%s" reason="%s"' % (source_path, destination_path, res.status.message))
-			raise IOError(res.status.message)
+        #
+        # Upload
+        #
+        try:
+            # TODO: Use tus client instead of PUT
+            headers = {
+                'Tus-Resumable': '1.0.0',
+                'x-access-token': self._authenticate(userid)
+            }
+            putres = requests.put(url=initfileuploadres.upload_endpoint, data=content, headers=headers)
 
-		tend = time.time()
-		self.ctx['log'].debug('msg="Invoked move" source="%s" destination="%s" elapsedTimems="%.1f"' % (source_path, destination_path, (tend - tstart) * 1000))
+        except requests.exceptions.RequestException as e:
+            self.log.error('msg="Exception when uploading file to Reva" reason="%s"' % e)
+            raise IOError(e)
+
+        time_end = time.time()
+
+        if putres.status_code != http.HTTPStatus.OK:
+            self.log.error('msg="Error uploading file to Reva" code="%d" reason="%s"' % (putres.status_code, putres.reason))
+            raise IOError(putres.reason)
+
+        self.log.info('msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (filepath, (time_end - time_start) * 1000))
+
+    def remove(self, filepath, userid, endpoint=None):
+        """
+        Remove a file or container using the given userid as access token.
+        """
+
+        reference = self._cs3_reference(filepath, endpoint)
+
+        req = cs3sp.DeleteRequest(ref=reference)
+        res = self.cs3_stub.Delete(request=req, metadata=[('x-access-token', self._authenticate(userid))])
+
+        if res.status.code != cs3code.CODE_OK:
+            self.log.warning('msg="Failed to remove file or folder" filepath="%s" error="%s"' % (filepath, res))
+            raise IOError(res.status.message)
+
+        self.log.debug('msg="Invoked remove" result="%s"' % res)
+
+    def read_directory(self, path, userid, endpoint=None):
+
+        """
+        Read a directory.
+        """
+
+        tstart = time.time()
+
+        reference = self._cs3_reference(path, endpoint)
+
+        req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
+        res = self.cs3_stub.ListContainer(request=req, metadata=[('x-access-token', self._authenticate(userid))])
+
+        if res.status.code != cs3code.CODE_OK:
+            self.log.warning('msg="Failed to read container" filepath="%s" reason="%s"' % (path, res.status.message))
+            raise IOError(res.status.message)
+
+        tend = time.time()
+        self.log.debug('msg="Invoked read container" filepath="%s" elapsedTimems="%.1f"' % (path, (tend - tstart) * 1000))
+
+        out = []
+        for info in res.infos:
+            out.append(info)
+
+        return out
+
+    def move(self, source_path, destination_path, userid, endpoint=None):
+
+        """
+        Move a file or container.
+        """
+
+        tstart = time.time()
+
+        src_reference = self._cs3_reference(source_path, endpoint)
+        dest_reference = self._cs3_reference(destination_path, endpoint)
+
+        req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
+        res = self.cs3_stub.Move(request=req, metadata=[('x-access-token', self._authenticate(userid))])
+
+        if res.status.code != cs3code.CODE_OK:
+            self.log.error('msg="Failed to move" source="%s" destination="%s" reason="%s"' % (source_path, destination_path, res.status.message))
+            raise IOError(res.status.message)
+
+        tend = time.time()
+        self.log.debug('msg="Invoked move" source="%s" destination="%s" elapsedTimems="%.1f"' % (source_path, destination_path, (tend - tstart) * 1000))
+
+
+    def create_directory(self, path, userid, endpoint=None):
+
+        """
+        Create a directory.
+        """
+
+        tstart = time.time()
+
+        reference = self._cs3_reference(path, endpoint)
+
+        req = cs3sp.CreateContainerRequest(ref=reference)
+        res = self.cs3_stub.CreateContainer(request=req, metadata=[('x-access-token', self._authenticate(userid))])
+
+        if res.status.code != cs3code.CODE_OK:
+            self.log.warning('msg="Failed to create container" filepath="%s" reason="%s"' % (path, res.status.message))
+            raise IOError(res.status.message)
+
+        tend = time.time()
+        self.log.debug('msg="Invoked create container" filepath="%s" elapsedTimems="%.1f"' % (path, (tend - tstart) * 1000))
