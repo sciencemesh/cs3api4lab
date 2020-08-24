@@ -161,33 +161,47 @@ class ShareHandle(APIHandler):
     @gen.coroutine
     def post(self):
         endpoint = self.get_query_argument('endpoint')
-        fileid = self.get_query_argument('fileid')
+        file_id = self.get_query_argument('file_id')
         grantee = self.get_query_argument('grantee')
         idp = self.get_query_argument('idp')
         role = self.get_query_argument('role')
         grantee_type = self.get_query_argument('grantee_type')
-
-        response = self.share_api.create(endpoint, fileid, grantee, idp, role, grantee_type)
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish(json.dumps(response))
+        try:
+            response = self.share_api.create(endpoint, file_id, grantee, idp, role, grantee_type)
+        except Exception as err:
+            self.set_status(500)
+            self.finish(json.dumps(str(err)))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_status(200)
+            self.finish(json.dumps(response))
 
     @web.authenticated
     @gen.coroutine
     def delete(self):
         share_id = self.get_query_argument('share_id')
-        self.share_api.remove(share_id)
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish()
+        try:
+            self.share_api.remove(share_id)
+        except Exception as err:
+            self.set_status(500)
+            self.finish(json.dumps(err))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_status(200)
+            self.finish()
 
     def put(self):
         share_id = self.get_query_argument('share_id')
         role = self.get_query_argument('role')
-        self.share_api.update(share_id, role)
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish()
+        try:
+            self.share_api.update(share_id, role)
+        except Exception as err:
+            self.set_status(500)
+            self.finish(json.dumps(err))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_status(200)
+            self.finish()
 
 
 class ListSharesHandler(APIHandler):
@@ -198,10 +212,15 @@ class ListSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        response = self.share_api.list()
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish(json.dumps(response))
+        try:
+            response = self.share_api.list()
+        except Exception as err:
+            self.set_status(500)
+            self.finish(json.dumps(err))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_status(200)
+            self.finish(json.dumps(response))
 
 
 class ListReceivedSharesHandler(APIHandler):
@@ -212,10 +231,30 @@ class ListReceivedSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        response = self.share_api.list_received()
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish(json.dumps(response))
+        try:
+            response = self.share_api.list_received()
+        except Exception as err:
+            self.set_status(500)
+            self.finish(json.dumps(err))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_status(200)
+            self.finish(json.dumps(response))
+
+    @web.authenticated
+    @gen.coroutine
+    def put(self):
+        share_id = self.get_query_argument('share_id', default=None)
+        state = self.get_query_argument('state', default='pending')
+        try:
+            self.share_api.update_received(share_id, state)
+        except Exception as err:
+            self.set_status(500)
+            self.finish(json.dumps(err))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_status(200)
+            self.finish()
 
 
 class ListSharesForFile(APIHandler):
@@ -229,11 +268,15 @@ class ListSharesForFile(APIHandler):
         print("Listing shares for file")
         file_id = self.get_query_argument('file_id', default=None)
         print("FILE_ID is " + file_id)
-        # response = Cs3ShareApi.list_grantees_for_file(file_id)
-        response = self.share_api.list_grantees_for_file(file_id)
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish(json.dumps(response))
+        try:
+            response = self.share_api.list_grantees_for_file(file_id)
+        except Exception as err:
+            self.set_status(500)
+            self.finish(json.dumps(err))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_status(200)
+            self.finish(json.dumps(response))
 
 
 class OcmShareHandle(APIHandler):
@@ -256,7 +299,22 @@ handlers = [
     (r"/api/cs3test/files", FilesHandle),
     (r"/api/cs3test/shares", ShareHandle),
     (r"/api/cs3test/shares/list", ListSharesHandler),
-    (r"/api/cs3test/shares/list-received", ListReceivedSharesHandler),
+    (r"/api/cs3test/shares/received", ListReceivedSharesHandler),
     (r"/api/cs3test/shares/file", ListSharesForFile),
     (r"/api/cs3test/ocmshares", OcmShareHandle),
 ]
+
+# todo inheritance
+# class HandlerUtil(APIHandler):
+#
+#     def handle_error(self, err):
+#         self.set_status(500)
+#         self.finish(json.dumps(err))
+#
+#     def handle_response(self, response):
+#         self.set_header('Content-Type', 'application/json')
+#         self.set_status(200)
+#         if(response is None):
+#             self.finish()
+#         else:
+#             self.finish(json.dumps(response))
