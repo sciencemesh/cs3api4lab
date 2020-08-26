@@ -134,10 +134,36 @@ to:
 * Linux:
  ```HOME_FOLDER/.jupyter/```
 
+## Setup for docker image
+
+### Build docker image from local source code
+
+Clone repo and switch to “docker” branch 
+```bash
+git clone https://github.com/JarCz/cs3api4lab.git
+cd cs3api4lab
+git switch docker
+```
+
+Modify the configuration file, set reva host, user authorization data, etc in file: jupyter-config/jupyter_cs3_config.json
+
+```bash
+nano jupyter-config/jupyter_cs3_config.json
+```
+Build docker image:
+```bash
+docker build -t cs3api4lab .
+```
+
+Run docker image:
+```run
+docker run -p 8888:8888 cs3api4lab
+```
+
 ### Quick build
 ```bash
 pip install -e .
-jupyter serverextension enable --py cs3api_test_ext --sys-prefix
+jupyter serverextension enable --py cs3api4lab --sys-prefix
 jlpm
 jlpm build
 jupyter labextension install .

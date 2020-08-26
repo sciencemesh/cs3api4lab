@@ -28,7 +28,6 @@ class TestCs3FileApi(TestCase):
             config = {
                 "revahost": config_parser.get('cs3', 'revahost'),
                 "authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
-                "userid": config_parser.get('cs3', 'userid'),
                 "endpoint": config_parser.get('cs3', 'endpoint'),
                 "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
                 "client_cert": config_parser.get('cs3', 'client_cert'),

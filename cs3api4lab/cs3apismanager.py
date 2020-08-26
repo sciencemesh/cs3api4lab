@@ -509,3 +509,27 @@ class CS3APIsManager(ContentsManager):
             raise web.HTTPError(400, u'Not a directory %s' % path)
 
         self._cs3_file_api().create_directory(path, self.cs3_user_id, self.cs3_endpoint)
+
+    #
+    # Notebook hack - disable checkpoint
+    #
+    def delete(self, path):
+        path = path.strip('/')
+        if not path:
+            raise web.HTTPError(400, "Can't delete root")
+        self.delete_file(path)
+
+    def rename(self, old_path, new_path):
+        self.rename_file(old_path, new_path)
+
+    def create_checkpoint(self, path):
+        return {'id': 'checkpoint', 'last_modified': "0"}
+
+    def restore_checkpoint(self, checkpoint_id, path):
+        pass
+
+    def list_checkpoints(self, path):
+        return [{'id': 'checkpoint', 'last_modified': "0"}]
+
+    def delete_checkpoint(self, checkpoint_id, path):
+        pass
