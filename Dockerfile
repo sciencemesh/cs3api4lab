@@ -5,7 +5,6 @@ FROM jupyter/base-notebook:a07573d685a4
 COPY cs3api4lab /opt/cs3/cs3api4lab
 COPY src /opt/cs3/src
 COPY style /opt/cs3/style
-COPY lib /opt/cs3/lib
 COPY jupyter-config/cs3api4lab.json /opt/cs3/jupyter-config/cs3api4lab.json
 COPY setup.py /opt/cs3/setup.py
 COPY README.md /opt/cs3/README.md
