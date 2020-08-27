@@ -18,7 +18,7 @@ import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
 import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
-
+import random
 
 class Cs3ShareApi:
     tokens = {}
@@ -83,9 +83,13 @@ class Cs3ShareApi:
         for share in shares:
             # permissions = self._resolveSharePermissions(share)
             opaque_id = share['grantee']['opaque_id']
-            shares_dict[opaque_id] = share['permissions']
+            shares_dict[self._map_opaque_id(opaque_id)] = share['permissions']
 
         return shares_dict
+
+    def _map_opaque_id(self, opaque_id):
+        # todo implement
+        return "user" + random.randint(0, 10)
 
     def _decode_file_id(self, file_id):
         if '%2F' in file_id:
