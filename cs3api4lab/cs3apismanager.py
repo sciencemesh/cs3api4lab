@@ -1,3 +1,4 @@
+import os
 from base64 import decodebytes
 from datetime import datetime
 
@@ -44,6 +45,17 @@ class CS3APIsManager(ContentsManager):
             if self.cs3_config is None:
                 log.error(u'Error while reading cs3 config file')
                 raise IOError(u'Error while reading cs3 config file')
+
+            #
+            # Overwriting configuration values with environment variables
+            #
+            env_names = {"revahost", "client_id", "client_secret", "home_dir"}
+            for name in env_names:
+                env_name = "CS3_" + name.upper()
+                if env_name in os.environ:
+                    log.debug(f"Overwriting config value {name}")
+                    self.cs3_config[name] = os.environ[env_name]
+
         else:
 
             self.cs3_config = external_config

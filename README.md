@@ -156,8 +156,20 @@ docker build -t cs3api4lab .
 ```
 
 Run docker image:
-```run
+```bash
 docker run -p 8888:8888 cs3api4lab
+```
+
+Run docker image with overwriting config variables:
+
+- all supported value:
+```bash
+docker run -p 8888:8888 -e CS3_REVAHOST=IP:PORT -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass -e CS3_HOME_DIR="/test" cs3api4lab
+```
+
+- user authorization data:
+```bash
+docker run -p 8888:8888 -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass cs3api4lab
 ```
 
 ### Quick build
