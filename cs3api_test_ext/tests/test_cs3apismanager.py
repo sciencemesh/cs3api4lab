@@ -34,6 +34,7 @@ class TestCS3APIsManager(TestCase):
                 "authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
                 "userid": config_parser.get('cs3', 'userid'),
                 "endpoint": config_parser.get('cs3', 'endpoint'),
+                "home_dir": config_parser.get('cs3', 'home_dir'),
                 "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
                 "client_cert": config_parser.get('cs3', 'client_cert'),
                 "client_key": config_parser.get('cs3', 'client_key'),
@@ -49,7 +50,7 @@ class TestCS3APIsManager(TestCase):
             log.error("Missing option or missing configuration, check the test.conf file")
             raise
 
-        self.contents_manager = CS3APIsManager(self, log)
+        self.contents_manager = CS3APIsManager(self, log, config)
 
     def test_get_text_file(self):
 
@@ -62,10 +63,10 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["name"], "test_get_text_file.txt")
         self.assertEqual(model["path"], file_id)
         self.assertEqual(model["content"], message)
-        self.assertEqual(model["format"], None)
+        self.assertEqual(model["format"], "text")
         self.assertEqual(model["mimetype"], "text/plain")
         self.assertEqual(model["size"], 29)
-        self.assertEqual(model["writable"], False)
+        self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "file")
 
         self.storage.remove(file_id, self.userid, self.endpoint)
@@ -116,7 +117,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["format"], "json")
         self.assertEqual(model["mimetype"], None)
         self.assertEqual(model["size"], 637)
-        self.assertEqual(model["writable"], False)
+        self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "notebook")
 
         self.storage.remove(file_id, self.userid, self.endpoint)
@@ -138,7 +139,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["format"], None)
         self.assertEqual(save_model["mimetype"], "text/plain")
         self.assertEqual(save_model["size"], 12)
-        self.assertEqual(save_model["writable"], False)
+        self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "file")
 
         self.storage.remove(file_id, self.userid, self.endpoint)
@@ -156,7 +157,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["format"], None)
         self.assertEqual(save_model["mimetype"], None)
         self.assertEqual(save_model["size"], 521)
-        self.assertEqual(save_model["writable"], False)
+        self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "notebook")
 
         self.storage.remove(file_id, self.userid, self.endpoint)
@@ -233,6 +234,11 @@ class TestCS3APIsManager(TestCase):
         with self.assertRaises(IOError):
             self.storage.stat(file_path, self.userid, self.endpoint)
 
+        self.storage.remove(file_dest, self.userid, self.endpoint)
+        with self.assertRaises(IOError):
+            self.storage.stat(file_dest, self.userid, self.endpoint)
+
+
     def test_rename_file_non_exits_file(self):
 
         file_path = "/test_rename_file.txt"
@@ -256,10 +262,10 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["name"], "test_new_file_model.txt")
         self.assertEqual(model["path"], file_path)
         self.assertEqual(model["content"], "Test content")
-        self.assertEqual(model["format"], None)
+        self.assertEqual(model["format"], "text")
         self.assertEqual(model["mimetype"], "text/plain")
         self.assertEqual(model["size"], 12)
-        self.assertEqual(model["writable"], False)
+        self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "file")
 
         self.storage.remove(file_path, self.userid, self.endpoint)
@@ -332,3 +338,43 @@ class TestCS3APIsManager(TestCase):
         file_path = "/root_dir/test_dir/file.txt"
         is_hidden = self.contents_manager.is_hidden(file_path)
         self.assertFalse(is_hidden)
+
+    def test_create_directory(self):
+
+        file_path = "/test_create_directory"
+        self.storage.create_directory(file_path, self.userid, self.endpoint)
+
+        self.contents_manager.delete_file(file_path)
+
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path, self.userid, self.endpoint)
+
+    def test_recreate_directory(self):
+
+        file_path = "/test_recreate_directory"
+        self.storage.create_directory(file_path, self.userid, self.endpoint)
+
+        with self.assertRaises(IOError):
+            self.storage.create_directory(file_path, self.userid, self.endpoint)
+
+        self.contents_manager.delete_file(file_path)
+
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path, self.userid, self.endpoint)
+
+
+    def test_create_subdirectory(self):
+
+        file_path = "/test_create_directory"
+        self.storage.create_directory(file_path, self.userid, self.endpoint)
+
+        file_path2 = "/test_create_directory/test_subdir"
+        self.storage.create_directory(file_path2, self.userid, self.endpoint)
+
+        self.contents_manager.delete_file(file_path2)
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path2, self.userid, self.endpoint)
+
+        self.contents_manager.delete_file(file_path)
+        with self.assertRaises(IOError):
+            self.storage.stat(file_path, self.userid, self.endpoint)

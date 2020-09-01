@@ -1,3 +1,4 @@
+import os
 from base64 import decodebytes
 from datetime import datetime
 
@@ -26,25 +27,36 @@ class CS3APIsManager(ContentsManager):
     log = None
     cs3_endpoint = None
 
-    def __init__(self, parent, log):
+    def __init__(self, parent, log, external_config=None):
 
         #
         # Get config from jupyter_cs3_config.json file
         #
-        config_path = jupyter_config_path()
-        if self.cs3_config_dir not in config_path:
-            # add self.config_dir to the front, if set manually
-            config_path.insert(0, self.cs3_config_dir)
-        cm = ConfigManager(read_config_path=config_path)
+        if external_config is None:
+            config_path = jupyter_config_path()
+            if self.cs3_config_dir not in config_path:
+                # add self.config_dir to the front, if set manually
+                config_path.insert(0, self.cs3_config_dir)
+            cm = ConfigManager(read_config_path=config_path)
 
-        cs3_config = cm.get('jupyter_cs3_config')
+            cs3_config_file = cm.get('jupyter_cs3_config')
+            self.cs3_config = cs3_config_file.get("cs3")
 
-        self.cs3_config = cs3_config.get("cs3", {
-            "revahost": "127.0.0.1:19000",
-            "endpoint": "/",
-            "authtokenvalidity": "3600",
-            "chunksize": "4194304"
-        })
+            if self.cs3_config is None:
+                log.error(u'Error while reading cs3 config file')
+                raise IOError(u'Error while reading cs3 config file')
+            #
+            # Overwriting configuration values with environment variables
+            #
+            env_names = {"revahost", "client_id", "client_secret", "home_dir"}
+            for name in env_names:
+                env_name = "CS3_" + name.upper()
+                if env_name in os.environ:
+                    log.debug(f"Overwriting config value {name}")
+                    self.cs3_config[name] = os.environ[env_name]
+        else:
+
+            self.cs3_config = external_config
 
         self.cs3_endpoint = self.cs3_config["endpoint"]
         self.log = log
@@ -101,6 +113,7 @@ class CS3APIsManager(ContentsManager):
         """
 
         parent_path = self._get_parent_path(path)
+        path = self._normalize_path(path)
 
         try:
             cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
@@ -165,10 +178,7 @@ class CS3APIsManager(ContentsManager):
                 self._save_file(path, model['content'], model['format'])
 
             elif model['type'] == 'directory':
-
-                # ToDo: implements create directory
-                # self._save_directory(os_path, model, path)
-                raise NotImplementedError('cs3: save directory')
+                self._save_directory(path)
 
             else:
                 raise web.HTTPError(400, "Unhandled contents type: %s" % model['type'])
@@ -189,7 +199,8 @@ class CS3APIsManager(ContentsManager):
 
         elif model['type'] == 'file':
             model = self._file_model(path, content=False, format=None)
-
+        elif model['type'] == 'directory':
+            model = self._dir_model(path, content=False)
         if validation_message:
             model['message'] = validation_message
 
@@ -261,8 +272,10 @@ class CS3APIsManager(ContentsManager):
 
     def _normalize_path(self, path):
 
-        if path[0] != '/':
+        if len(path) > 0 and path[0] != '/':
             path = '/' + path
+        elif path == '' or path is None:
+            path = '/'
         return path
 
     def _get_parent_path(self, path):
@@ -271,9 +284,9 @@ class CS3APIsManager(ContentsManager):
         directories.reverse()
 
         if directories[0] != '':
-            return self._replace_last(str(path), directories[0])
+            path = self._replace_last(str(path), directories[0])
 
-        return path
+        return self._normalize_path(path)
 
     def _replace_last(self, source_string, replace_what, replace_with=""):
 
@@ -303,6 +316,9 @@ class CS3APIsManager(ContentsManager):
 
         if content:
             content = self._read_file(tmp_model.path)
+
+            if format is None:
+                format = "text"
 
             if model['mimetype'] is None:
                 default_mime = {
@@ -339,6 +355,7 @@ class CS3APIsManager(ContentsManager):
             return True
 
         parent_path = self._get_parent_path(path)
+        path = self._normalize_path(path)
 
         try:
             cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
@@ -348,10 +365,10 @@ class CS3APIsManager(ContentsManager):
 
         for cs3_model in cs3_container:
 
-            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
-                return False
             if cs3_model.type == self.TYPE_DIRECTORY and cs3_model.path == path:
                 return True
+            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
+                return False
 
         return False
 
@@ -389,12 +406,8 @@ class CS3APIsManager(ContentsManager):
                 created = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
                 last_modified = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
 
-        # ToDo: Implement file writable permission from Riva
-        # try:
-        #     model['writable'] = os.access(os_path, os.W_OK)
-        # except OSError:
-        #     self.log.error("Failed to check write permissions on %s", os_path)
-        #     model['writable'] = False
+                if str(cs3_model.permission_set.create_container).lower() == "true":
+                    writable = True
 
         #
         # Create the base model
@@ -493,3 +506,40 @@ class CS3APIsManager(ContentsManager):
         except Exception as e:
             self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
+
+    def _save_directory(self, path):
+
+        if self.is_hidden(path) and not self.allow_hidden:
+            raise web.HTTPError(400, u'Cannot create hidden directory %s' % path)
+
+        if self._is_dir(path):
+            raise web.HTTPError(400, u'Directory %r already exists %s' % path)
+
+        if self.file_exists(path):
+            raise web.HTTPError(400, u'Not a directory %s' % path)
+
+        self._cs3_file_api().create_directory(path, self.cs3_user_id, self.cs3_endpoint)
+
+    #
+    # Notebook hack - disable checkpoint
+    #
+    def delete(self, path):
+        path = path.strip('/')
+        if not path:
+            raise web.HTTPError(400, "Can't delete root")
+        self.delete_file(path)
+
+    def rename(self, old_path, new_path):
+        self.rename_file(old_path, new_path)
+
+    def create_checkpoint(self, path):
+        return {'id': 'checkpoint', 'last_modified': "0"}
+
+    def restore_checkpoint(self, checkpoint_id, path):
+        pass
+
+    def list_checkpoints(self, path):
+        return [{'id': 'checkpoint', 'last_modified': "0"}]
+
+    def delete_checkpoint(self, checkpoint_id, path):
+        pass

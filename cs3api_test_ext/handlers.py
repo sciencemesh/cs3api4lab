@@ -161,33 +161,23 @@ class ShareHandle(APIHandler):
     @gen.coroutine
     def post(self):
         endpoint = self.get_query_argument('endpoint')
-        fileid = self.get_query_argument('fileid')
+        file_id = self.get_query_argument('file_id')
         grantee = self.get_query_argument('grantee')
         idp = self.get_query_argument('idp')
         role = self.get_query_argument('role')
         grantee_type = self.get_query_argument('grantee_type')
-
-        response = self.share_api.create(endpoint, fileid, grantee, idp, role, grantee_type)
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish(json.dumps(response))
+        RequestHandler.handle_request(self, self.share_api.create, 201, endpoint, file_id, grantee, idp, role, grantee_type)
 
     @web.authenticated
     @gen.coroutine
     def delete(self):
         share_id = self.get_query_argument('share_id')
-        self.share_api.remove(share_id)
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish()
+        RequestHandler.handle_request(self, self.share_api.remove, 204, share_id)
 
     def put(self):
         share_id = self.get_query_argument('share_id')
         role = self.get_query_argument('role')
-        self.share_api.update(share_id, role)
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish()
+        RequestHandler.handle_request(self, self.share_api.update, 204, share_id, role)
 
 
 class ListSharesHandler(APIHandler):
@@ -198,10 +188,7 @@ class ListSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        response = self.share_api.list()
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish(json.dumps(response))
+        RequestHandler.handle_request(self, self.share_api.list, 200)
 
 
 class ListReceivedSharesHandler(APIHandler):
@@ -212,10 +199,14 @@ class ListReceivedSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        response = self.share_api.list_received()
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish(json.dumps(response))
+        RequestHandler.handle_request(self, self.share_api.list_received, 200)
+
+    @web.authenticated
+    @gen.coroutine
+    def put(self):
+        share_id = self.get_query_argument('share_id', default=None)
+        state = self.get_query_argument('state', default='pending')
+        RequestHandler.handle_request(self, self.share_api.update_received, 200, share_id, state)
 
 
 class ListSharesForFile(APIHandler):
@@ -229,11 +220,7 @@ class ListSharesForFile(APIHandler):
         print("Listing shares for file")
         file_id = self.get_query_argument('file_id', default=None)
         print("FILE_ID is " + file_id)
-        # response = Cs3ShareApi.list_grantees_for_file(file_id)
-        response = self.share_api.list_grantees_for_file(file_id)
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(200)
-        self.finish(json.dumps(response))
+        RequestHandler.handle_request(self, self.share_api.list_grantees_for_file, 200, file_id)
 
 
 class OcmShareHandle(APIHandler):
@@ -256,7 +243,33 @@ handlers = [
     (r"/api/cs3test/files", FilesHandle),
     (r"/api/cs3test/shares", ShareHandle),
     (r"/api/cs3test/shares/list", ListSharesHandler),
-    (r"/api/cs3test/shares/list-received", ListReceivedSharesHandler),
+    (r"/api/cs3test/shares/received", ListReceivedSharesHandler),
     (r"/api/cs3test/shares/file", ListSharesForFile),
     (r"/api/cs3test/ocmshares", OcmShareHandle),
 ]
+
+
+class RequestHandler(APIHandler):
+
+    @staticmethod
+    def handle_request(self, api_function, success_code, *args):
+        try:
+            response = api_function(*args)
+        except Exception as err:
+            RequestHandler.handle_error(self, err)
+        else:
+            RequestHandler.handle_response(self, response, success_code)
+
+    @staticmethod
+    def handle_error(self, err):
+        self.set_status(500)
+        self.finish(json.dumps(str(err)))
+
+    @staticmethod
+    def handle_response(self, response, success_code):
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(success_code)
+        if response is None:
+            self.finish()
+        else:
+            self.finish(json.dumps(response))
