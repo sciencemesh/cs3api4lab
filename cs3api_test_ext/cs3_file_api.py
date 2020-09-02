@@ -43,7 +43,7 @@ class Cs3FileApi:
 
         self.client_id = config['client_id']
         self.client_secret = config['client_secret']
-        self.home_dir = config['home_dir']
+        self.home_dir = "/"
 
         # prepare the gRPC connection
 

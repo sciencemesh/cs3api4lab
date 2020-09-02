@@ -1,7 +1,7 @@
 import { ReactWidget } from '@jupyterlab/apputils';
 import React from 'react';
 
-import Main from "./Main";
+import CreateShare from "./CreateShare";
 
 /**
  * Widget container.
@@ -14,7 +14,7 @@ export class Widget extends ReactWidget {
 
     protected render(): JSX.Element {
       return (
-          <Main />
+          <CreateShare />
       )
     }
 }
