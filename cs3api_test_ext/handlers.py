@@ -160,12 +160,12 @@ class ShareHandle(APIHandler):
     @web.authenticated
     @gen.coroutine
     def post(self):
-        endpoint = self.get_query_argument('endpoint')
-        file_id = self.get_query_argument('file_id')
-        grantee = self.get_query_argument('grantee')
-        idp = self.get_query_argument('idp')
-        role = self.get_query_argument('role')
-        grantee_type = self.get_query_argument('grantee_type')
+        endpoint = self.get_json_body()['endpoint']
+        file_id = self.get_json_body()['file_id']
+        grantee = self.get_json_body()['grantee']
+        idp = self.get_json_body()['idp']
+        role = self.get_json_body()['role']
+        grantee_type = self.get_json_body()['grantee_type']
         RequestHandler.handle_request(self, self.share_api.create, 201, endpoint, file_id, grantee, idp, role, grantee_type)
 
     @web.authenticated
@@ -175,8 +175,8 @@ class ShareHandle(APIHandler):
         RequestHandler.handle_request(self, self.share_api.remove, 204, share_id)
 
     def put(self):
-        share_id = self.get_query_argument('share_id')
-        role = self.get_query_argument('role')
+        share_id = self.get_json_body()['share_id']
+        role = self.get_json_body()['role']
         RequestHandler.handle_request(self, self.share_api.update, 204, share_id, role)
 
 
