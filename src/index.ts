@@ -178,7 +178,9 @@ const cs3info: JupyterFrontEndPlugin<void> = {
         if (widget) {
           each(widget.selectedItems(), fileInfo => {
             showDialog({
-              body: new Widget(),
+              body: new Widget({
+                  fileInfo: fileInfo
+              }),
               buttons: [Dialog.okButton({label: 'Close'})]
             });
           });
