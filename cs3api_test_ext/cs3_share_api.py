@@ -83,13 +83,13 @@ class Cs3ShareApi:
         for share in shares:
             # permissions = self._resolveSharePermissions(share)
             opaque_id = share['grantee']['opaque_id']
-            shares_dict[self._map_opaque_id(opaque_id)] = share['permissions']
+            shares_dict[opaque_id] = share['permissions']
 
         return shares_dict
 
     def _map_opaque_id(self, opaque_id):
         # todo implement
-        return "user" + random.randint(0, 10)
+        return "user" + str(random.randint(0, 10))
 
     def _decode_file_id(self, file_id):
         if '%2F' in file_id:
