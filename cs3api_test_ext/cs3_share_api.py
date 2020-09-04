@@ -7,10 +7,8 @@ Authors:
 """
 
 import re
-import time
 import grpc
 import logging
-import cs3.gateway.v1beta1.gateway_api_pb2 as gateway
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
 import cs3.sharing.collaboration.v1beta1.resources_pb2 as sharing_res
@@ -19,21 +17,20 @@ import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
 import random
+from cs3api_test_ext.authenticator import Authenticator
+from cs3api_test_ext.channel_connector import ChannelConnector
+
 
 class Cs3ShareApi:
-    tokens = {}
     gateway_stub = None
     log = None
-    config = {
-        "revahost": "127.0.0.1:19000",
-        "authtokenvalidity": 3600,
-        "userid": "einstein",
-        "endpoint": "/",
-        "chunksize": 4194304
-    }
+    auth = None
+    connector = None
+    config = {}
 
-    def __init__(self):
-        channel = grpc.insecure_channel(self.config["revahost"])
+    def __init__(self, config):
+        self.config = config
+        channel = grpc.insecure_channel(self.config["reva_host"])
         self.gateway_stub = grpc_gateway.GatewayAPIStub(channel)
 
         log = logging.getLogger("CS3_SHARE_API_LOG")
@@ -42,6 +39,10 @@ class Cs3ShareApi:
         console_handler.setLevel(level=logging.DEBUG)
         log.addHandler(console_handler)
         self.log = log
+        # todo logger
+        self.connector = ChannelConnector(config, log)
+        channel = self.connector.get_channel()
+        self.auth = Authenticator(config, channel)
         return
 
     def create(self, endpoint, fileid, grantee, idp=None, role="viewer", grantee_type="user"):
@@ -52,7 +53,7 @@ class Cs3ShareApi:
         share_grant = self._get_share_grant(grantee_type_enum, share_permissions, idp, grantee)
         resource_info = self._get_resource_info(endpoint, fileid)
         share_request = sharing.CreateShareRequest(resource_info=resource_info, grant=share_grant)
-        token = self._get_token()
+        token = self.auth.authenticate(self.config['user_id'])
         share_response = self.gateway_stub.CreateShare(request=share_request,
                                                        metadata=[('x-access-token', token)])
         self._check_response_code(share_response)
@@ -64,7 +65,8 @@ class Cs3ShareApi:
         # todo filters
         list_request = sharing.ListSharesRequest()
         list_response = self.gateway_stub.ListShares(request=list_request,
-                                                     metadata=[('x-access-token', self._get_token())])
+                                                     metadata=[('x-access-token',
+                                                                self.auth.authenticate(self.config['user_id']))])
         self._check_response_code(list_response)
         self.log.info("List shares response for user: einstein")
         self.log.info(list_request)
@@ -81,7 +83,6 @@ class Cs3ShareApi:
 
         shares_dict = {}
         for share in shares:
-            # permissions = self._resolveSharePermissions(share)
             opaque_id = share['grantee']['opaque_id']
             shares_dict[opaque_id] = share['permissions']
 
@@ -102,7 +103,7 @@ class Cs3ShareApi:
         ref = sharing_res.ShareReference(id=share_id_object)
         remove_request = sharing.RemoveShareRequest(ref=ref)
         remove_response = self.gateway_stub.RemoveShare(request=remove_request,
-                                                        metadata=[('x-access-token', self._get_token())])
+                                                        metadata=[('x-access-token', self.auth.authenticate(self.config['user_id']))])
         self._check_response_code(remove_response)
         self.log.info("Removing share " + share_id)
         return
@@ -116,14 +117,14 @@ class Cs3ShareApi:
                                                     field=sharing.UpdateShareRequest.UpdateField(
                                                         permissions=share_permissions))
         update_response = self.gateway_stub.UpdateShare(request=update_request,
-                                                        metadata=[('x-access-token', self._get_token())])
+                                                        metadata=[('x-access-token', self.auth.authenticate(self.config['user_id']))])
         self._check_response_code(update_response)
         return
 
     def list_received(self):
         list_request = sharing.ListReceivedSharesRequest()
         list_response = self.gateway_stub.ListReceivedShares(request=list_request,
-                                                             metadata=[('x-access-token', self._get_token())])
+                                                             metadata=[('x-access-token', self.auth.authenticate(self.config['user_id']))])
         self._check_response_code(list_response)
         self.log.info("List received shares response for user: " + 'einstein')
         self.log.info(list_response)
@@ -203,7 +204,7 @@ class Cs3ShareApi:
                                                             field=sharing.UpdateReceivedShareRequest.UpdateField(
                                                                 state=share_state))
         update_response = self.gateway_stub.UpdateReceivedShare(request=update_request,
-                                                                metadata=[('x-access-token', self._get_token())])
+                                                                metadata=[('x-access-token', self.auth.authenticate(self.config['user_id']))])
         self._check_response_code(update_response)
         return
 
@@ -215,19 +216,19 @@ class Cs3ShareApi:
         else:
             return "viewer"
 
-    def _get_token(self):
-        # todo export
-        user_id = "einstein"
-        auth_req = gateway.AuthenticateRequest(type='basic', client_id='einstein', client_secret='relativity')
-        if user_id not in self.tokens or self.tokens[user_id]['exp'] < time.time():
-            auth_res = self.gateway_stub.Authenticate(auth_req)
-            self.tokens[user_id] = {'token': auth_res.token, 'exp': time.time() + self.config['authtokenvalidity']}
-        # return self.gateway_stub.Authenticate(auth_req).token
-        return self.tokens[user_id]['token']
+    # def _get_token(self):
+    #     # todo export
+    #     user_id = "einstein"
+    #     auth_req = gateway.AuthenticateRequest(type='basic', client_id='einstein', client_secret='relativity')
+    #     if user_id not in self.tokens or self.tokens[user_id]['exp'] < time.time():
+    #         auth_res = self.gateway_stub.Authenticate(auth_req)
+    #         self.tokens[user_id] = {'token': auth_res.token, 'exp': time.time() + self.config['authtokenvalidity']}
+    #     # return self.gateway_stub.Authenticate(auth_req).token
+    #     return self.tokens[user_id]['token']
 
     def _get_resource_info(self, endpoint, file_id):
         ref = self._get_reference(endpoint, file_id)
-        token = self._get_token()
+        token = self.auth.authenticate(self.config['user_id'])
         stat_info = self.gateway_stub.Stat(request=storage_provider.StatRequest(ref=ref),
                                            metadata=[('x-access-token', token)])
         return stat_info.info

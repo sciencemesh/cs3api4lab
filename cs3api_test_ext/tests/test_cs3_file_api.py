@@ -1,8 +1,7 @@
 import unittest
-from unittest import TestCase
-
 import logging
 import configparser
+from unittest import TestCase
 
 from cs3api_test_ext.cs3_file_api import Cs3FileApi
 
@@ -26,8 +25,8 @@ class TestCs3FileApi(TestCase):
             self.endpoint = config_parser.get('cs3', 'endpoint')
 
             config = {
-                "revahost": config_parser.get('cs3', 'revahost'),
-                "authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
+                "reva_host": config_parser.get('cs3', 'reva_host'),
+                "auth_token_validity": config_parser.get('cs3', 'auth_token_validity'),
                 "user_id": config_parser.get('cs3', 'user_id'),
                 "endpoint": config_parser.get('cs3', 'endpoint'),
                 "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
@@ -38,6 +37,7 @@ class TestCs3FileApi(TestCase):
                 "client_id": config_parser.get('cs3', 'client_id'),
                 "client_secret": config_parser.get('cs3', 'client_secret'),
                 "home_dir": config_parser.get('cs3', 'home_dir'),
+                "login_type": config_parser.get('cs3', 'login_type')
             }
 
             self.storage = Cs3FileApi(config, log)
