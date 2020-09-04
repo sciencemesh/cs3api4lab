@@ -5,7 +5,7 @@ from notebook.utils import maybe_future
 from tornado import gen, web
 import json
 
-from cs3api_test_ext import CS3APIsManager
+from cs3api_test_ext.cs3apismanager import CS3APIsManager
 from cs3api_test_ext.cs3_share_api import Cs3ShareApi
 
 
