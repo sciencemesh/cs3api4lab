@@ -12,12 +12,12 @@ import time
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
-import cs3.storage.provider.v1beta1.resources_pb2 as cs3spr
 import cs3.types.v1beta1.types_pb2 as types
 import requests
 
 from cs3api_test_ext.channel_connector import ChannelConnector
 from cs3api_test_ext.authenticator import Authenticator
+from cs3api_test_ext.file_utils import FileUtils as file_utils
 
 
 class Cs3FileApi:
@@ -34,7 +34,7 @@ class Cs3FileApi:
     auth = None
 
     def __init__(self, config, log):
-
+        
         self.log = log
         self.chunksize = int(config['chunksize'])
         self.auth_token_validity = int(config['auth_token_validity'])
@@ -48,23 +48,6 @@ class Cs3FileApi:
         self.cs3_stub = cs3gw_grpc.GatewayAPIStub(channel)
         return
 
-    def _cs3_reference(self, fileid, endpoint=None):
-
-        if len(fileid) > 0 and fileid[0] == '/':
-
-            # assume this is a filepath
-            if len(self.home_dir) > 0 and not fileid.startswith(self.home_dir):
-                fileid = self.home_dir + fileid
-
-            file = cs3spr.Reference(path=fileid)
-            return file
-
-        if endpoint == 'default' or endpoint is None:
-            raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
-
-        # assume we have an opaque fileid
-        return cs3spr.Reference(id=cs3spr.ResourceId(storage_id=endpoint, opaque_id=fileid))
-
     def stat(self, fileid, userid, endpoint=None):
 
         """
@@ -75,7 +58,7 @@ class Cs3FileApi:
 
         time_start = time.time()
 
-        ref = self._cs3_reference(fileid, endpoint)
+        ref = file_utils.get_reference(fileid, self.home_dir, endpoint)
 
         stat_info = self.cs3_stub.Stat(request=cs3sp.StatRequest(ref=ref),
                                        metadata=[('x-access-token', self.auth.authenticate(userid))])
@@ -106,7 +89,7 @@ class Cs3FileApi:
         #
         # Prepare endpoint
         #
-        reference = self._cs3_reference(filepath, endpoint)
+        reference = file_utils.get_reference(filepath, self.home_dir, endpoint)
 
         req = cs3sp.InitiateFileDownloadRequest(ref=reference)
 
@@ -160,7 +143,7 @@ class Cs3FileApi:
         #
         time_start = time.time()
 
-        reference = self._cs3_reference(filepath, endpoint)
+        reference = file_utils.get_reference(filepath, self.home_dir, endpoint)
 
         if isinstance(content, str):
             content_size = str(len(content))
@@ -214,7 +197,7 @@ class Cs3FileApi:
         Remove a file or container using the given userid as access token.
         """
 
-        reference = self._cs3_reference(filepath, endpoint)
+        reference = file_utils.get_reference(filepath, self.home_dir, endpoint)
 
         req = cs3sp.DeleteRequest(ref=reference)
         res = self.cs3_stub.Delete(request=req, metadata=[('x-access-token', self.auth.authenticate(userid))])
@@ -233,7 +216,7 @@ class Cs3FileApi:
 
         tstart = time.time()
 
-        reference = self._cs3_reference(path, endpoint)
+        reference = file_utils.get_reference(path, self.home_dir, endpoint)
 
         req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
         res = self.cs3_stub.ListContainer(request=req, metadata=[('x-access-token', self.auth.authenticate(userid))])
@@ -264,8 +247,8 @@ class Cs3FileApi:
 
         tstart = time.time()
 
-        src_reference = self._cs3_reference(source_path, endpoint)
-        dest_reference = self._cs3_reference(destination_path, endpoint)
+        src_reference = file_utils.get_reference(source_path, self.home_dir, endpoint)
+        dest_reference = file_utils.get_reference(destination_path, self.home_dir, endpoint)
 
         req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
         res = self.cs3_stub.Move(request=req, metadata=[('x-access-token', self.auth.authenticate(userid))])
@@ -287,7 +270,7 @@ class Cs3FileApi:
 
         tstart = time.time()
 
-        reference = self._cs3_reference(path, endpoint)
+        reference = file_utils.get_reference(path, self.home_dir, endpoint)
 
         req = cs3sp.CreateContainerRequest(ref=reference)
         res = self.cs3_stub.CreateContainer(request=req, metadata=[('x-access-token', self.auth.authenticate(userid))])

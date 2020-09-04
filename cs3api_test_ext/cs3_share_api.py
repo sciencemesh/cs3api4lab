@@ -19,6 +19,7 @@ import cs3.rpc.v1beta1.code_pb2 as cs3_code
 import random
 from cs3api_test_ext.authenticator import Authenticator
 from cs3api_test_ext.channel_connector import ChannelConnector
+from cs3api_test_ext.file_utils import FileUtils as file_utils
 
 
 class Cs3ShareApi:
@@ -227,7 +228,7 @@ class Cs3ShareApi:
     #     return self.tokens[user_id]['token']
 
     def _get_resource_info(self, endpoint, file_id):
-        ref = self._get_reference(endpoint, file_id)
+        ref = file_utils.get_reference(file_id, self.config['home_dir'], endpoint)
         token = self.auth.authenticate(self.config['user_id'])
         stat_info = self.gateway_stub.Stat(request=storage_provider.StatRequest(ref=ref),
                                            metadata=[('x-access-token', token)])
@@ -289,18 +290,6 @@ class Cs3ShareApi:
                 return "invalid"
 
         raise Exception("Unknown share state")
-
-    def _get_reference(self, endpoint, fileid):
-        if endpoint == 'default':
-            raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
-        if fileid[0] == '/':
-            # assume this is a filepath
-            ref = storage_resources.Reference(path=fileid)
-        else:
-            # assume we have an opaque fileid
-            ref = storage_resources.Reference(id=storage_resources.ResourceId(storage_id=endpoint,
-                                                                              opaque_id=fileid))
-        return ref
 
     def _check_response_code(self, response):
         if response.status.code != cs3_code.CODE_OK:
