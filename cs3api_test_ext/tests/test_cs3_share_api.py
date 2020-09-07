@@ -1,8 +1,8 @@
 from unittest import TestCase
 from unittest import skip
-from cs3api_test_ext.cs3_share_api import Cs3ShareApi
+from cs3api_test_ext.api.cs3_share_api import Cs3ShareApi
 import configparser
-from cs3api_test_ext.cs3_file_api import Cs3FileApi
+from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
 import logging
 
 

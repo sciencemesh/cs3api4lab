@@ -12,7 +12,7 @@ from notebook import _tz as tz
 import mimetypes
 from nbformat.v4 import new_notebook
 
-from cs3api_test_ext.cs3_file_api import Cs3FileApi
+from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
 
 
 class CS3APIsManager(ContentsManager):

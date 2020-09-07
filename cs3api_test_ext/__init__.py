@@ -1,7 +1,7 @@
 from notebook.utils import url_path_join
 
 from ._version import __version__ 
-from cs3api_test_ext.cs3apischeckpoint import CS3APIsCheckpoints
+from cs3api_test_ext.api.cs3apischeckpoint import CS3APIsCheckpoints
 from .handlers import handlers
 
 
