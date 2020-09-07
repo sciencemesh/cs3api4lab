@@ -1,8 +1,7 @@
 import unittest
 import logging
-import configparser
 from unittest import TestCase
-
+from cs3api_test_ext.config.config_manager import ConfigManager
 from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
 
 
@@ -15,36 +14,13 @@ class TestCs3FileApi(TestCase):
         log = logging.getLogger('cs3api.test')
         log.setLevel(logging.DEBUG)
 
-        config_parser = configparser.ConfigParser()
+        config = ConfigManager('test.conf').config
 
-        try:
-            with open('test.conf') as fdconf:
-                config_parser.read_file(fdconf)
+        self.user_id = config['user_id']
+        self.endpoint = config['endpoint']
+        self.storage = Cs3FileApi(config, log)
 
-            self.user_id = config_parser.get('cs3', 'user_id')
-            self.endpoint = config_parser.get('cs3', 'endpoint')
 
-            config = {
-                "reva_host": config_parser.get('cs3', 'reva_host'),
-                "auth_token_validity": config_parser.get('cs3', 'auth_token_validity'),
-                "user_id": config_parser.get('cs3', 'user_id'),
-                "endpoint": config_parser.get('cs3', 'endpoint'),
-                "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
-                "client_cert": config_parser.get('cs3', 'client_cert'),
-                "client_key": config_parser.get('cs3', 'client_key'),
-                "ca_cert": config_parser.get('cs3', 'ca_cert'),
-                "chunksize": config_parser.get('io', 'chunksize'),
-                "client_id": config_parser.get('cs3', 'client_id'),
-                "client_secret": config_parser.get('cs3', 'client_secret'),
-                "home_dir": config_parser.get('cs3', 'home_dir'),
-                "login_type": config_parser.get('cs3', 'login_type')
-            }
-
-            self.storage = Cs3FileApi(config, log)
-
-        except (KeyError, configparser.NoOptionError):
-            print("Missing option or missing configuration, check the test.conf file")
-            raise
 
     def test_stat(self):
 

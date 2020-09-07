@@ -1,9 +1,9 @@
 from unittest import TestCase
 from unittest import skip
 from cs3api_test_ext.api.cs3_share_api import Cs3ShareApi
-import configparser
 from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
 import logging
+from cs3api_test_ext.config.config_manager import ConfigManager
 
 
 class TestCs3ShareApi(TestCase):
@@ -16,33 +16,7 @@ class TestCs3ShareApi(TestCase):
         # todo logger
         log = logging.getLogger('cs3api.test')
         log.setLevel(logging.DEBUG)
-        config_parser = configparser.ConfigParser()
-        try:
-            with open('test.conf') as fdconf:
-                config_parser.read_file(fdconf)
-                cls.config = {
-                    "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
-                    "client_cert": config_parser.get('cs3', 'client_cert'),
-                    "client_key": config_parser.get('cs3', 'client_key'),
-                    "ca_cert": config_parser.get('cs3', 'ca_cert'),
-                    "chunksize": config_parser.get('io', 'chunksize'),
-                    "reva_host": config_parser.get('cs3', 'reva_host'),
-                    "auth_token_validity": config_parser.get('cs3', 'auth_token_validity'),
-                    "client_id": config_parser.get('cs3', 'client_id'),
-                    "client_secret": config_parser.get('cs3', 'client_secret'),
-                    "file_path": config_parser.get('cs3', 'file_path'),
-                    "receiver_id": config_parser.get('cs3', 'receiver_id'),
-                    "receiver_idp": config_parser.get('cs3', 'receiver_idp'),
-                    "receiver_role": config_parser.get('cs3', 'receiver_role'),
-                    "receiver_grantee_type": config_parser.get('cs3', 'receiver_grantee_type'),
-                    "endpoint": config_parser.get('cs3', 'endpoint'),
-                    "home_dir": config_parser.get('cs3', 'home_dir'),
-                    "login_type": config_parser.get('cs3', 'login_type'),
-                    "user_id": config_parser.get('cs3', 'user_id')
-                }
-        except (KeyError, configparser.NoOptionError):
-            print("Missing option or missing configuration, check the test.conf file")
-            raise
+        cls.config = ConfigManager('test.conf').config
         cls.storage = Cs3FileApi(cls.config, log)
         cls.api = Cs3ShareApi(cls.config)
 

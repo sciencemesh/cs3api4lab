@@ -7,6 +7,7 @@ import json
 
 from cs3api_test_ext.api.cs3apismanager import CS3APIsManager
 from cs3api_test_ext.api.cs3_share_api import Cs3ShareApi
+from cs3api_test_ext.config.config_manager import ConfigManager
 
 
 class HelloWorldHandle(APIHandler):
@@ -152,7 +153,7 @@ class FilesHandle(APIHandler):
 class ShareHandle(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi()
+        return Cs3ShareApi(ConfigManager('cs3api_test_ext/app.conf').config)
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
@@ -183,7 +184,7 @@ class ShareHandle(APIHandler):
 class ListSharesHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi()
+        return Cs3ShareApi(ConfigManager('cs3api_test_ext/app.conf').config)
 
     @web.authenticated
     @gen.coroutine
@@ -194,7 +195,7 @@ class ListSharesHandler(APIHandler):
 class ListReceivedSharesHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi()
+        return Cs3ShareApi(ConfigManager('cs3api_test_ext/app.conf').config)
 
     @web.authenticated
     @gen.coroutine
@@ -212,7 +213,7 @@ class ListReceivedSharesHandler(APIHandler):
 class ListSharesForFile(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi()
+        return Cs3ShareApi(ConfigManager('cs3api_test_ext/app.conf').config)
 
     @web.authenticated
     @gen.coroutine
