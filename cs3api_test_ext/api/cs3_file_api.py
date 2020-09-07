@@ -15,9 +15,9 @@ import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 import cs3.types.v1beta1.types_pb2 as types
 import requests
 
-from cs3api_test_ext.channel_connector import ChannelConnector
-from cs3api_test_ext.authenticator import Authenticator
-from cs3api_test_ext.file_utils import FileUtils as file_utils
+from cs3api_test_ext.auth.channel_connector import ChannelConnector
+from cs3api_test_ext.auth.authenticator import Authenticator
+from cs3api_test_ext.api.file_utils import FileUtils as file_utils
 
 
 class Cs3FileApi:

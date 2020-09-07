@@ -3,7 +3,7 @@ import logging
 import configparser
 from unittest import TestCase
 
-from cs3api_test_ext.cs3_file_api import Cs3FileApi
+from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
 
 
 class TestCs3FileApi(TestCase):

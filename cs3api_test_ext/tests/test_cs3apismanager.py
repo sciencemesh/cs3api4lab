@@ -5,8 +5,8 @@ import configparser
 
 from tornado import web
 
-from cs3api_test_ext import CS3APIsManager
-from cs3api_test_ext.cs3_file_api import Cs3FileApi
+from cs3api_test_ext.api.cs3apismanager import CS3APIsManager
+from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
 
 
 class TestCS3APIsManager(TestCase):
@@ -26,13 +26,13 @@ class TestCS3APIsManager(TestCase):
             with open('test.conf') as fdconf:
                 config_parser.read_file(fdconf)
 
-            self.userid = config_parser.get('cs3', 'userid')
+            self.userid = config_parser.get('cs3', 'user_id')
             self.endpoint = config_parser.get('cs3', 'endpoint')
 
             config = {
-                "revahost": config_parser.get('cs3', 'revahost'),
-                "authtokenvalidity": config_parser.get('cs3', 'authtokenvalidity'),
-                "userid": config_parser.get('cs3', 'userid'),
+                "reva_host": config_parser.get('cs3', 'reva_host'),
+                "auth_token_validity": config_parser.get('cs3', 'auth_token_validity'),
+                "user_id": config_parser.get('cs3', 'user_id'),
                 "endpoint": config_parser.get('cs3', 'endpoint'),
                 "home_dir": config_parser.get('cs3', 'home_dir'),
                 "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
@@ -42,6 +42,7 @@ class TestCS3APIsManager(TestCase):
                 "chunksize": config_parser.get('io', 'chunksize'),
                 "client_id": config_parser.get('cs3', 'client_id'),
                 "client_secret": config_parser.get('cs3', 'client_secret'),
+                "login_type": config_parser.get('cs3', 'login_type')
             }
 
             self.storage = Cs3FileApi(config, log)
