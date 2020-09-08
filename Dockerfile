@@ -41,11 +41,11 @@ RUN cd /opt/cs3 && \
 #	
 COPY jupyter-config/jupyter_cs3_config.json /home/${NB_USER}/.jupyter/jupyter_cs3_config.json
 RUN fix-permissions "/home/${NB_USER}"
-	
+
+ENV JUPYTER_ENABLE_LAB = 1
+
 EXPOSE 8888
 
-ENTRYPOINT ["jupyter", "lab", "--ip=0.0.0.0", "--allow-root", "--no-browser"]
-	
 USER $NB_UID
 
 WORKDIR $HOME
