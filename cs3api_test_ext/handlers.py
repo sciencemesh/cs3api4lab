@@ -150,10 +150,10 @@ class FilesHandle(APIHandler):
         self.finish(json.dumps(model))
 
 
-class ShareHandle(APIHandler):
+class ShareHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(ConfigManager('cs3api_test_ext/app.conf').config)
+        return Cs3ShareApi(CS3APIsManager(None, self.log).cs3_config)
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
@@ -184,7 +184,7 @@ class ShareHandle(APIHandler):
 class ListSharesHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(ConfigManager('cs3api_test_ext/app.conf').config)
+        return Cs3ShareApi(CS3APIsManager(None, self.log).cs3_config)
 
     @web.authenticated
     @gen.coroutine
@@ -195,7 +195,7 @@ class ListSharesHandler(APIHandler):
 class ListReceivedSharesHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(ConfigManager('cs3api_test_ext/app.conf').config)
+        return Cs3ShareApi(CS3APIsManager(None, self.log).cs3_config)
 
     @web.authenticated
     @gen.coroutine
@@ -213,7 +213,7 @@ class ListReceivedSharesHandler(APIHandler):
 class ListSharesForFile(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(ConfigManager('cs3api_test_ext/app.conf').config)
+        return Cs3ShareApi(CS3APIsManager(None, self.log).cs3_config)
 
     @web.authenticated
     @gen.coroutine
@@ -242,7 +242,7 @@ class OcmShareHandle(APIHandler):
 handlers = [
     (r"/api/cs3test/helloworld", HelloWorldHandle),
     (r"/api/cs3test/files", FilesHandle),
-    (r"/api/cs3test/shares", ShareHandle),
+    (r"/api/cs3test/shares", ShareHandler),
     (r"/api/cs3test/shares/list", ListSharesHandler),
     (r"/api/cs3test/shares/received", ListReceivedSharesHandler),
     (r"/api/cs3test/shares/file", ListSharesForFile),

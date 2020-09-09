@@ -1,30 +1,25 @@
 from unittest import TestCase
 
-import logging
-import configparser
-
 from tornado import web
 
 from cs3api_test_ext.api.cs3apismanager import CS3APIsManager
 from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
 from cs3api_test_ext.config.config_manager import ConfigManager
+from traitlets.config import LoggingConfigurable
 
 
-class TestCS3APIsManager(TestCase):
+class TestCS3APIsManager(TestCase, LoggingConfigurable):
     user_id = None
     endpoint = None
     storage = None
     contents_manager = None
 
     def setUp(self):
-
-        log = logging.getLogger('cs3api.test')
-        log.setLevel(logging.DEBUG)
         config = ConfigManager('test.conf').config
-        self.user_id = config['user_id']
+        self.user_id = config['client_id']
         self.endpoint = config['endpoint']
-        self.storage = Cs3FileApi(config, log)
-        self.contents_manager = CS3APIsManager(self, log, config)
+        self.storage = Cs3FileApi(config, self.log)
+        self.contents_manager = CS3APIsManager(self, self.log, config)
 
     def test_get_text_file(self):
 

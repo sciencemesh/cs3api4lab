@@ -2,23 +2,19 @@ from unittest import TestCase
 from unittest import skip
 from cs3api_test_ext.api.cs3_share_api import Cs3ShareApi
 from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
-import logging
 from cs3api_test_ext.config.config_manager import ConfigManager
+from traitlets.config import LoggingConfigurable
 
 
-class TestCs3ShareApi(TestCase):
+class TestCs3ShareApi(TestCase, LoggingConfigurable):
     api = None
     config = {}
     share_id = None
 
-    @classmethod
-    def setUpClass(cls):
-        # todo logger
-        log = logging.getLogger('cs3api.test')
-        log.setLevel(logging.DEBUG)
-        cls.config = ConfigManager('test.conf').config
-        cls.storage = Cs3FileApi(cls.config, log)
-        cls.api = Cs3ShareApi(cls.config)
+    def setUp(self):
+        self.config = ConfigManager('test.conf').config
+        self.storage = Cs3FileApi(self.config, self.log)
+        self.api = Cs3ShareApi(self.config)
 
     def test_create_and_list(self):
         created_share = self._create_share()

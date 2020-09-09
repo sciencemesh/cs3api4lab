@@ -47,7 +47,7 @@ class CS3APIsManager(ContentsManager):
             #
             # Overwriting configuration values with environment variables
             #
-            env_names = {"revahost", "client_id", "client_secret", "home_dir"}
+            env_names = {"reva_host", "client_id", "client_secret", "home_dir"}
             for name in env_names:
                 env_name = "CS3_" + name.upper()
                 if env_name in os.environ:

@@ -61,7 +61,7 @@ class Cs3ShareApi:
         share_grant = self._get_share_grant(grantee_type_enum, share_permissions, idp, grantee)
         resource_info = self._get_resource_info(endpoint, fileid)
         share_request = sharing.CreateShareRequest(resource_info=resource_info, grant=share_grant)
-        token = self.auth.authenticate(self.config['user_id'])
+        token = self.get_token()
         share_response = self.gateway_stub.CreateShare(request=share_request,
                                                        metadata=[('x-access-token', token)])
         self._check_response_code(share_response)
@@ -73,10 +73,9 @@ class Cs3ShareApi:
         # todo filters
         list_request = sharing.ListSharesRequest()
         list_response = self.gateway_stub.ListShares(request=list_request,
-                                                     metadata=[('x-access-token',
-                                                                self.auth.authenticate(self.config['user_id']))])
+                                                     metadata=[('x-access-token', self.get_token())])
         self._check_response_code(list_response)
-        self.log.info("List shares response for user: " + self.config['user_id'])
+        self.log.info("List shares response for user: " + self.config['client_id'])
         self.log.info(list_request)
         return self._map_given_shares(list_response)
 
@@ -109,8 +108,7 @@ class Cs3ShareApi:
         ref = sharing_res.ShareReference(id=share_id_object)
         remove_request = sharing.RemoveShareRequest(ref=ref)
         remove_response = self.gateway_stub.RemoveShare(request=remove_request,
-                                                        metadata=[('x-access-token',
-                                                                   self.auth.authenticate(self.config['user_id']))])
+                                                        metadata=[('x-access-token', self.get_token())])
         self._check_response_code(remove_response)
         self.log.info("Removing share " + share_id)
         return
@@ -124,18 +122,16 @@ class Cs3ShareApi:
                                                     field=sharing.UpdateShareRequest.UpdateField(
                                                         permissions=share_permissions))
         update_response = self.gateway_stub.UpdateShare(request=update_request,
-                                                        metadata=[('x-access-token',
-                                                                   self.auth.authenticate(self.config['user_id']))])
+                                                        metadata=[('x-access-token', self.get_token())])
         self._check_response_code(update_response)
         return
 
     def list_received(self):
         list_request = sharing.ListReceivedSharesRequest()
         list_response = self.gateway_stub.ListReceivedShares(request=list_request,
-                                                             metadata=[('x-access-token', self.auth.authenticate(
-                                                                 self.config['user_id']))])
+                                                             metadata=[('x-access-token', self.get_token())])
         self._check_response_code(list_response)
-        self.log.info("List received shares response for user: " + self.config['user_id'])
+        self.log.info("List received shares response for user: " + self.config['client_id'])
         self.log.info(list_response)
         return self._map_received_shares(list_response)
 
@@ -212,8 +208,7 @@ class Cs3ShareApi:
                                                             field=sharing.UpdateReceivedShareRequest.UpdateField(
                                                                 state=share_state))
         update_response = self.gateway_stub.UpdateReceivedShare(request=update_request,
-                                                                metadata=[('x-access-token', self.auth.authenticate(
-                                                                    self.config['user_id']))])
+                                                                metadata=[('x-access-token', self.get_token())])
         self._check_response_code(update_response)
         return
 
@@ -227,7 +222,7 @@ class Cs3ShareApi:
 
     def _get_resource_info(self, endpoint, file_id):
         ref = FileUtils.get_reference(file_id, self.config['home_dir'], endpoint)
-        token = self.auth.authenticate(self.config['user_id'])
+        token = self.get_token()
         stat_info = self.gateway_stub.Stat(request=storage_provider.StatRequest(ref=ref),
                                            metadata=[('x-access-token', token)])
         return stat_info.info
@@ -294,3 +289,6 @@ class Cs3ShareApi:
             self.log.error("Server response is not OK: ")
             self.log.error(response)
             raise Exception("Incorrect server response: " + response.status.message)
+
+    def get_token(self):
+        return self.auth.authenticate(self.config['client_id'])

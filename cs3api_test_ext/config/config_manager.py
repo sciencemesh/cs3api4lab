@@ -12,7 +12,6 @@ class ConfigManager:
             self.config = {
                 "reva_host": config_parser.get('cs3', 'reva_host'),
                 "auth_token_validity": config_parser.get('cs3', 'auth_token_validity'),
-                "user_id": config_parser.get('cs3', 'user_id'),
                 "endpoint": config_parser.get('cs3', 'endpoint'),
                 "secure_channel": config_parser.getboolean('cs3', 'secure_channel'),
                 "client_cert": config_parser.get('cs3', 'client_cert'),

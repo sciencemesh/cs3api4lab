@@ -10,6 +10,7 @@
   	"client_key": "",
   	"ca_cert": "",
 	"client_id": "einstein",
-	"client_secret": "relativity"
+	"client_secret": "relativity",
+	"login_type": "basic"
 	}
 }
