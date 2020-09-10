@@ -1,7 +1,7 @@
 {
   "cs3":{
-	"revahost":"127.0.0.1:19000",
-	"authtokenvalidity": "3600",
+	"reva_host":"127.0.0.1:19000",
+	"auth_token_validity": "3600",
 	"endpoint": "/",
 	"home_dir": "/home",
   	"chunksize": "4194304",
@@ -10,6 +10,7 @@
   	"client_key": "",
   	"ca_cert": "",
 	"client_id": "einstein",
-	"client_secret": "relativity"
+	"client_secret": "relativity",
+	"login_type": "basic"
 	}
 }
