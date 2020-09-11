@@ -18,7 +18,7 @@ class CS3APIsManager(ContentsManager):
     TYPE_FILE = 1
     TYPE_DIRECTORY = 2
 
-    def __init__(self, log):
+    def __init__(self, parent, log):
         self.cs3_config = Cs3ConfigManager().config
         self.log = log
 
