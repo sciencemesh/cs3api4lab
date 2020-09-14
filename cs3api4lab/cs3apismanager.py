@@ -109,7 +109,7 @@ class CS3APIsManager(ContentsManager):
         path = self._normalize_path(path)
 
         try:
-            cs3_container = self._cs3_file_api().read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+            cs3_container = self.cs3_file_api.read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
         except Exception as ex:
             self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
             raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
@@ -231,6 +231,10 @@ class CS3APIsManager(ContentsManager):
         old_path = self._normalize_path(old_path)
         new_path = self._normalize_path(new_path)
 
+        # Should we proceed with the move?
+        if self.exists(new_path):
+            raise web.HTTPError(409, u'File already exists: %s' % new_path)
+
         # Move the file
         try:
             self.cs3_file_api.move(old_path, new_path, self.cs3_user_id, self.cs3_endpoint)
@@ -306,12 +310,12 @@ class CS3APIsManager(ContentsManager):
 
     def _file_model(self, path, content, format):
 
-        model, tmp_model = self._create_base_model_from_cs3_container(path)
+        model, cs3_model = self._create_base_model_from_cs3_container(path)
         model['type'] = 'file'
-        model['mimetype'] = mimetypes.guess_type(tmp_model.path)[0]
+        model['mimetype'] = mimetypes.guess_type(cs3_model.path)[0]
 
         if content:
-            content = self._read_file(tmp_model.path)
+            content = self._read_file(cs3_model.path)
 
             if format is None:
                 format = "text"
@@ -332,11 +336,11 @@ class CS3APIsManager(ContentsManager):
 
     def _notebook_model(self, path, content):
 
-        model, tmp_model = self._create_base_model_from_cs3_container(path)
+        model, cs3_model = self._create_base_model_from_cs3_container(path)
         model['type'] = 'notebook'
 
         if content:
-            file_content = self._read_file(tmp_model.path)
+            file_content = self._read_file(cs3_model.path)
             nb = nbformat.reads(file_content, as_version=4)
             self.mark_trusted_cells(nb, path)
             model['content'] = nb
@@ -378,6 +382,7 @@ class CS3APIsManager(ContentsManager):
         for cs3_tmp_model in cs3_container:
             if cs3_tmp_model.type == self.TYPE_FILE and cs3_tmp_model.path == path:
                 cs3_model = cs3_tmp_model
+                break
 
         if cs3_model is None:
             raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
@@ -403,6 +408,8 @@ class CS3APIsManager(ContentsManager):
 
                 if str(cs3_model.permission_set.create_container).lower() == "true":
                     writable = True
+
+                break
 
         #
         # Create the base model
