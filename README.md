@@ -134,6 +134,18 @@ to:
 * Linux:
  ```HOME_FOLDER/.jupyter/```
 
+Config file fields:
+- revahost - address and port on which the Reva server is listening
+- authtokenvalidity - the lifetime of the authenticating token
+- endpoint - endpoint for Reva storage provider
+- chunksize - size of the downloaded fragment from Reva
+- secure_channel - secure channel flag
+- client_cert - public key file path (PEM-encoded)
+- client_key - private key file path
+- ca_cert - certificate authority file path
+- client_id - client login to authenticate in Reva
+- client_secret - client password to authenticate in Reva
+
 ## Setup for docker image
 
 ### Build docker image from local source code
