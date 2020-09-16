@@ -29,7 +29,7 @@ To enable the Manager and Chekpoints, the following configuration needs to be ad
 
 ```python
 c.NotebookApp.contents_manager_class = 'cs3api4lab.api.cs3apismanager.CS3APIsManager'
-c.ContentsManager.checkpoints_class = 'cs3api4lab.CS3APIsCheckpoints'
+c.ContentsManager.checkpoints_class = 'cs3api4lab.api.cs3apischeckpoint.CS3APIsCheckpoints'
 ```
 
 ## Contributing
@@ -123,7 +123,7 @@ c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemana
 to
 
 ```
-c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
+c.NotebookApp.contents_manager_class = 'cs3api4lab.api.cs3apismanager.CS3APIsManager'
 ```
 
 ### CS3 config file

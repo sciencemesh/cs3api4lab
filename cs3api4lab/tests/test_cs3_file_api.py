@@ -1,7 +1,7 @@
 import unittest
 from unittest import TestCase
-from cs3api_test_ext.config.config_manager import ConfigManager
-from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
+from cs3api4lab.config.config_manager import Cs3ConfigManager
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from traitlets.config import LoggingConfigurable
 
 
@@ -10,7 +10,7 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
     endpoint = None
 
     def setUp(self):
-        config = ConfigManager('test.conf').config
+        config = Cs3ConfigManager(self.log, '').config
 
         self.client_id = config['client_id']
         self.endpoint = config['endpoint']

@@ -3,8 +3,6 @@ from base64 import decodebytes
 from datetime import datetime
 
 import nbformat
-from jupyter_core.paths import jupyter_config_path
-from notebook.services.config import ConfigManager
 from notebook.services.contents.manager import ContentsManager
 from tornado import web
 
@@ -12,11 +10,10 @@ from notebook import _tz as tz
 import mimetypes
 from nbformat.v4 import new_notebook
 
-from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
 
 
 class CS3APIsManager(ContentsManager):
-    cs3_config_dir = "\\jupyter-config"
     cs3_config = {}
     cs3_client_id = None
 
@@ -27,39 +24,11 @@ class CS3APIsManager(ContentsManager):
     log = None
     cs3_endpoint = None
 
-    def __init__(self, parent, log, external_config=None):
-        #
-        # Get config from jupyter_cs3_config.json file
-        #
-        if external_config is None:
-            config_path = jupyter_config_path()
-            if self.cs3_config_dir not in config_path:
-                # add self.config_dir to the front, if set manually
-                config_path.insert(0, os.getcwd() + self.cs3_config_dir)
-            cm = ConfigManager(read_config_path=config_path)
-
-            cs3_config_file = cm.get('jupyter_cs3_config')
-            self.cs3_config = cs3_config_file.get("cs3")
-
-            if self.cs3_config is None:
-                log.error(u'Error while reading cs3 config file')
-                raise IOError(u'Error while reading cs3 config file')
-            #
-            # Overwriting configuration values with environment variables
-            #
-            env_names = {"reva_host", "client_id", "client_secret", "home_dir"}
-            for name in env_names:
-                env_name = "CS3_" + name.upper()
-                if env_name in os.environ:
-                    log.debug(f"Overwriting config value {name}")
-                    self.cs3_config[name] = os.environ[env_name]
-        else:
-
-            self.cs3_config = external_config
-
-        self.cs3_endpoint = self.cs3_config["endpoint"]
+    def __init__(self, log, config):
+        self.cs3_config = config
+        self.cs3_endpoint = config["endpoint"]
         self.log = log
-        self.cs3_client_id = self.cs3_config["client_id"]
+        self.cs3_client_id = config["client_id"]
 
     def dir_exists(self, path):
         """Does a directory exist at the given path?

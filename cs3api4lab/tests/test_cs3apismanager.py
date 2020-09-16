@@ -2,9 +2,9 @@ from unittest import TestCase
 
 from tornado import web
 
-from cs3api_test_ext.api.cs3apismanager import CS3APIsManager
-from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
-from cs3api_test_ext.config.config_manager import ConfigManager
+from cs3api4lab.api.cs3apismanager import CS3APIsManager
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
+from cs3api4lab.config.config_manager import Cs3ConfigManager
 from traitlets.config import LoggingConfigurable
 
 
@@ -15,11 +15,11 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
     contents_manager = None
 
     def setUp(self):
-        config = ConfigManager('test.conf').config
+        config = Cs3ConfigManager(self.log, '').config
         self.user_id = config['client_id']
         self.endpoint = config['endpoint']
         self.storage = Cs3FileApi(config, self.log)
-        self.contents_manager = CS3APIsManager(self, self.log, config)
+        self.contents_manager = CS3APIsManager(self.log, config)
 
     def test_get_text_file(self):
 

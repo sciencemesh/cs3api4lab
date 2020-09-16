@@ -15,14 +15,14 @@ import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 import cs3.types.v1beta1.types_pb2 as types
 import requests
 
-from cs3api_test_ext.auth.channel_connector import ChannelConnector
-from cs3api_test_ext.auth.authenticator import Authenticator
-from cs3api_test_ext.api.file_utils import FileUtils as file_utils
+from cs3api4lab.auth.channel_connector import ChannelConnector
+from cs3api4lab.auth.authenticator import Authenticator
+from cs3api4lab.api.file_utils import FileUtils as file_utils
 
 
 class Cs3FileApi:
     log = None
-    chunksize = 4194304
+    chunk_size = 4194304
     auth_token_validity = 3600
     cs3_stub = None
     home_dir = ""
@@ -36,7 +36,7 @@ class Cs3FileApi:
     def __init__(self, config, log):
         
         self.log = log
-        self.chunksize = int(config['chunksize'])
+        self.chunk_size = int(config['chunk_size'])
         self.auth_token_validity = int(config['auth_token_validity'])
         self.client_id = config['client_id']
         self.client_secret = config['client_secret']
@@ -129,8 +129,8 @@ class Cs3FileApi:
         else:
             self.log.info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (
             filepath, (time_end - time_start) * 1000))
-            for i in range(0, len(data), self.chunksize):
-                yield data[i:i + self.chunksize]
+            for i in range(0, len(data), self.chunk_size):
+                yield data[i:i + self.chunk_size]
 
     def write_file(self, filepath, userid, content, endpoint=None):
         """

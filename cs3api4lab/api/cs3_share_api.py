@@ -17,11 +17,11 @@ import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
 import random
-from cs3api_test_ext.auth.authenticator import Authenticator
-from cs3api_test_ext.auth.channel_connector import ChannelConnector
-from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
-from cs3api_test_ext.api.file_utils import FileUtils
-from cs3api_test_ext.common.strings import *
+from cs3api4lab.auth.authenticator import Authenticator
+from cs3api4lab.auth.channel_connector import ChannelConnector
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
+from cs3api4lab.api.file_utils import FileUtils
+from cs3api4lab.common.strings import *
 
 
 class Cs3ShareApi:
