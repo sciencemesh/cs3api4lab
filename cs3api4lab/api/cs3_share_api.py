@@ -7,9 +7,6 @@ Authors:
 """
 
 import re
-import grpc
-import logging
-import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
 import cs3.sharing.collaboration.v1beta1.resources_pb2 as sharing_res
 import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
@@ -18,42 +15,30 @@ import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
 import random
 from cs3api4lab.auth.authenticator import Authenticator
-from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.api.file_utils import FileUtils
 from cs3api4lab.common.strings import *
+from cs3api4lab.config.config_manager import Cs3ConfigManager
+import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
+from cs3api4lab.auth.channel_connector import ChannelConnector
 
 
 class Cs3ShareApi:
     gateway_stub = None
     log = None
     auth = None
-    connector = None
     config = {}
     file_api = None
 
-    def __init__(self, config):
-        self.config = config
-
-        log = logging.getLogger("CS3_SHARE_API_LOG")
-        log.setLevel(level=logging.DEBUG)
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(level=logging.DEBUG)
-        log.addHandler(console_handler)
+    def __init__(self, log):
+        self.config = Cs3ConfigManager().config
+        self.auth = Authenticator()
+        self.file_api = Cs3FileApi(log)
+        self.gateway_stub = grpc_gateway.GatewayAPIStub(ChannelConnector().channel)
         self.log = log
-        # todo logger
-
-        channel = grpc.insecure_channel(self.config["reva_host"])
-        self.gateway_stub = grpc_gateway.GatewayAPIStub(channel)
-
-        self.connector = ChannelConnector(config, log)
-        channel = self.connector.get_channel()
-        self.auth = Authenticator(config, channel)
-
-        self.file_api = Cs3FileApi(config, log)
         return
 
-    def create(self, endpoint, fileid, grantee, idp, role="viewer", grantee_type="user"):
+    def create(self, endpoint, fileid, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
         if grantee is None:
             raise Exception("Grantee was not provided")
         share_permissions = self._get_share_permissions(role)

@@ -1,13 +1,16 @@
 import cs3.gateway.v1beta1.gateway_api_pb2 as cs3gw
 import time
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
+from cs3api4lab.config.config_manager import Cs3ConfigManager
+from cs3api4lab.auth.channel_connector import ChannelConnector
 
 
 class Authenticator:
     tokens = {}  # map client_id [string] to {authentication token, token expiration time}
 
-    def __init__(self, config, channel):
-        self.config = config
+    def __init__(self):
+        self.config = Cs3ConfigManager().config
+        channel = ChannelConnector().channel
         self.cs3_stub = cs3gw_grpc.GatewayAPIStub(channel)
 
     def authenticate(self, client_id):

@@ -8,7 +8,7 @@ from traitlets.config import LoggingConfigurable
 
 class TestCs3ShareApi(TestCase, LoggingConfigurable):
     api = None
-    config = {}
+    config = None
     share_id = None
 
     receiver_id = 'f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c'
@@ -18,9 +18,9 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     file_path = '/test.txt'
 
     def setUp(self):
-        self.config = Cs3ConfigManager(log = self.log, directory='').config
-        self.storage = Cs3FileApi(self.config, self.log)
-        self.api = Cs3ShareApi(self.config)
+        self.config = Cs3ConfigManager().config
+        self.storage = Cs3FileApi(self.log)
+        self.api = Cs3ShareApi(self.log)
 
     def test_create_and_list(self):
         created_share = self._create_share()
