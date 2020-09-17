@@ -19,7 +19,7 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
         self.user_id = config['client_id']
         self.endpoint = config['endpoint']
         self.storage = Cs3FileApi(self.log)
-        self.contents_manager = CS3APIsManager(self.log)
+        self.contents_manager = CS3APIsManager(None, self.log)
 
     def test_get_text_file(self):
         file_id = "/test_get_text_file.txt"

@@ -176,6 +176,10 @@ class Cs3FileApi:
         req = cs3sp.DeleteRequest(ref=reference)
         res = self.cs3_stub.Delete(request=req, metadata=[('x-access-token', self.auth.authenticate(user_id))])
 
+        if res.status.code == cs3code.CODE_NOT_FOUND:
+            self.log.info('msg="File or folder not found on remove" filepath="%s"' % file_path)
+            raise FileNotFoundError('No such file or directory')
+
         if res.status.code != cs3code.CODE_OK:
             self.log.warning('msg="Failed to remove file or folder" filepath="%s" error="%s"' % (file_path, res))
             raise IOError(res.status.message)
