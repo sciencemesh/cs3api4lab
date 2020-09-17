@@ -9,7 +9,7 @@ from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 class ShareHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(CS3APIsManager(None, self.log).cs3_config)
+        return Cs3ShareApi(self.log)
 
     @web.authenticated
     @gen.coroutine
@@ -43,7 +43,7 @@ class ShareHandler(APIHandler):
 class ListSharesHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(CS3APIsManager(None, self.log).cs3_config)
+        return Cs3ShareApi(self.log)
 
     @web.authenticated
     @gen.coroutine
@@ -54,7 +54,7 @@ class ListSharesHandler(APIHandler):
 class ListReceivedSharesHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(CS3APIsManager(None, self.log).cs3_config)
+        return Cs3ShareApi(self.log)
 
     @web.authenticated
     @gen.coroutine
@@ -72,7 +72,7 @@ class ListReceivedSharesHandler(APIHandler):
 class ListSharesForFile(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(CS3APIsManager(None, self.log).cs3_config)
+        return Cs3ShareApi(self.log)
 
     @web.authenticated
     @gen.coroutine
