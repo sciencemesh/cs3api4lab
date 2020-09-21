@@ -61,7 +61,7 @@ class Cs3ShareApi:
                                                      metadata=[('x-access-token', self.get_token())])
         self._check_response_code(list_response)
         self.log.info("List shares response for user: " + self.config['client_id'])
-        self.log.info(list_request)
+        self.log.info(list_response)
         return self._map_given_shares(list_response)
 
     def list_grantees_for_file(self, file_id):
