@@ -3,7 +3,7 @@ import React from 'react';
 
 // import {requestAPI} from "../../services/requestAPI";
 
-// const getShares = async () => {
+// const getSharedByMe = async () => {
 //     let data :Promise<object> = null;
 //     try {
 //         data = await requestAPI<any>('/api/cs3test/shares/file?file_id=test.txt', {
