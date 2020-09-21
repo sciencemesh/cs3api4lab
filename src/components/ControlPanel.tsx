@@ -61,15 +61,15 @@ const ControlPanel = (props: ControlProps): JSX.Element => {
                 </div>
             </div>
 
-            <div>
-                <div>Grantee Type</div>
-                <div>
-                    <select name='grantee_type' id='grantee_type' onChange={setFormStateFromValues}>
-                        <option value='user'>User</option>
-                        <option value="group">Group</option>
-                    </select>
-                </div>
-            </div>
+            {/*<div>*/}
+            {/*    <div>Grantee Type</div>*/}
+            {/*    <div>*/}
+            {/*        <select name='grantee_type' id='grantee_type' onChange={setFormStateFromValues}>*/}
+            {/*            <option value='user'>User</option>*/}
+            {/*            <option value="group">Group</option>*/}
+            {/*        </select>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             <button onClick={localMakeRequest}>Make request</button>
         </div>
