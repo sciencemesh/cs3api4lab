@@ -38,13 +38,13 @@ class Cs3ShareApi:
         self.log = log
         return
 
-    def create(self, endpoint, fileid, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
+    def create(self, endpoint, file_path, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
         if grantee is None:
             raise Exception("Grantee was not provided")
         share_permissions = self._get_share_permissions(role)
         grantee_type_enum = self._get_grantee_type(grantee_type)
         share_grant = self._get_share_grant(grantee_type_enum, share_permissions, idp, grantee)
-        resource_info = self._get_resource_info(endpoint, fileid)
+        resource_info = self._get_resource_info(endpoint, file_path)
         share_request = sharing.CreateShareRequest(resource_info=resource_info, grant=share_grant)
         token = self.get_token()
         share_response = self.gateway_stub.CreateShare(request=share_request,
@@ -64,12 +64,12 @@ class Cs3ShareApi:
         self.log.info(list_request)
         return self._map_given_shares(list_response)
 
-    def list_grantees_for_file(self, file_id):
+    def list_grantees_for_file(self, file_path):
         shares_response = self.list()
 
         shares = []
         for share in shares_response:
-            if file_id == self._decode_file_id(share['id']['opaque_id']):
+            if file_path == self._decode_file_id(share['id']['opaque_id']):
                 shares.append(share)
 
         shares_dict = {}

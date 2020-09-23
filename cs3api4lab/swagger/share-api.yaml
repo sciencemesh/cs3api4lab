@@ -25,8 +25,8 @@ paths:
         description: "endpoint path, default /"
         required: true
       - in: "query"
-        name: "file_id"
-        description: "filename with path, e.g. /test.yml"
+        name: "file_path"
+        description: "Path with file name, e.g. /test.yml"
         required: true
       - in: "query"
         name: "grantee"
@@ -150,8 +150,8 @@ paths:
         - "application/json"
       parameters:
         - in: "query"
-          name: "file_id"
-          description: "Filename with path, e.g. '/home/test.txt'"
+          name: "file_path"
+          description: "Path with file name, e.g. '/home/test.txt'"
           required: true
       responses:
         "200":
@@ -161,7 +161,7 @@ paths:
         "500":
           description: "Error returning grantees"
 
-  /shares/list-received:
+  /shares/received:
     get:
       tags:
       - "shares"
