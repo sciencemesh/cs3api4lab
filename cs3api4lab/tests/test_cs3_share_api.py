@@ -16,6 +16,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     receiver_role = 'viewer'
     receiver_grantee_type = 'user'
     file_path = '/test.txt'
+    storage_id = '123e4567-e89b-12d3-a456-426655440000'
 
     def setUp(self):
         self.config = Cs3ConfigManager().config
@@ -34,7 +35,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
     def test_list_grantees_for_file(self):
         self._create_share()
-        shares_dict = self.api.list_grantees_for_file(self.file_path)
+        shares_dict = self.api.list_grantees_for_file(self.storage_id, self.file_path)
         try:
             if not shares_dict:
                 raise Exception("Failed to retrieve grantees of the file")

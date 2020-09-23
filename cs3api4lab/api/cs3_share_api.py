@@ -6,14 +6,13 @@ CS3 Share API for the JupyterLab Extension
 Authors:
 """
 
-import re
+import urllib.parse
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
 import cs3.sharing.collaboration.v1beta1.resources_pb2 as sharing_res
 import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
 import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
-import random
 from cs3api4lab.auth.authenticator import Authenticator
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.api.file_utils import FileUtils
@@ -55,7 +54,6 @@ class Cs3ShareApi:
         return self._map_given_share(share_response.share)
 
     def list(self):
-        # todo filters
         list_request = sharing.ListSharesRequest()
         list_response = self.gateway_stub.ListShares(request=list_request,
                                                      metadata=[('x-access-token', self.get_token())])
@@ -64,29 +62,28 @@ class Cs3ShareApi:
         self.log.info(list_request)
         return self._map_given_shares(list_response)
 
-    def list_grantees_for_file(self, file_path):
-        shares_response = self.list()
-
-        shares = []
-        for share in shares_response:
-            if file_path == self._decode_file_id(share['id']['opaque_id']):
-                shares.append(share)
+    def list_grantees_for_file(self, storage_id, file_path):
+        file_path = urllib.parse.quote('fileid-' + self.config['client_id'] + file_path, safe='')
+        resource_id = storage_resources.ResourceId(storage_id=storage_id, opaque_id=file_path)
+        resource_filter = sharing.ListSharesRequest.Filter(
+            resource_id=resource_id,
+            type=sharing.ListSharesRequest.Filter.Type.TYPE_RESOURCE_ID)
+        list_request = sharing.ListSharesRequest(filters=[resource_filter])
+        shares_response = self.gateway_stub.ListShares(request=list_request,
+                                                       metadata=[('x-access-token', self.get_token())])
 
         shares_dict = {}
-        for share in shares:
-            opaque_id = share['grantee']['opaque_id']
-            shares_dict[opaque_id] = share['permissions']
+        for share in shares_response.shares:
+            opaque_id = share.grantee.id.opaque_id
+            shares_dict[opaque_id] = self._resolve_share_permissions(share)
 
         return shares_dict
 
-    def _map_opaque_id(self, opaque_id):
-        return "user" + str(random.randint(0, 10))
+    def _decode_file_path(self, file_path):
+        return urllib.parse.unquote(file_path)
 
-    def _decode_file_id(self, file_id):
-        if '%2F' in file_id:
-            return re.search('(?=%2F).*', file_id).group(0).replace('%2F', '/')
-        else:
-            return file_id
+    def _purify_file_path(self, file_path):
+        return self._decode_file_path(file_path.replace('fileid-' + self.config['client_id'], ''))
 
     def remove(self, share_id):
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
@@ -99,7 +96,6 @@ class Cs3ShareApi:
         return
 
     def update(self, share_id, role):
-        # todo check role
         share_permissions = self._get_share_permissions(role)
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
@@ -127,7 +123,7 @@ class Cs3ShareApi:
                 "opaque_id": share.share.id.opaque_id,
                 "id": {
                     "storage_id": share.share.resource_id.storage_id,
-                    "opaque_id": self._decode_file_id(share.share.resource_id.opaque_id),
+                    "opaque_id": self._purify_file_path(share.share.resource_id.opaque_id),
                 },
                 "permissions": self._resolve_share_permissions(share.share),
                 "grantee": {
@@ -153,7 +149,7 @@ class Cs3ShareApi:
             "opaque_id": share.id.opaque_id,
             "id": {
                 "storage_id": share.resource_id.storage_id,
-                "opaque_id": self._decode_file_id(share.resource_id.opaque_id),
+                "opaque_id": self._purify_file_path(share.resource_id.opaque_id),
             },
             "permissions": self._resolve_share_permissions(share),
             "grantee": {
@@ -168,8 +164,7 @@ class Cs3ShareApi:
             "creator": {
                 "idp": share.creator.idp,
                 "opaque_id": share.creator.opaque_id
-            },
-            # "state": share.state
+            }
         }
         return share_mapped
 
