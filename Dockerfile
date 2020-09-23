@@ -34,7 +34,7 @@ RUN cd /opt/cs3 && \
     fix-permissions "/opt/cs3" && \
     fix-permissions "/home/${NB_USER}" && \
 	sed -i 's/#c.NotebookApp.contents_manager_class/c.NotebookApp.contents_manager_class/g' /home/${NB_USER}/.jupyter/jupyter_notebook_config.py && \
-	sed -i 's/notebook.services.contents.largefilemanager.LargeFileManager/cs3api4lab.CS3APIsManager/g' /home/${NB_USER}/.jupyter/jupyter_notebook_config.py
+	sed -i 's/notebook.services.contents.largefilemanager.LargeFileManager/cs3api4lab.api.cs3apismanager.CS3APIsManager/g' /home/${NB_USER}/.jupyter/jupyter_notebook_config.py
 
 #
 # Copy cs3Api plugin config

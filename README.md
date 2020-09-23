@@ -152,7 +152,7 @@ Config file fields:
 
 Clone repo and switch to “docker” branch 
 ```bash
-git clone https://github.com/JarCz/cs3api4lab.git
+git clone https://github.com/sciencemesh/cs3api4lab.git
 cd cs3api4lab
 git switch docker
 ```
