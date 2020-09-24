@@ -39,4 +39,3 @@ class Cs3ConfigManager(LoggingConfigurable):
             if env_name in os.environ:
                 self.log.debug(f"Overwriting config value {name}")
                 self.config[name] = os.environ[env_name]
-        # Cs3ConfigManager.config = self.config
