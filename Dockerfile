@@ -20,6 +20,7 @@ RUN cd /opt/cs3 && \
 	python -m pip install --upgrade pip && \
 	pip install --no-cache-dir jupyter_packaging && \
 	pip install --no-cache-dir -e . && \
+    jupyter lab --generate-config -y && \
 	jupyter serverextension enable --py cs3api4lab --sys-prefix && \
 	jlpm && \
 	jlpm build && \
