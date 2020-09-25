@@ -19,7 +19,7 @@ class ShareHandler(APIHandler):
                                       self.share_api.create,
                                       201,
                                       request['endpoint'],
-                                      request['file_id'],
+                                      request['file_path'],
                                       request['grantee'],
                                       request['idp'],
                                       request['role'],
@@ -48,7 +48,7 @@ class ListSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        RequestHandler.handle_request(self, self.share_api.list, 200)
+        RequestHandler.handle_request(self, self.share_api.list_dir_model, 200)
 
 
 class ListReceivedSharesHandler(APIHandler):
@@ -77,8 +77,8 @@ class ListSharesForFile(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        file_id = self.get_query_argument('file_id', default=None)
-        RequestHandler.handle_request(self, self.share_api.list_grantees_for_file, 200, file_id)
+        request = self.get_json_body()
+        RequestHandler.handle_request(self, self.share_api.list_grantees_for_file, 200, request['storage_id'], request['file_path'])
 
 
 handlers = [
