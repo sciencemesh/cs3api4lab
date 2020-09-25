@@ -91,7 +91,7 @@ class Cs3ShareApi:
         file_info = {
             "resource_id": {
                 "storage_id": share.resource_id.storage_id,
-                "opaque_id": share.resource_id.opaque_id
+                "opaque_id": self._purify_file_path(share.resource_id.opaque_id)
             },
             "owner": {
                 "idp": share.owner.idp,
@@ -358,6 +358,7 @@ class Cs3ShareApi:
         model['writable'] = False
         model['type'] = 'file'
         model['mimetype'] = mimetypes.guess_type(file_id)[0]
-        model['resource_id'] = {"opaque_id": share.resource_id.opaque_id, "storage_id": share.resource_id.storage_id}
+        model['resource_id'] = {"opaque_id": self._purify_file_path(share.resource_id.opaque_id),
+                                "storage_id": share.resource_id.storage_id}
 
         return model

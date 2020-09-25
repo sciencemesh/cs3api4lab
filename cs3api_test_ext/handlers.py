@@ -77,8 +77,9 @@ class ListSharesForFile(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        request = self.get_json_body()
-        RequestHandler.handle_request(self, self.share_api.list_grantees_for_file, 200, request['storage_id'], request['file_path'])
+        file_path = self.get_query_argument('file_path')
+        storage_id = self.get_query_argument('storage_id')
+        RequestHandler.handle_request(self, self.share_api.list_grantees_for_file, 200, storage_id, file_path)
 
 
 handlers = [
