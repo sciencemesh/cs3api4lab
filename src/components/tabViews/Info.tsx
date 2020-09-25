@@ -7,7 +7,6 @@ type InfoProps = {
 }
 
 const Info = (props :InfoProps) :JSX.Element => {
-    console.log(props.content);
     return (
         <table className='jp-file-detail'>
             <tbody>
