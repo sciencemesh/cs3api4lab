@@ -1,29 +1,29 @@
 import { ReactWidget } from '@jupyterlab/apputils';
 import React from 'react';
 
-import CreateShare from "./CreateShare";
-import {Contents} from "@jupyterlab/services";
+import Main from "./Main";
+import { Contents } from '@jupyterlab/services';
 
 type WidgetProps = {
-    fileInfo: Contents.IModel
+    fileInfo: Contents.IModel,
 }
 
 /**
  * Widget container.
  */
-export class Widget extends ReactWidget {
+export class CreateShareWidget extends ReactWidget {
     private readonly fileInfo: Contents.IModel;
 
-    constructor(props :WidgetProps) {
+    public constructor(props :WidgetProps) {
         super();
         this.addClass('jp-ReactWidget');
         this.fileInfo = props.fileInfo;
     }
 
     protected render(): JSX.Element {
-      return (
-          <CreateShare fileInfo={this.fileInfo}/>
-      )
+        return (
+            <Main fileInfo={this.fileInfo} />
+        )
     }
 }
 

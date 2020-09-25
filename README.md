@@ -28,7 +28,7 @@ jupyter labextension install @sciencemesh/cs3api4lab
 To enable the Manager and Chekpoints, the following configuration needs to be added to `jupyter_notebook_config.py`:
 
 ```python
-c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
+c.NotebookApp.contents_manager_class = 'cs3api_test_ext.api.cs3apismanager.CS3APIsManager'
 c.ContentsManager.checkpoints_class = 'cs3api4lab.CS3APIsCheckpoints'
 ```
 
@@ -109,7 +109,7 @@ c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemana
 to
 
 ```
-c.NotebookApp.contents_manager_class = 'cs3api_test_ext.CS3APIsManager'
+c.NotebookApp.contents_manager_class = 'cs3api_test_ext.api.cs3apismanager.CS3APIsManager'
 ```
 
 ## Setup for docker image
