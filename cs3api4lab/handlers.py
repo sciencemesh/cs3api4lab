@@ -48,7 +48,7 @@ class ListSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        RequestHandler.handle_request(self, self.share_api.list, 200)
+        RequestHandler.handle_request(self, self.share_api.list_dir_model(), 200)
 
 
 class ListReceivedSharesHandler(APIHandler):

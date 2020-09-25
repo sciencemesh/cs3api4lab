@@ -13,6 +13,10 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
     receiver_id = 'f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c'
     receiver_idp = 'cesnet.cz'
+
+    receiver2_id = '932b4540-8d16-481e-8ef4-588e4b6b151c'
+    receiver2_idp = 'example.org'
+
     receiver_role = 'viewer'
     receiver_grantee_type = 'user'
     file_path = '/test.txt'
@@ -29,6 +33,36 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         share_list = self.api.list()
         try:
             if not list(filter(lambda s: s['opaque_id'] == str(self.share_id), share_list)):
+                raise Exception("Share not created")
+        finally:
+            self._clear_shares()
+
+    def test_create_and_list_directory_model(self):
+
+        self._clear_shares()
+
+        created_share = self._create_share()
+        self.share_id = created_share['opaque_id']
+        share_list = self.api.list_dir_model()
+
+        try:
+            if not list(filter(lambda s: s['path'] == str(self.file_path), share_list['content'])):
+                raise Exception("Share not created")
+        finally:
+            self._clear_shares()
+
+    def test_create_duplicate_and_list_directory_model(self):
+
+        created_share = self._create_share()
+        self.share_id = created_share['opaque_id']
+
+        self._create_test_share(self.receiver2_id, self.receiver2_idp)
+
+        share_list = self.api.list_dir_model()
+        self.assertEqual(len(share_list['content']), 1)
+
+        try:
+            if not list(filter(lambda s: s['path'] == str(self.file_path), share_list['content'])):
                 raise Exception("Share not created")
         finally:
             self._clear_shares()
@@ -88,14 +122,17 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         shares = self.api.list()
         for share in shares:
             self._remove_test_share(share['opaque_id'])
-        self._remove_test_file()
+        try:
+            self._remove_test_file()
+        except IOError as e:
+            print("Error remove file:", e)
 
-    def _create_test_share(self):
+    def _create_test_share(self, receiver_id='f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c', receiver_idp='cesnet.cz'):
         file_path = self.config['home_dir'] + self.file_path
         return self.api.create(self.config['endpoint'],
                                file_path,
-                               self.receiver_id,
-                               self.receiver_idp,
+                               receiver_id,
+                               receiver_idp,
                                self.receiver_role,
                                self.receiver_grantee_type)
 

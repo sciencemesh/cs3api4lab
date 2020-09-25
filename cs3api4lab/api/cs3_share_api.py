@@ -5,6 +5,8 @@ CS3 Share API for the JupyterLab Extension
 
 Authors:
 """
+import mimetypes
+from datetime import datetime
 
 import urllib.parse
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
@@ -13,6 +15,9 @@ import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
 import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
+
+from IPython.utils import tz
+
 from cs3api4lab.auth.authenticator import Authenticator
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.api.file_utils import FileUtils
@@ -54,13 +59,23 @@ class Cs3ShareApi:
         return self._map_given_share(share_response.share)
 
     def list(self):
+        list_response = self._list()
+        return self._map_given_shares(list_response)
+
+    def list_dir_model(self):
+        list_response = self._list()
+        return self._map_shares_to_dir_model(list_response)
+
+    def _list(self):
+        # todo filters
         list_request = sharing.ListSharesRequest()
         list_response = self.gateway_stub.ListShares(request=list_request,
                                                      metadata=[('x-access-token', self.get_token())])
         self._check_response_code(list_response)
         self.log.info("List shares response for user: " + self.config['client_id'])
         self.log.info(list_request)
-        return self._map_given_shares(list_response)
+        return list_response
+
 
     def list_grantees_for_file(self, storage_id, file_path):
         file_path = urllib.parse.quote('fileid-' + self.config['client_id'] + file_path, safe='')
@@ -294,3 +309,54 @@ class Cs3ShareApi:
 
     def get_token(self):
         return self.auth.authenticate(self.config['client_id'])
+
+    def _map_shares_to_dir_model(self, list_response):
+
+        model = self._create_dir_model()
+        path_list = []
+        for share in list_response.shares:
+            file_model = self._map_share_to_file_model(share)
+            if file_model['path'] not in path_list:
+                model['content'].append(file_model)
+                path_list.append(file_model['path'])
+
+        return model
+
+    def _create_dir_model(self):
+
+        model = {}
+        model['name'] = "/"
+        model['path'] = "/"
+        model['last_modified'] = datetime.now(tz=tz.UTC)
+        model['created'] = datetime.now(tz=tz.UTC)
+        model['mimetype'] = None
+        model['writable'] = False
+        model['type'] = None
+        model['size'] = None
+        model['type'] = 'directory'
+        model['content'] = []
+        model['format'] = 'json'
+
+        return model
+
+    def _map_share_to_file_model(self, share):
+
+        created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC)
+        last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC)
+        file_id = self._purify_file_path(share.resource_id.opaque_id)
+
+        model = {}
+        model['name'] = file_id
+        model['path'] = file_id
+
+        model['last_modified'] = last_modified
+        model['created'] = created
+        model['content'] = None
+        model['format'] = None
+        model['size'] = None
+        model['writable'] = False
+        model['type'] = 'file'
+        model['mimetype'] = mimetypes.guess_type(file_id)[0]
+        model['resource_id'] = share.resource_id
+
+        return model
