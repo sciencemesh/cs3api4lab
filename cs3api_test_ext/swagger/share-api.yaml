@@ -20,23 +20,23 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - in: "query"
+      - in: "body"
         name: "endpoint"
         description: "endpoint path, default /"
         required: true
-      - in: "query"
-        name: "file_id"
-        description: "filename with path, e.g. /test.yml"
+      - in: "body"
+        name: "file_path"
+        description: "Path with file name, e.g. /test.yml"
         required: true
-      - in: "query"
+      - in: "body"
         name: "grantee"
         description: "Share receiver's opaque_id"
         required: true
-      - in: "query"
+      - in: "body"
         name: "idp"
         description: "ID provider address"
         required: true
-      - in: "query"
+      - in: "body"
         name: "role"
         description: "role of a share receiver"
         required: true
@@ -45,7 +45,7 @@ paths:
           enum:
           - "viewer"
           - "editor"
-      - in: "query"
+      - in: "body"
         name: "grantee_type"
         description: ""
         required: true
@@ -70,27 +70,19 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - in: "query"
-        name: "endpoint"
-        description: "endpoint path"
-        required: true
-      - in: "query"
-        name: "user_id"
-        description: "Username"
-        required: true
-      - in: "query"
+      - in: "body"
         name: "share_id"
         description: "ID of a share"
         required: true
-      - in: "query"
-        name: "grantee_type"
+      - in: "body"
+        name: "role"
         description: ""
         required: true
         items:
           type: "string"
           enum:
-          - "user"
-          - "group"
+          - "editor"
+          - "viewer"
       responses:
         "204":
           description: "Share updated"
@@ -127,11 +119,6 @@ paths:
       description: ""
       produces:
       - "application/json"
-      parameters:
-      - in: "query"
-        name: "user_id"
-        description: "Username"
-        required: true
       responses:
         "200":
           description: "Shares returned"
@@ -149,10 +136,14 @@ paths:
       produces:
         - "application/json"
       parameters:
-        - in: "query"
-          name: "file_id"
-          description: "Filename with path, e.g. '/home/test.txt'"
+        - in: "body"
+          name: "file_path"
+          description: "Path with file name, e.g. '/home/test.txt'"
           required: true
+        - in: "body"
+            name: "storage_id"
+            description: "Storage id"
+            required: true
       responses:
         "200":
           description: "Grantees returned"
@@ -161,7 +152,7 @@ paths:
         "500":
           description: "Error returning grantees"
 
-  /shares/list-received:
+  /shares/received:
     get:
       tags:
       - "shares"
@@ -169,11 +160,6 @@ paths:
       description: ""
       produces:
       - "application/json"
-      parameters:
-      - in: "query"
-        name: "user_id"
-        description: "Username"
-        required: true
       responses:
         "200":
           description: "Shares returned"

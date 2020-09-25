@@ -5,15 +5,19 @@ CS3 Share API for the JupyterLab Extension
 
 Authors:
 """
+import mimetypes
+from datetime import datetime
 
-import re
+import urllib.parse
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
 import cs3.sharing.collaboration.v1beta1.resources_pb2 as sharing_res
 import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
 import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
-import random
+
+from IPython.utils import tz
+
 from cs3api_test_ext.auth.authenticator import Authenticator
 from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
 from cs3api_test_ext.api.file_utils import FileUtils
@@ -29,6 +33,7 @@ class Cs3ShareApi:
     auth = None
     config = {}
     file_api = None
+    date_fmt = '%d-%b-%Y (%H:%M:%S.%f)'
 
     def __init__(self, log):
         self.config = Cs3ConfigManager().config
@@ -38,13 +43,13 @@ class Cs3ShareApi:
         self.log = log
         return
 
-    def create(self, endpoint, fileid, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
+    def create(self, endpoint, file_path, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
         if grantee is None:
             raise Exception("Grantee was not provided")
         share_permissions = self._get_share_permissions(role)
         grantee_type_enum = self._get_grantee_type(grantee_type)
         share_grant = self._get_share_grant(grantee_type_enum, share_permissions, idp, grantee)
-        resource_info = self._get_resource_info(endpoint, fileid)
+        resource_info = self._get_resource_info(endpoint, file_path)
         share_request = sharing.CreateShareRequest(resource_info=resource_info, grant=share_grant)
         token = self.get_token()
         share_response = self.gateway_stub.CreateShare(request=share_request,
@@ -55,38 +60,68 @@ class Cs3ShareApi:
         return self._map_given_share(share_response.share)
 
     def list(self):
+        list_response = self._list()
+        return self._map_given_shares(list_response)
+
+    def list_dir_model(self):
+        list_response = self._list()
+        return self._map_shares_to_dir_model(list_response)
+
+    def _list(self):
         # todo filters
         list_request = sharing.ListSharesRequest()
         list_response = self.gateway_stub.ListShares(request=list_request,
                                                      metadata=[('x-access-token', self.get_token())])
         self._check_response_code(list_response)
         self.log.info("List shares response for user: " + self.config['client_id'])
-        self.log.info(list_response)
-        return self._map_given_shares(list_response)
+        self.log.info(list_request)
+        return list_response
 
-    def list_grantees_for_file(self, file_id):
-        shares_response = self.list()
 
+    def list_grantees_for_file(self, storage_id, file_path):
+        file_path = urllib.parse.quote('fileid-' + self.config['client_id'] + file_path, safe='')
+        resource_id = storage_resources.ResourceId(storage_id=storage_id, opaque_id=file_path)
+        resource_filter = sharing.ListSharesRequest.Filter(
+            resource_id=resource_id,
+            type=sharing.ListSharesRequest.Filter.Type.TYPE_RESOURCE_ID)
+        list_request = sharing.ListSharesRequest(filters=[resource_filter])
+        shares_response = self.gateway_stub.ListShares(request=list_request,
+                                                       metadata=[('x-access-token', self.get_token())])
+        share = shares_response.shares[0]
+        file_info = {
+            "resource_id": {
+                "storage_id": share.resource_id.storage_id,
+                "opaque_id": share.resource_id.opaque_id
+            },
+            "owner": {
+                "idp": share.owner.idp,
+                "opaque_id": share.owner.opaque_id
+            },
+            "creator": {
+                "idp": share.creator.idp,
+                "opaque_id": share.creator.opaque_id
+            }
+        }
         shares = []
-        for share in shares_response:
-            if file_id == self._decode_file_id(share['id']['opaque_id']):
-                shares.append(share)
+        for share in shares_response.shares:
+            share_info = {
+                "opaque_id": share.id.opaque_id,
+                "grantee": {
+                    "idp": share.grantee.id.idp,
+                    "opaque_id": share.grantee.id.opaque_id,
+                    "permissions": self._resolve_share_permissions(share)
+                }
+            }
+            shares.append(share_info)
 
-        shares_dict = {}
-        for share in shares:
-            opaque_id = share['grantee']['opaque_id']
-            shares_dict[opaque_id] = share['permissions']
+        response = {"file_info": file_info, "shares": shares}
+        return response
 
-        return shares_dict
+    def _decode_file_path(self, file_path):
+        return urllib.parse.unquote(file_path)
 
-    def _map_opaque_id(self, opaque_id):
-        return "user" + str(random.randint(0, 10))
-
-    def _decode_file_id(self, file_id):
-        if '%2F' in file_id:
-            return re.search('(?=%2F).*', file_id).group(0).replace('%2F', '/')
-        else:
-            return file_id
+    def _purify_file_path(self, file_path):
+        return self._decode_file_path(file_path.replace('fileid-' + self.config['client_id'], ''))
 
     def remove(self, share_id):
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
@@ -99,7 +134,6 @@ class Cs3ShareApi:
         return
 
     def update(self, share_id, role):
-        # todo check role
         share_permissions = self._get_share_permissions(role)
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
@@ -127,7 +161,7 @@ class Cs3ShareApi:
                 "opaque_id": share.share.id.opaque_id,
                 "id": {
                     "storage_id": share.share.resource_id.storage_id,
-                    "opaque_id": self._decode_file_id(share.share.resource_id.opaque_id),
+                    "opaque_id": self._purify_file_path(share.share.resource_id.opaque_id),
                 },
                 "permissions": self._resolve_share_permissions(share.share),
                 "grantee": {
@@ -153,7 +187,7 @@ class Cs3ShareApi:
             "opaque_id": share.id.opaque_id,
             "id": {
                 "storage_id": share.resource_id.storage_id,
-                "opaque_id": self._decode_file_id(share.resource_id.opaque_id),
+                "opaque_id": self._purify_file_path(share.resource_id.opaque_id),
             },
             "permissions": self._resolve_share_permissions(share),
             "grantee": {
@@ -168,8 +202,7 @@ class Cs3ShareApi:
             "creator": {
                 "idp": share.creator.idp,
                 "opaque_id": share.creator.opaque_id
-            },
-            # "state": share.state
+            }
         }
         return share_mapped
 
@@ -277,3 +310,54 @@ class Cs3ShareApi:
 
     def get_token(self):
         return self.auth.authenticate(self.config['client_id'])
+
+    def _map_shares_to_dir_model(self, list_response):
+
+        model = self._create_dir_model()
+        path_list = []
+        for share in list_response.shares:
+            file_model = self._map_share_to_file_model(share)
+            if file_model['path'] not in path_list:
+                model['content'].append(file_model)
+                path_list.append(file_model['path'])
+
+        return model
+
+    def _create_dir_model(self):
+
+        model = {}
+        model['name'] = "/"
+        model['path'] = "/"
+        model['last_modified'] = datetime.now(tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
+        model['created'] = datetime.now(tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
+        model['mimetype'] = None
+        model['writable'] = False
+        model['type'] = None
+        model['size'] = None
+        model['type'] = 'directory'
+        model['content'] = []
+        model['format'] = 'json'
+
+        return model
+
+    def _map_share_to_file_model(self, share):
+
+        created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
+        last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
+        file_id = self._purify_file_path(share.resource_id.opaque_id)
+
+        model = {}
+        model['name'] = file_id
+        model['path'] = file_id
+
+        model['last_modified'] = last_modified
+        model['created'] = created
+        model['content'] = None
+        model['format'] = None
+        model['size'] = None
+        model['writable'] = False
+        model['type'] = 'file'
+        model['mimetype'] = mimetypes.guess_type(file_id)[0]
+        model['resource_id'] = {"opaque_id": share.resource_id.opaque_id, "storage_id": share.resource_id.storage_id}
+
+        return model
