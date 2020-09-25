@@ -6,13 +6,17 @@ import Shares from "./tabViews/Shares";
 type ContentProps = {
     content: Contents.IModel,
     contentType: string,
+    grantees: Object
 }
+
 
 const Content = (props: ContentProps): JSX.Element => {
     let elementToDisplay :JSX.Element;
 
     switch (props.contentType) {
-        case 'shares': elementToDisplay = Shares(); break;
+        case 'shares': elementToDisplay = Shares({grantees: props.grantees});
+            break;
+
         case 'info':
         default:
             elementToDisplay = Info({ content: props.content});
