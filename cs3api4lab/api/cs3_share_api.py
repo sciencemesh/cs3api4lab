@@ -71,13 +71,35 @@ class Cs3ShareApi:
         list_request = sharing.ListSharesRequest(filters=[resource_filter])
         shares_response = self.gateway_stub.ListShares(request=list_request,
                                                        metadata=[('x-access-token', self.get_token())])
-
-        shares_dict = {}
+        share = shares_response.shares[0]
+        file_info = {
+            "resource_id": {
+                "storage_id": share.resource_id.storage_id,
+                "opaque_id": share.resource_id.opaque_id
+            },
+            "owner": {
+                "idp": share.owner.idp,
+                "opaque_id": share.owner.opaque_id
+            },
+            "creator": {
+                "idp": share.creator.idp,
+                "opaque_id": share.creator.opaque_id
+            }
+        }
+        shares = []
         for share in shares_response.shares:
-            opaque_id = share.grantee.id.opaque_id
-            shares_dict[opaque_id] = self._resolve_share_permissions(share)
+            share_info = {
+                "opaque_id": share.id.opaque_id,
+                "grantee": {
+                    "idp": share.grantee.id.idp,
+                    "opaque_id": share.grantee.id.opaque_id,
+                    "permissions": self._resolve_share_permissions(share)
+                }
+            }
+            shares.append(share_info)
 
-        return shares_dict
+        response = {"file_info": file_info, "shares": shares}
+        return response
 
     def _decode_file_path(self, file_path):
         return urllib.parse.unquote(file_path)

@@ -35,12 +35,14 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
     def test_list_grantees_for_file(self):
         self._create_share()
-        shares_dict = self.api.list_grantees_for_file(self.storage_id, self.file_path)
+        response = self.api.list_grantees_for_file(self.storage_id, self.file_path)
         try:
-            if not shares_dict:
+            if not response:
                 raise Exception("Failed to retrieve grantees of the file")
-            if shares_dict[self.receiver_id] != self.receiver_role:
+            if response['shares'][0]['grantee']['opaque_id'] != self.receiver_id:
                 raise Exception("Incorrect grantee")
+            if response['shares'][0]['grantee']['permissions'] != self.receiver_role:
+                raise Exception("Incorrect permissions")
         finally:
             self._clear_shares()
 
