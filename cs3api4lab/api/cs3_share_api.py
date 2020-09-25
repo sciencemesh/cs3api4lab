@@ -33,6 +33,7 @@ class Cs3ShareApi:
     auth = None
     config = {}
     file_api = None
+    date_fmt = '%d-%b-%Y (%H:%M:%S.%f)'
 
     def __init__(self, log):
         self.config = Cs3ConfigManager().config
@@ -327,8 +328,8 @@ class Cs3ShareApi:
         model = {}
         model['name'] = "/"
         model['path'] = "/"
-        model['last_modified'] = datetime.now(tz=tz.UTC)
-        model['created'] = datetime.now(tz=tz.UTC)
+        model['last_modified'] = datetime.now(tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
+        model['created'] = datetime.now(tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
         model['mimetype'] = None
         model['writable'] = False
         model['type'] = None
@@ -341,8 +342,8 @@ class Cs3ShareApi:
 
     def _map_share_to_file_model(self, share):
 
-        created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC)
-        last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC)
+        created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
+        last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
         file_id = self._purify_file_path(share.resource_id.opaque_id)
 
         model = {}
@@ -357,6 +358,6 @@ class Cs3ShareApi:
         model['writable'] = False
         model['type'] = 'file'
         model['mimetype'] = mimetypes.guess_type(file_id)[0]
-        model['resource_id'] = share.resource_id
+        model['resource_id'] = {"opaque_id": share.resource_id.opaque_id, "storage_id": share.resource_id.storage_id}
 
         return model
