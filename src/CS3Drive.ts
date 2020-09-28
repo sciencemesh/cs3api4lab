@@ -8,6 +8,7 @@ export async function getDummyFilesForCS3Share(stateDB: IStateDB) :Promise<any> 
     const share_type = (share as ReadonlyJSONObject)['share_type']
 
     const shares = (share_type == 'with_me') ? await getSharedWithMe() : await getSharedByMe();
+    console.log('shares', shares);
     const contents: Contents.IModel = {
         name: 'cs3 shared',
         path: '/',
@@ -20,37 +21,18 @@ export async function getDummyFilesForCS3Share(stateDB: IStateDB) :Promise<any> 
         format: 'json'
     };
 
-    const fileList: Contents.IModel[] = [];
-    shares.forEach((x :any) => {
-        fileList.push({
-            name: x.id.opaque_id,
-            path: x.id.opaque_id,
-            type: 'file',
-            writable: false,
-            created: '2020-07-07T08:19:19Z',
-            last_modified: '2020-07-07T08:19:19Z',
-            content: 'dsa',
-            mimetype: 'text/plain',
-            format: 'json',
-            size: 21,
-        });
-    });
-
+    const fileList = (typeof shares?.content != 'undefined') ? shares.content : [];
     return {...contents, content: fileList};
 }
 
-export async function getSharedByMe (): Promise<any>{
-    const  shares = await requestAPI('/api/cs3test/shares/list', {
+async function getSharedByMe(): Promise<any>{
+    return await requestAPI('/api/cs3test/shares/list', {
         method: 'get'
     });
-
-    return shares;
 }
 
-export async function getSharedWithMe (): Promise<any>{
-    const  shares = await requestAPI('/api/cs3test/shares/received', {
+async function getSharedWithMe(): Promise<any>{
+    return await requestAPI('/api/cs3test/shares/received', {
         method: 'get'
     });
-
-    return shares;
 }
