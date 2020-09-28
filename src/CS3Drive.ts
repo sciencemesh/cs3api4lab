@@ -26,13 +26,13 @@ export async function getDummyFilesForCS3Share(stateDB: IStateDB) :Promise<any> 
 }
 
 async function getSharedByMe(): Promise<any>{
-    return await requestAPI('/api/cs3test/shares/list', {
+    return await requestAPI('/api/cs3/shares/list', {
         method: 'get'
     });
 }
 
 async function getSharedWithMe(): Promise<any>{
-    return await requestAPI('/api/cs3test/shares/received', {
+    return await requestAPI('/api/cs3/shares/received', {
         method: 'get'
     });
 }
