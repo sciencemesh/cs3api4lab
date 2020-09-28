@@ -1,8 +1,8 @@
 from unittest import TestCase
 from unittest import skip
-from cs3api_test_ext.api.cs3_share_api import Cs3ShareApi
-from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
-from cs3api_test_ext.config.config_manager import Cs3ConfigManager
+from cs3api4lab.api.cs3_share_api import Cs3ShareApi
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
+from cs3api4lab.config.config_manager import Cs3ConfigManager
 from traitlets.config import LoggingConfigurable
 
 

@@ -2,8 +2,8 @@ from notebook.base.handlers import APIHandler
 from tornado import gen, web
 import json
 
-from cs3api_test_ext.api.cs3apismanager import CS3APIsManager
-from cs3api_test_ext.api.cs3_share_api import Cs3ShareApi
+from cs3api4lab.api.cs3apismanager import CS3APIsManager
+from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 
 
 class ShareHandler(APIHandler):
@@ -82,10 +82,10 @@ class ListSharesForFile(APIHandler):
 
 
 handlers = [
-    (r"/api/cs3test/shares", ShareHandler),
-    (r"/api/cs3test/shares/list", ListSharesHandler),
-    (r"/api/cs3test/shares/received", ListReceivedSharesHandler),
-    (r"/api/cs3test/shares/file", ListSharesForFile),
+    (r"/api/cs3/shares", ShareHandler),
+    (r"/api/cs3/shares/list", ListSharesHandler),
+    (r"/api/cs3/shares/received", ListReceivedSharesHandler),
+    (r"/api/cs3/shares/file", ListSharesForFile),
 ]
 
 

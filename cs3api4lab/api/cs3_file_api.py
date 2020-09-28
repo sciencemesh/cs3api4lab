@@ -14,10 +14,10 @@ import cs3.rpc.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 import cs3.types.v1beta1.types_pb2 as types
 import requests
-from cs3api_test_ext.auth.authenticator import Authenticator
-from cs3api_test_ext.api.file_utils import FileUtils as file_utils
-from cs3api_test_ext.auth.channel_connector import ChannelConnector
-from cs3api_test_ext.config.config_manager import Cs3ConfigManager
+from cs3api4lab.auth.authenticator import Authenticator
+from cs3api4lab.api.file_utils import FileUtils as file_utils
+from cs3api4lab.auth.channel_connector import ChannelConnector
+from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 
 class Cs3FileApi:

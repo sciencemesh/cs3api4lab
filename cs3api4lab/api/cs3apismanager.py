@@ -3,11 +3,11 @@ from datetime import datetime
 import nbformat
 import mimetypes
 from notebook.services.contents.manager import ContentsManager
-from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from tornado import web
 from notebook import _tz as tz
 from nbformat.v4 import new_notebook
-from cs3api_test_ext.config.config_manager import Cs3ConfigManager
+from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 
 class CS3APIsManager(ContentsManager):
