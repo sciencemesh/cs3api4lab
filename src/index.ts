@@ -25,7 +25,7 @@ namespace CommandIDs {
     export const createShare = 'filebrowser:cs3-create-share';
     // export const showBrowser = 'filebrowser:showBrowser';
 }
-
+console.log('test');
 /**
  * The JupyterLab plugin for the Google Drive Filebrowser.
  */
@@ -183,7 +183,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
  * Initialization data for the cs3api4lab extension.
  */
 const cs3info: JupyterFrontEndPlugin<void> = {
-  id: 'cs3api_test_ext',
+  id: 'cs3api4lab',
   autoStart: true,
   requires: [IFileBrowserFactory, ISettingRegistry, ICommandPalette],
   optional: [ILauncher],
