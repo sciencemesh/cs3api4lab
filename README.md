@@ -28,8 +28,8 @@ jupyter labextension install @sciencemesh/cs3api4lab
 To enable the Manager and Chekpoints, the following configuration needs to be added to `jupyter_notebook_config.py`:
 
 ```python
-c.NotebookApp.contents_manager_class = 'cs3api_test_ext.api.cs3apismanager.CS3APIsManager'
-c.ContentsManager.checkpoints_class = 'cs3api4lab.CS3APIsCheckpoints'
+c.NotebookApp.contents_manager_class = 'cs3api4lab.api.cs3apismanager.CS3APIsManager'
+c.ContentsManager.checkpoints_class = 'cs3api4lab.api.cs3apischeckpoint.CS3APIsCheckpoints'
 ```
 
 ## Contributing
@@ -75,24 +75,38 @@ Now every change will be built locally and bundled into JupyterLab. Be sure to r
 ### Uninstall
 
 ```bash
-pip uninstall cs3api_test_ext
-jupyter labextension uninstall @JarCz/cs3api_test_ext
+pip uninstall cs3api4lab
+jupyter labextension uninstall @sciencemesh/cs3api4lab
+```
+
+### Setup env for integration testing
+
+#### Create local IOP instance 
+Follow the first 3 steps from this tutorial https://reva.link/docs/tutorials/share-tutorial/
+or create with commands: 
+
+```bash
+git clone https://github.com/cs3org/reva
+cd reva
+make deps
+make
+cd examples/ocmd/ && mkdir -p /tmp/reva && && mkdir -p /var/tmp/reva 
+```
+
+#### Run test
+
+Goto test folder:
+```bash
+cd cs3api4lab/tests
+```
+
+Run cs3 API connector test:
+```bash
+python test_cs3_file_api.py
+python test_cs3apismanager.py
 ```
 
 ### Setup env 
-
-Windows console:
-```
-mkdir c:\var\tmp
-pip install cs3apis grpcio grpcio-tools
-```
-
-JupyterLab console:
-```
-pip install cs3apis grpcio grpcio-tools
-```
-
-Replace notebook File Content Manager class
 
 Create config:
 ```
@@ -109,16 +123,36 @@ c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemana
 to
 
 ```
-c.NotebookApp.contents_manager_class = 'cs3api_test_ext.api.cs3apismanager.CS3APIsManager'
+c.NotebookApp.contents_manager_class = 'cs3api4lab.api.cs3apismanager.CS3APIsManager'
 ```
+
+### CS3 config file
+Copy cs3 example config file from "jupyter-config/jupyter_cs3_config.json"
+to:
+* Windows: 
+```C:\Users\{USER_PROFILE}\.jupyter\```
+* Linux:
+ ```HOME_FOLDER/.jupyter/```
+
+Config file fields:
+- revahost - address and port on which the Reva server is listening
+- authtokenvalidity - the lifetime of the authenticating token
+- endpoint - endpoint for Reva storage provider
+- chunksize - size of the downloaded fragment from Reva
+- secure_channel - secure channel flag
+- client_cert - public key file path (PEM-encoded)
+- client_key - private key file path
+- ca_cert - certificate authority file path
+- client_id - client login to authenticate in Reva
+- client_secret - client password to authenticate in Reva
 
 ## Setup for docker image
 
 ### Build docker image from local source code
 
-Clone repo and switch to â€śdockerâ€ť branch 
+Clone repo and switch to “docker” branch 
 ```bash
-git clone https://github.com/JarCz/cs3api4lab.git
+git clone https://github.com/sciencemesh/cs3api4lab.git
 cd cs3api4lab
 git switch docker
 ```
@@ -142,7 +176,7 @@ Run docker image with overwriting config variables:
 
 - all supported value:
 ```bash
-docker run -p 8888:8888 -e CS3_REVAHOST=IP:PORT -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass -e CS3_HOME_DIR="/test" cs3api4lab
+docker run -p 8888:8888 -e CS3_REVA_HOST=IP:PORT -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass -e CS3_HOME_DIR="/test" cs3api4lab
 ```
 
 - user authorization data:
@@ -153,7 +187,7 @@ docker run -p 8888:8888 -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass 
 ### Quick build
 ```bash
 pip install -e .
-jupyter serverextension enable --py cs3api_test_ext --sys-prefix
+jupyter serverextension enable --py cs3api4lab --sys-prefix
 jlpm
 jlpm build
 jupyter labextension install .

@@ -20,6 +20,7 @@ RUN cd /opt/cs3 && \
 	python -m pip install --upgrade pip && \
 	pip install --no-cache-dir jupyter_packaging && \
 	pip install --no-cache-dir -e . && \
+    jupyter lab --generate-config -y && \
 	jupyter serverextension enable --py cs3api4lab --sys-prefix && \
 	jlpm && \
 	jlpm build && \
@@ -34,18 +35,18 @@ RUN cd /opt/cs3 && \
     fix-permissions "/opt/cs3" && \
     fix-permissions "/home/${NB_USER}" && \
 	sed -i 's/#c.NotebookApp.contents_manager_class/c.NotebookApp.contents_manager_class/g' /home/${NB_USER}/.jupyter/jupyter_notebook_config.py && \
-	sed -i 's/notebook.services.contents.largefilemanager.LargeFileManager/cs3api4lab.CS3APIsManager/g' /home/${NB_USER}/.jupyter/jupyter_notebook_config.py
+	sed -i 's/notebook.services.contents.largefilemanager.LargeFileManager/cs3api4lab.api.cs3apismanager.CS3APIsManager/g' /home/${NB_USER}/.jupyter/jupyter_notebook_config.py
 
 #
 # Copy cs3Api plugin config
 #	
 COPY jupyter-config/jupyter_cs3_config.json /home/${NB_USER}/.jupyter/jupyter_cs3_config.json
 RUN fix-permissions "/home/${NB_USER}"
-	
+
+ENV JUPYTER_ENABLE_LAB = 1
+
 EXPOSE 8888
 
-ENTRYPOINT ["jupyter", "lab", "--ip=0.0.0.0", "--allow-root", "--no-browser"]
-	
 USER $NB_UID
 
 WORKDIR $HOME

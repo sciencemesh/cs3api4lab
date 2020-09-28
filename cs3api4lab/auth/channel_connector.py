@@ -1,7 +1,7 @@
 import sys
 import grpc
 from traitlets.config import LoggingConfigurable
-from cs3api_test_ext.config.config_manager import Cs3ConfigManager
+from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 
 class ChannelConnector(LoggingConfigurable):

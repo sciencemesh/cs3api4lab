@@ -18,13 +18,13 @@ import cs3.rpc.v1beta1.code_pb2 as cs3_code
 
 from IPython.utils import tz
 
-from cs3api_test_ext.auth.authenticator import Authenticator
-from cs3api_test_ext.api.cs3_file_api import Cs3FileApi
-from cs3api_test_ext.api.file_utils import FileUtils
-from cs3api_test_ext.common.strings import *
-from cs3api_test_ext.config.config_manager import Cs3ConfigManager
+from cs3api4lab.auth.authenticator import Authenticator
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
+from cs3api4lab.api.file_utils import FileUtils
+from cs3api4lab.common.strings import *
+from cs3api4lab.config.config_manager import Cs3ConfigManager
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
-from cs3api_test_ext.auth.channel_connector import ChannelConnector
+from cs3api4lab.auth.channel_connector import ChannelConnector
 
 
 class Cs3ShareApi:

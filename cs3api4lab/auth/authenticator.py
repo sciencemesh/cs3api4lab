@@ -1,8 +1,8 @@
 import cs3.gateway.v1beta1.gateway_api_pb2 as cs3gw
 import time
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
-from cs3api_test_ext.config.config_manager import Cs3ConfigManager
-from cs3api_test_ext.auth.channel_connector import ChannelConnector
+from cs3api4lab.config.config_manager import Cs3ConfigManager
+from cs3api4lab.auth.channel_connector import ChannelConnector
 
 
 class Authenticator:

@@ -1,7 +1,7 @@
 {
   "NotebookApp": {
     "nbserver_extensions": {
-      "cs3api_test_ext": true
+      "cs3api4lab": true
     }
   }
 }

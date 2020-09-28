@@ -12,7 +12,7 @@ import setuptools
 HERE = os.path.abspath(os.path.dirname(__file__))
 
 # The name of the project
-name="cs3api_test_ext"
+name="cs3api4lab"
 
 # Ensure a valid python version
 ensure_python(">=3.5")
