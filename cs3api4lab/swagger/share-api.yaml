@@ -136,14 +136,10 @@ paths:
       produces:
         - "application/json"
       parameters:
-        - in: "body"
+        - in: "query"
           name: "file_path"
           description: "Path with file name, e.g. '/home/test.txt'"
           required: true
-        - in: "body"
-            name: "storage_id"
-            description: "Storage id"
-            required: true
       responses:
         "200":
           description: "Grantees returned"
