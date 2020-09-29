@@ -28,8 +28,8 @@ jupyter labextension install @sciencemesh/cs3api4lab
 To enable the Manager and Chekpoints, the following configuration needs to be added to `jupyter_notebook_config.py`:
 
 ```python
-c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
-c.ContentsManager.checkpoints_class = 'cs3api4lab.CS3APIsCheckpoints'
+c.NotebookApp.contents_manager_class = 'cs3api4lab.api.cs3apismanager.CS3APIsManager'
+c.ContentsManager.checkpoints_class = 'cs3api4lab.api.cs3apischeckpoint.CS3APIsCheckpoints'
 ```
 
 ## Contributing
@@ -93,32 +93,7 @@ make
 cd examples/ocmd/ && mkdir -p /tmp/reva && && mkdir -p /var/tmp/reva 
 ```
 
-Change config file, reconfigure http.services.dataprovider and grpc.services.storageprovider in examples/ocmd/ocmd-server-1.toml with disable_tus = true.
-It will look like this
-
-```ini
-...
-[http.services.dataprovider]
-...
-disable_tus = true
-
-```
-
-and
-
-```ini
-[grpc.services.storageprovider]
-...
-disable_tus = true
-
-```
-
 #### Run test
-
-Add dependency for project:
-```bash
-pip install -r requirements.txt
-```
 
 Goto test folder:
 ```bash
@@ -128,6 +103,7 @@ cd cs3api4lab/tests
 Run cs3 API connector test:
 ```bash
 python test_cs3_file_api.py
+python test_cs3apismanager.py
 ```
 
 ### Setup env 
@@ -147,7 +123,7 @@ c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemana
 to
 
 ```
-c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
+c.NotebookApp.contents_manager_class = 'cs3api4lab.api.cs3apismanager.CS3APIsManager'
 ```
 
 ### CS3 config file
@@ -170,10 +146,48 @@ Config file fields:
 - client_id - client login to authenticate in Reva
 - client_secret - client password to authenticate in Reva
 
+## Setup for docker image
+
+### Build docker image from local source code
+
+Clone repo and switch to “docker” branch 
+```bash
+git clone https://github.com/sciencemesh/cs3api4lab.git
+cd cs3api4lab
+git switch docker
+```
+
+Modify the configuration file, set reva host, user authorization data, etc in file: jupyter-config/jupyter_cs3_config.json
+
+```bash
+nano jupyter-config/jupyter_cs3_config.json
+```
+Build docker image:
+```bash
+docker build -t cs3api4lab .
+```
+
+Run docker image:
+```bash
+docker run -p 8888:8888 cs3api4lab
+```
+
+Run docker image with overwriting config variables:
+
+- all supported value:
+```bash
+docker run -p 8888:8888 -e CS3_REVA_HOST=IP:PORT -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass -e CS3_HOME_DIR="/test" cs3api4lab
+```
+
+- user authorization data:
+```bash
+docker run -p 8888:8888 -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass cs3api4lab
+```
+
 ### Quick build
 ```bash
 pip install -e .
-jupyter serverextension enable --py cs3api_test_ext --sys-prefix
+jupyter serverextension enable --py cs3api4lab --sys-prefix
 jlpm
 jlpm build
 jupyter labextension install .

@@ -1,58 +1,29 @@
 from base64 import decodebytes
 from datetime import datetime
-
 import nbformat
-from jupyter_core.paths import jupyter_config_path
-from notebook.services.config import ConfigManager
-from notebook.services.contents.manager import ContentsManager
-from tornado import web
-
-from notebook import _tz as tz
 import mimetypes
+from notebook.services.contents.manager import ContentsManager
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
+from tornado import web
+from notebook import _tz as tz
 from nbformat.v4 import new_notebook
-
-from cs3api4lab.cs3_file_api import Cs3FileApi
+from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 
 class CS3APIsManager(ContentsManager):
-    cs3_config_dir = ""
-    cs3_config = {}
-    cs3_user_id = "einstein"
-
+    cs3_config = None
+    log = None
+    
     # ToDo: Change to cs3 Type
     TYPE_FILE = 1
     TYPE_DIRECTORY = 2
 
-    log = None
-    cs3_endpoint = None
-
     cs3_file_api = None
 
-    def __init__(self, parent, log, external_config=None):
-
-        #
-        # Get config from jupyter_cs3_config.json file
-        #
-        if external_config is None:
-            config_path = jupyter_config_path()
-            if self.cs3_config_dir not in config_path:
-                # add self.config_dir to the front, if set manually
-                config_path.insert(0, self.cs3_config_dir)
-            cm = ConfigManager(read_config_path=config_path)
-
-            cs3_config_file = cm.get('jupyter_cs3_config')
-            self.cs3_config = cs3_config_file.get("cs3")
-
-            if self.cs3_config is None:
-                log.error(u'Error while reading cs3 config file')
-                raise IOError(u'Error while reading cs3 config file')
-        else:
-
-            self.cs3_config = external_config
-
-        self.cs3_endpoint = self.cs3_config["endpoint"]
+    def __init__(self, parent, log):
+        self.cs3_config = Cs3ConfigManager().config
         self.log = log
-        self.cs3_file_api = Cs3FileApi(self.cs3_config, self.log)
+        self.cs3_file_api = Cs3FileApi(self.log)
 
     def dir_exists(self, path):
         """Does a directory exist at the given path?
@@ -82,13 +53,10 @@ class CS3APIsManager(ContentsManager):
         hidden : bool
             Whether the path is hidden.
         """
-
         path = self._normalize_path(path)
-
         parts = path.split('/')
         if any(part.startswith('.') for part in parts):
             return True
-
         return False
 
     def file_exists(self, path=''):
@@ -104,12 +72,10 @@ class CS3APIsManager(ContentsManager):
         exists : bool
             Whether the file exists.
         """
-
         parent_path = self._get_parent_path(path)
         path = self._normalize_path(path)
-
         try:
-            cs3_container = self.cs3_file_api.read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+            cs3_container = self.cs3_file_api.read_directory(parent_path, self.cs3_config['client_id'], self.cs3_config['endpoint'])
         except Exception as ex:
             self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
             raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
@@ -122,9 +88,7 @@ class CS3APIsManager(ContentsManager):
 
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
-
         path = self._normalize_path(path)
-
         if type in (None, 'directory') and self._is_dir(path):
             model = self._dir_model(path, content=content)
         elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
@@ -143,16 +107,12 @@ class CS3APIsManager(ContentsManager):
         should call self.run_pre_save_hook(model=model, path=path) prior to
         writing any data.
         """
-
         path = self._normalize_path(path)
-
         if 'type' not in model:
             raise web.HTTPError(400, u'No file type provided')
         if 'content' not in model and model['type'] != 'directory':
             raise web.HTTPError(400, u'No file content provided')
-
         self.log.debug("Saving %s", path)
-
         # ToDo: Implements run_pre_save_hook and run_post_save_hook
         # self.run_pre_save_hook(model=model, path=path)
 
@@ -192,10 +152,8 @@ class CS3APIsManager(ContentsManager):
 
         elif model['type'] == 'file':
             model = self._file_model(path, content=False, format=None)
-
         elif model['type'] == 'directory':
             model = self._dir_model(path, content=False)
-
         if validation_message:
             model['message'] = validation_message
 
@@ -205,11 +163,9 @@ class CS3APIsManager(ContentsManager):
 
     def delete_file(self, path):
         """Delete the file or directory at path."""
-
         path = self._normalize_path(path)
-
         try:
-            self.cs3_file_api.remove(path, self.cs3_user_id, self.cs3_endpoint)
+            self.cs3_file_api.remove(path, self.cs3_config['client_id'], self.cs3_config['endpoint'])
 
         except FileNotFoundError as e:
             self.log.error(u'File not found error: %s %s', path, e, exc_info=True)
@@ -231,13 +187,9 @@ class CS3APIsManager(ContentsManager):
         old_path = self._normalize_path(old_path)
         new_path = self._normalize_path(new_path)
 
-        # Should we proceed with the move?
-        if self.exists(new_path):
-            raise web.HTTPError(409, u'File already exists: %s' % new_path)
-
         # Move the file
         try:
-            self.cs3_file_api.move(old_path, new_path, self.cs3_user_id, self.cs3_endpoint)
+            self.cs3_file_api.move(old_path, new_path, self.cs3_config['client_id'], self.cs3_config['endpoint'])
         except Exception as e:
             self.log.error(u'Error renaming file: %s %s', old_path, e)
             raise web.HTTPError(500, u'Error renaming file: %s %s' % (old_path, e))
@@ -289,33 +241,32 @@ class CS3APIsManager(ContentsManager):
         return self._normalize_path(path)
 
     def _replace_last(self, source_string, replace_what, replace_with=""):
-
         head, _sep, tail = source_string.rpartition(replace_what)
         return head + replace_with + tail
 
     def _read_file(self, path):
 
         content = ''
-        for chunk in self.cs3_file_api.read_file(path, self.cs3_user_id, self.cs3_endpoint):
+        for chunk in self.cs3_file_api.read_file(path, self.cs3_config['client_id'], self.cs3_config['endpoint']):
             content += chunk.decode('utf-8')
 
         return content
 
     def _dir_model(self, path, content):
 
-        cs3_container = self.cs3_file_api.read_directory(path, self.cs3_user_id, self.cs3_endpoint)
+        cs3_container = self.cs3_file_api.read_directory(path, self.cs3_config['client_id'], self.cs3_config['endpoint'])
         model = self._convert_container_to_directory_model(path, cs3_container, content)
 
         return model
 
     def _file_model(self, path, content, format):
 
-        model, cs3_model = self._create_base_model_from_cs3_container(path)
+        model, tmp_model = self._create_base_model_from_cs3_container(path)
         model['type'] = 'file'
-        model['mimetype'] = mimetypes.guess_type(cs3_model.path)[0]
+        model['mimetype'] = mimetypes.guess_type(tmp_model.path)[0]
 
         if content:
-            content = self._read_file(cs3_model.path)
+            content = self._read_file(tmp_model.path)
 
             if format is None:
                 format = "text"
@@ -336,11 +287,11 @@ class CS3APIsManager(ContentsManager):
 
     def _notebook_model(self, path, content):
 
-        model, cs3_model = self._create_base_model_from_cs3_container(path)
+        model, tmp_model = self._create_base_model_from_cs3_container(path)
         model['type'] = 'notebook'
 
         if content:
-            file_content = self._read_file(cs3_model.path)
+            file_content = self._read_file(tmp_model.path)
             nb = nbformat.reads(file_content, as_version=4)
             self.mark_trusted_cells(nb, path)
             model['content'] = nb
@@ -358,7 +309,7 @@ class CS3APIsManager(ContentsManager):
         path = self._normalize_path(path)
 
         try:
-            cs3_container = self.cs3_file_api.read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+            cs3_container = self.cs3_file_api.read_directory(parent_path, self.cs3_config['client_id'], self.cs3_config['endpoint'])
         except Exception as ex:
             self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
             raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
@@ -376,13 +327,12 @@ class CS3APIsManager(ContentsManager):
 
         parent_path = self._get_parent_path(path)
 
-        cs3_container = self.cs3_file_api.read_directory(parent_path, self.cs3_user_id, self.cs3_endpoint)
+        cs3_container = self.cs3_file_api.read_directory(parent_path, self.cs3_config['client_id'], self.cs3_config['endpoint'])
 
         cs3_model = None
         for cs3_tmp_model in cs3_container:
             if cs3_tmp_model.type == self.TYPE_FILE and cs3_tmp_model.path == path:
                 cs3_model = cs3_tmp_model
-                break
 
         if cs3_model is None:
             raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
@@ -408,8 +358,6 @@ class CS3APIsManager(ContentsManager):
 
                 if str(cs3_model.permission_set.create_container).lower() == "true":
                     writable = True
-
-                break
 
         #
         # Create the base model
@@ -491,7 +439,7 @@ class CS3APIsManager(ContentsManager):
                 b64_bytes = content.encode('ascii')
                 bcontent = decodebytes(b64_bytes)
 
-            self.cs3_file_api.write_file(path, self.cs3_user_id, bcontent, self.cs3_endpoint)
+            self.cs3_file_api.write_file(path, self.cs3_config['client_id'], bcontent, self.cs3_config['endpoint'])
 
         except Exception as e:
             self.log.error(u'Error saving: %s %s', path, e)
@@ -501,7 +449,7 @@ class CS3APIsManager(ContentsManager):
 
         nb_content = nbformat.writes(nb)
         try:
-            self.cs3_file_api.write_file(path, self.cs3_user_id, nb_content, self.cs3_endpoint)
+            self.cs3_file_api.write_file(path, self.cs3_config['client_id'], nb_content, self.cs3_config['endpoint'])
 
         except Exception as e:
             self.log.error(u'Error saving: %s %s', path, e)
@@ -518,4 +466,28 @@ class CS3APIsManager(ContentsManager):
         if self.file_exists(path):
             raise web.HTTPError(400, u'Not a directory %s' % path)
 
-        self.cs3_file_api.create_directory(path, self.cs3_user_id, self.cs3_endpoint)
+        self.cs3_file_api.create_directory(path, self.cs3_config['client_id'], self.cs3_config['endpoint'])
+
+    #
+    # Notebook hack - disable checkpoint
+    #
+    def delete(self, path):
+        path = path.strip('/')
+        if not path:
+            raise web.HTTPError(400, "Can't delete root")
+        self.delete_file(path)
+
+    def rename(self, old_path, new_path):
+        self.rename_file(old_path, new_path)
+
+    def create_checkpoint(self, path):
+        return {'id': 'checkpoint', 'last_modified': "0"}
+
+    def restore_checkpoint(self, checkpoint_id, path):
+        pass
+
+    def list_checkpoints(self, path):
+        return [{'id': 'checkpoint', 'last_modified': "0"}]
+
+    def delete_checkpoint(self, checkpoint_id, path):
+        pass
