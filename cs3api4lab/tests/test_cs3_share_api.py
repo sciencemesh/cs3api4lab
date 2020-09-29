@@ -69,7 +69,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
     def test_list_grantees_for_file(self):
         self._create_share()
-        response = self.api.list_grantees_for_file(self.storage_id, self.file_path)
+        response = self.api.list_grantees_for_file(self.file_path)
         try:
             if not response:
                 raise Exception("Failed to retrieve grantees of the file")

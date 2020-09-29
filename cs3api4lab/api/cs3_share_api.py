@@ -77,10 +77,10 @@ class Cs3ShareApi:
         self.log.info(list_request)
         return list_response
 
-
-    def list_grantees_for_file(self, storage_id, file_path):
-        file_path = urllib.parse.quote('fileid-' + self.config['client_id'] + file_path, safe='')
-        resource_id = storage_resources.ResourceId(storage_id=storage_id, opaque_id=file_path)
+    def list_grantees_for_file(self, file_path):
+        stat = self.file_api.stat(file_path, self.config['client_id'])
+        resource_id = storage_resources.ResourceId(storage_id=stat['inode']['storage_id'],
+                                                   opaque_id=stat['inode']['opaque_id'])
         resource_filter = sharing.ListSharesRequest.Filter(
             resource_id=resource_id,
             type=sharing.ListSharesRequest.Filter.Type.TYPE_RESOURCE_ID)
@@ -91,7 +91,7 @@ class Cs3ShareApi:
         file_info = {
             "resource_id": {
                 "storage_id": share.resource_id.storage_id,
-                "opaque_id": share.resource_id.opaque_id
+                "opaque_id": self._purify_file_path(share.resource_id.opaque_id)
             },
             "owner": {
                 "idp": share.owner.idp,
@@ -358,6 +358,7 @@ class Cs3ShareApi:
         model['writable'] = False
         model['type'] = 'file'
         model['mimetype'] = mimetypes.guess_type(file_id)[0]
-        model['resource_id'] = {"opaque_id": share.resource_id.opaque_id, "storage_id": share.resource_id.storage_id}
+        model['resource_id'] = {"opaque_id": self._purify_file_path(share.resource_id.opaque_id),
+                                "storage_id": share.resource_id.storage_id}
 
         return model
