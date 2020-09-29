@@ -25,7 +25,7 @@ const CreateShare = (props: CreateShareProps): JSX.Element => {
         <ControlPanel fileInfo={props.fileInfo}
                       makeRequest={async (params: object) => {
                           try {
-                              const data = await requestAPI<any>('/api/cs3test/shares', {
+                              const data = await requestAPI<any>('/api/cs3/shares', {
                                   method: 'POST',
                                   body: JSON.stringify(params)
                               });
