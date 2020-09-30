@@ -129,3 +129,62 @@ Run cs3 API connector test:
 ```bash
 python test_cs3_file_api.py
 ```
+
+### Setup env 
+
+Create config:
+```
+jupyter notebook --generate-config
+```
+
+Enable CS3 File Content Manager
+Replace in file HOME_FOLDER/.jupyter/jupyter_notebook_config.py line 
+
+```
+c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemanager.LargeFileManager'
+```
+
+to
+
+```
+c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
+```
+
+### CS3 config file
+Copy cs3 example config file from "jupyter-config/jupyter_cs3_config.json"
+to:
+* Windows: 
+```C:\Users\{USER_PROFILE}\.jupyter\```
+* Linux:
+ ```HOME_FOLDER/.jupyter/```
+
+Config file fields:
+- revahost - address and port on which the Reva server is listening
+- authtokenvalidity - the lifetime of the authenticating token
+- endpoint - endpoint for Reva storage provider
+- chunksize - size of the downloaded fragment from Reva
+- secure_channel - secure channel flag
+- client_cert - public key file path (PEM-encoded)
+- client_key - private key file path
+- ca_cert - certificate authority file path
+- client_id - client login to authenticate in Reva
+- client_secret - client password to authenticate in Reva
+
+### Quick build
+```bash
+pip install -e .
+jupyter serverextension enable --py cs3api_test_ext --sys-prefix
+jlpm
+jlpm build
+jupyter labextension install .
+jlpm build
+jupyter lab build
+jupyter lab 
+
+```
+
+### Quick build python
+```bash
+jupyter labextension install .
+jupyter lab
+```
