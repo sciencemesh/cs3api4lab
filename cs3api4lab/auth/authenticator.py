@@ -8,10 +8,9 @@ from cs3api4lab.auth.channel_connector import ChannelConnector
 class Authenticator:
     tokens = {}  # map client_id [string] to {authentication token, token expiration time}
 
-    def __init__(self):
-        self.config = Cs3ConfigManager().config
-        channel = ChannelConnector().channel
-        self.cs3_stub = cs3gw_grpc.GatewayAPIStub(channel)
+    def __init__(self, config, channel):
+        self.config = config
+        self.cs3_api = cs3gw_grpc.GatewayAPIStub(channel)
 
     def authenticate(self, client_id):
         # ToDo: use real authentication data or get token from author provider
@@ -21,7 +20,7 @@ class Authenticator:
             auth_req = cs3gw.AuthenticateRequest(type=self.config['login_type'],
                                                  client_id=self.config['client_id'],
                                                  client_secret=self.config['client_secret'])
-            auth_res = self.cs3_stub.Authenticate(auth_req)
+            auth_res = self.cs3_api.Authenticate(auth_req)
             self.tokens[client_id] = {'tok': auth_res.token,
                                     'exp': time.time() + float(self.config['auth_token_validity'])}
 

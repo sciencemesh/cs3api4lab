@@ -28,7 +28,7 @@ from cs3api4lab.auth.channel_connector import ChannelConnector
 
 
 class Cs3ShareApi:
-    gateway_stub = None
+    cs3_api = None
     log = None
     auth = None
     config = {}
@@ -36,11 +36,13 @@ class Cs3ShareApi:
     date_fmt = '%d-%b-%Y (%H:%M:%S.%f)'
 
     def __init__(self, log):
-        self.config = Cs3ConfigManager().config
-        self.auth = Authenticator()
-        self.file_api = Cs3FileApi(log)
-        self.gateway_stub = grpc_gateway.GatewayAPIStub(ChannelConnector().channel)
         self.log = log
+        config = Cs3ConfigManager.get_config()
+        channel = ChannelConnector.get_channel()
+        self.config = config
+        self.auth = Authenticator(config, channel)
+        self.file_api = Cs3FileApi(log)
+        self.cs3_api = grpc_gateway.GatewayAPIStub(channel)
         return
 
     def create(self, endpoint, file_path, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
@@ -50,34 +52,33 @@ class Cs3ShareApi:
         grantee_type_enum = self._get_grantee_type(grantee_type)
         share_grant = self._get_share_grant(grantee_type_enum, share_permissions, idp, grantee)
         resource_info = self._get_resource_info(endpoint, file_path)
-        share_request = sharing.CreateShareRequest(resource_info=resource_info, grant=share_grant)
+        create_request = sharing.CreateShareRequest(resource_info=resource_info, grant=share_grant)
         token = self.get_token()
-        share_response = self.gateway_stub.CreateShare(request=share_request,
-                                                       metadata=[('x-access-token', token)])
-        self._check_response_code(share_response)
-        self.log.info("Share created")
-        self.log.info(share_response)
-        return self._map_given_share(share_response.share)
-
-    def list(self):
-        list_response = self._list()
-        return self._map_given_shares(list_response)
+        create_response = self.cs3_api.CreateShare(request=create_request,
+                                                   metadata=[('x-access-token', token)])
+        self.log.info("Creating share " + endpoint + file_path + " for " + idp + ":" + grantee)
+        if self._is_code_ok(create_response):
+            self.log.info("Share created")
+            self.log.info(create_response)
+        else:
+            self._handle_error(create_response)
+        return self._map_given_share(create_response.share)
 
     def list_dir_model(self):
         list_response = self._list()
         return self._map_shares_to_dir_model(list_response)
 
     def _list(self):
-        # todo filters
         list_request = sharing.ListSharesRequest()
-        list_response = self.gateway_stub.ListShares(request=list_request,
-                                                     metadata=[('x-access-token', self.get_token())])
-        self._check_response_code(list_response)
+        list_response = self.cs3_api.ListShares(request=list_request,
+                                                metadata=[('x-access-token', self.get_token())])
+        self._is_code_ok(list_response)
         self.log.info("List shares response for user: " + self.config['client_id'])
         self.log.info(list_request)
         return list_response
 
     def list_grantees_for_file(self, file_path):
+        self.log.info("Listing grantees for file " + file_path)
         stat = self.file_api.stat(file_path, self.config['client_id'])
         resource_id = storage_resources.ResourceId(storage_id=stat['inode']['storage_id'],
                                                    opaque_id=stat['inode']['opaque_id'])
@@ -85,8 +86,12 @@ class Cs3ShareApi:
             resource_id=resource_id,
             type=sharing.ListSharesRequest.Filter.Type.TYPE_RESOURCE_ID)
         list_request = sharing.ListSharesRequest(filters=[resource_filter])
-        shares_response = self.gateway_stub.ListShares(request=list_request,
-                                                       metadata=[('x-access-token', self.get_token())])
+        shares_response = self.cs3_api.ListShares(request=list_request,
+                                                  metadata=[('x-access-token', self.get_token())])
+        if self._is_code_ok(shares_response):
+            self.log.info("Successfully retreived grantees")
+        else:
+            self._handle_error(shares_response)
         share = shares_response.shares[0]
         file_info = {
             "resource_id": {
@@ -124,34 +129,45 @@ class Cs3ShareApi:
         return self._decode_file_path(file_path.replace('fileid-' + self.config['client_id'], ''))
 
     def remove(self, share_id):
+        self.log.info("Removing share with ID: " + share_id)
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
         remove_request = sharing.RemoveShareRequest(ref=ref)
-        remove_response = self.gateway_stub.RemoveShare(request=remove_request,
-                                                        metadata=[('x-access-token', self.get_token())])
-        self._check_response_code(remove_response)
-        self.log.info("Removing share " + share_id)
+        remove_response = self.cs3_api.RemoveShare(request=remove_request,
+                                                   metadata=[('x-access-token', self.get_token())])
+        if self._is_code_ok(remove_response):
+            self.log.info("Successfully removed share with ID: " + share_id)
+        else:
+            self._handle_error(remove_response)
         return
 
     def update(self, share_id, role):
+        self.log.info("Updating share: " + share_id + ", with role: " + role)
         share_permissions = self._get_share_permissions(role)
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
         update_request = sharing.UpdateShareRequest(ref=ref,
                                                     field=sharing.UpdateShareRequest.UpdateField(
                                                         permissions=share_permissions))
-        update_response = self.gateway_stub.UpdateShare(request=update_request,
-                                                        metadata=[('x-access-token', self.get_token())])
-        self._check_response_code(update_response)
+        update_response = self.cs3_api.UpdateShare(request=update_request,
+                                                   metadata=[('x-access-token', self.get_token())])
+        if self._is_code_ok(update_response):
+            self.log.info("Successfully updated share: " + share_id +" with role: " + role)
+        else:
+            self.log.error("Error updating share: ")
+            self._handle_error(update_response)
         return
 
     def list_received(self):
+        self.log.info("Listing received shares")
         list_request = sharing.ListReceivedSharesRequest()
-        list_response = self.gateway_stub.ListReceivedShares(request=list_request,
-                                                             metadata=[('x-access-token', self.get_token())])
-        self._check_response_code(list_response)
-        self.log.info("List received shares response for user: " + self.config['client_id'])
-        self.log.info(list_response)
+        list_response = self.cs3_api.ListReceivedShares(request=list_request,
+                                                        metadata=[('x-access-token', self.get_token())])
+        if self._is_code_ok(list_response):
+            self.log.info("List received shares response for user: " + self.config['client_id'])
+            self.log.info(list_response)
+        else:
+            self._handle_error(list_response)
         return self._map_received_shares(list_response)
 
     def _map_received_shares(self, list_res):
@@ -219,15 +235,19 @@ class Cs3ShareApi:
             return Grantee.GROUP
 
     def update_received(self, share_id, state=State.PENDING):
+        self.log.info("Updating received share " + share_id + "with state " + state)
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
         share_state = self._map_share_state(state)
         update_request = sharing.UpdateReceivedShareRequest(ref=ref,
                                                             field=sharing.UpdateReceivedShareRequest.UpdateField(
                                                                 state=share_state))
-        update_response = self.gateway_stub.UpdateReceivedShare(request=update_request,
-                                                                metadata=[('x-access-token', self.get_token())])
-        self._check_response_code(update_response)
+        update_response = self.cs3_api.UpdateReceivedShare(request=update_request,
+                                                           metadata=[('x-access-token', self.get_token())])
+        if self._is_code_ok(update_response):
+            self.log.info("Successfully updated share " + share_id + "with state " + state)
+        else:
+            self._handle_error(update_response)
         return
 
     def _resolve_share_permissions(self, share):
@@ -241,8 +261,8 @@ class Cs3ShareApi:
     def _get_resource_info(self, endpoint, file_id):
         ref = FileUtils.get_reference(file_id, self.config['home_dir'], endpoint)
         token = self.get_token()
-        stat_info = self.gateway_stub.Stat(request=storage_provider.StatRequest(ref=ref),
-                                           metadata=[('x-access-token', token)])
+        stat_info = self.cs3_api.Stat(request=storage_provider.StatRequest(ref=ref),
+                                      metadata=[('x-access-token', token)])
         return stat_info.info
 
     def _get_share_grant(self, grantee_type, share_permissions, idp, grantee):
@@ -302,11 +322,15 @@ class Cs3ShareApi:
 
         raise Exception("Unknown share state")
 
-    def _check_response_code(self, response):
-        if response.status.code != cs3_code.CODE_OK:
-            self.log.error("Server response is not OK: ")
-            self.log.error(response)
-            raise Exception("Incorrect server response: " + response.status.message)
+    def _is_code_ok(self, response):
+        return response.status.code == cs3_code.CODE_OK
+            # self.log.error("Server response is not OK: ")
+            # self.log.error(response)
+            # raise Exception("Incorrect server response: " + response.status.message)
+
+    def _handle_error(self, response):
+        self.log.error(response)
+        raise Exception("Incorrect server response: " + response.status.message)
 
     def get_token(self):
         return self.auth.authenticate(self.config['client_id'])

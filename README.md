@@ -25,11 +25,10 @@ jupyter serverextension enable --py cs3api4lab --sys-prefix
 jupyter labextension install @sciencemesh/cs3api4lab
 ```
 
-To enable the Manager and Chekpoints, the following configuration needs to be added to `jupyter_notebook_config.py`:
+To enable the Manager, the following configuration needs to be added to `jupyter_notebook_config.py`:
 
 ```python
 c.NotebookApp.contents_manager_class = 'cs3api4lab.api.cs3apismanager.CS3APIsManager'
-c.ContentsManager.checkpoints_class = 'cs3api4lab.api.cs3apischeckpoint.CS3APIsCheckpoints'
 ```
 
 ## Contributing
