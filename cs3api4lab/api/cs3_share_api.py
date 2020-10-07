@@ -74,7 +74,7 @@ class Cs3ShareApi:
                                                 metadata=[('x-access-token', self.get_token())])
         if self._is_code_ok(list_response):
             self.log.info("List shares response for user: " + self.config['client_id'])
-            self.log.info(list_request)
+            self.log.info(list_response)
         else:
             self.log.error("Error listing shares response for user: " + self.config['client_id'])
             self._handle_error(list_response)
