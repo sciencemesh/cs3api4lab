@@ -15,7 +15,7 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
     contents_manager = None
 
     def setUp(self):
-        config = Cs3ConfigManager().config
+        config = Cs3ConfigManager.get_config()
         self.user_id = config['client_id']
         self.endpoint = config['endpoint']
         self.storage = Cs3FileApi(self.log)
