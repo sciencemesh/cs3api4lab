@@ -168,7 +168,7 @@ class CS3APIsManager(ContentsManager):
             self.file_api.remove(path, self.cs3_config['client_id'], self.cs3_config['endpoint'])
 
         except FileNotFoundError as e:
-            self.log.error(u'Unknown error delete file: %s %s', path, e, exc_info=True)
+            self.log.error(u'File not found error: %s %s', path, e, exc_info=True)
             raise web.HTTPError(404, u'No such file or directory: %s %s' % (path, e))
 
         except Exception as e:
