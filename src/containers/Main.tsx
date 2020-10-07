@@ -47,7 +47,7 @@ class Main extends React.Component<any, any> {
     protected getGranteesForResource = async () => {
         let resource = '/home/' + this.props.fileInfo.path;
 
-        const grantees  =  await requestAPI<any>('/api/cs3test/shares/file?file_id=' + resource, {
+        const grantees  =  await requestAPI<any>('/api/cs3/shares/file?file_id=' + resource, {
             method: 'GET',
         });
 

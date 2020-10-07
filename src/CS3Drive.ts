@@ -5,10 +5,9 @@ import { ReadonlyJSONObject } from '@lumino/coreutils';
 
 export async function getDummyFilesForCS3Share(stateDB: IStateDB) :Promise<any> {
     let share = await stateDB.fetch('share');
-    const share_type = (share as ReadonlyJSONObject)['share_type']
+    const shareType = (share as ReadonlyJSONObject)['share_type']
 
-    const shares = (share_type == 'with_me') ? await getSharedWithMe() : await getSharedByMe();
-    console.log('shares', shares);
+    const shares = (shareType == 'with_me') ? await getSharedWithMe() : await getSharedByMe();
     const contents: Contents.IModel = {
         name: 'cs3 shared',
         path: '/',
@@ -26,13 +25,13 @@ export async function getDummyFilesForCS3Share(stateDB: IStateDB) :Promise<any> 
 }
 
 async function getSharedByMe(): Promise<any>{
-    return await requestAPI('/api/cs3test/shares/list', {
+    return await requestAPI('/api/cs3/shares/list', {
         method: 'get'
     });
 }
 
 async function getSharedWithMe(): Promise<any>{
-    return await requestAPI('/api/cs3test/shares/received', {
+    return await requestAPI('/api/cs3/shares/received', {
         method: 'get'
     });
 }
