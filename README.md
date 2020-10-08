@@ -28,7 +28,7 @@ jupyter labextension install @sciencemesh/cs3api4lab
 To enable the Manager, the following configuration needs to be added to `jupyter_notebook_config.py`:
 
 ```python
-c.NotebookApp.contents_manager_class = 'cs3api4lab.api.cs3apismanager.CS3APIsManager'
+c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
 ```
 
 ## Contributing
@@ -122,7 +122,7 @@ c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemana
 to
 
 ```
-c.NotebookApp.contents_manager_class = 'cs3api4lab.api.cs3apismanager.CS3APIsManager'
+c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
 ```
 
 ### CS3 config file
