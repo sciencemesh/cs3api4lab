@@ -1,4 +1,3 @@
-import {Contents} from "@jupyterlab/services";
 import {requestAPI} from './services/requestAPI';
 import {IStateDB} from '@jupyterlab/statedb';
 import { ReadonlyJSONObject } from '@lumino/coreutils';
@@ -8,20 +7,7 @@ export async function getDummyFilesForCS3Share(stateDB: IStateDB) :Promise<any> 
     const shareType = (share as ReadonlyJSONObject)['share_type']
 
     const shares = (shareType == 'with_me') ? await getSharedWithMe() : await getSharedByMe();
-    const contents: Contents.IModel = {
-        name: 'cs3 shared',
-        path: '/',
-        type: 'directory',
-        writable: false,
-        created: '',
-        last_modified: '',
-        mimetype: '',
-        content: null,
-        format: 'json'
-    };
-
-    const fileList = (typeof shares?.content != 'undefined') ? shares.content : [];
-    return {...contents, content: fileList};
+    return shares;
 }
 
 async function getSharedByMe(): Promise<any>{
