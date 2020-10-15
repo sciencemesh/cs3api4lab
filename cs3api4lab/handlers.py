@@ -102,6 +102,7 @@ class RequestHandler(APIHandler):
 
     @staticmethod
     def handle_error(self, err):
+        # todo specify errors and response codes
         self.set_status(500)
         self.finish(json.dumps(str(err)))
 

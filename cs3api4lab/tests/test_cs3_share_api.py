@@ -23,23 +23,11 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
 
     def setUp(self):
-        self.config = Cs3ConfigManager().config
+        self.config = Cs3ConfigManager.get_config()
         self.storage = Cs3FileApi(self.log)
         self.api = Cs3ShareApi(self.log)
 
-    def test_create_and_list(self):
-        created_share = self._create_share()
-        self.share_id = created_share['opaque_id']
-        share_list = self.api.list()
-        try:
-            if not list(filter(lambda s: s['opaque_id'] == str(self.share_id), share_list)):
-                raise Exception("Share not created")
-        finally:
-            self._clear_shares()
-
     def test_create_and_list_directory_model(self):
-
-        self._clear_shares()
 
         created_share = self._create_share()
         self.share_id = created_share['opaque_id']
@@ -83,25 +71,26 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     def test_remove(self):
         created_share = self._create_share()
         self.share_id = created_share['opaque_id']
-        share_list = self.api.list()
+        share_list = self.api.list_dir_model()
         try:
-            if not list(filter(lambda s: s['opaque_id'] == str(self.share_id), share_list)):
+            if not list(filter(lambda s: s['path'] == self.file_path, share_list['content'])):
                 raise Exception("Share not created")
         finally:
             self.api.remove(self.share_id)
-        share_list = self.api.list()
-        if list(filter(lambda s: s['opaque_id'] == str(self.share_id), share_list)):
+        share_list = self.api.list_dir_model()
+        if list(filter(lambda s: s['path'] == self.file_path, share_list['content'])):
             raise Exception("Share not removed")
 
     def test_update(self):
         created_share = self._create_share()
         self.share_id = created_share['opaque_id']
         self.api.update(self.share_id, 'editor')
-        share_list = self.api.list()
+        share_list = self.api.list_grantees_for_file(self.file_path)
         try:
             if not list(filter(
-                    lambda s: s['opaque_id'] == str(self.share_id) and s['permissions'] == 'editor',
-                    share_list)):
+                    lambda s: s['grantee']['opaque_id'] == self.receiver_id
+                              and s['grantee']['permissions'] == 'editor',
+                    share_list['shares'])):
                 raise Exception("Share not updated")
         finally:
             self._clear_shares()
@@ -119,8 +108,8 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         return self._create_test_share()
 
     def _clear_shares(self):
-        shares = self.api.list()
-        for share in shares:
+        shares = self.api.list_grantees_for_file(self.file_path)
+        for share in shares['shares']:
             self._remove_test_share(share['opaque_id'])
         try:
             self._remove_test_file()

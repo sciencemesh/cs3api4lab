@@ -22,16 +22,17 @@ from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 class Cs3FileApi:
     log = None
-    cs3_stub = None
+    cs3_api = None
     auth = None
     config = None
 
     def __init__(self, log):
         self.log = log
-        self.config = Cs3ConfigManager().config
-        self.auth = Authenticator()
-        channel = ChannelConnector().channel
-        self.cs3_stub = cs3gw_grpc.GatewayAPIStub(channel)
+        config = Cs3ConfigManager.get_config()
+        channel = ChannelConnector.get_channel()
+        self.config = config
+        self.auth = Authenticator(config, channel)
+        self.cs3_api = cs3gw_grpc.GatewayAPIStub(channel)
         return
 
     def stat(self, file_id, user_id, endpoint=None):
@@ -42,8 +43,8 @@ class Cs3FileApi:
         """
         time_start = time.time()
         ref = file_utils.get_reference(file_id, self.config['home_dir'], endpoint)
-        stat_info = self.cs3_stub.Stat(request=cs3sp.StatRequest(ref=ref),
-                                       metadata=[('x-access-token', self.auth.authenticate(user_id))])
+        stat_info = self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
+                                      metadata=[('x-access-token', self.auth.authenticate(user_id))])
         time_end = time.time()
         self.log.info('msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (file_id, (time_end - time_start) * 1000))
 
@@ -71,7 +72,7 @@ class Cs3FileApi:
         #
         reference = file_utils.get_reference(file_path, self.config['home_dir'], endpoint)
         req = cs3sp.InitiateFileDownloadRequest(ref=reference)
-        init_file_download = self.cs3_stub.InitiateFileDownload(request=req, metadata=[
+        init_file_download = self.cs3_api.InitiateFileDownload(request=req, metadata=[
             ('x-access-token', self.auth.authenticate(user_id))])
 
         if init_file_download.status.code == cs3code.CODE_NOT_FOUND:
@@ -129,7 +130,7 @@ class Cs3FileApi:
         meta_data = types.Opaque(
             map={"Upload-Length": types.OpaqueEntry(decoder="plain", value=str.encode(content_size))})
         req = cs3sp.InitiateFileUploadRequest(ref=reference, opaque=meta_data)
-        init_file_upload_res = self.cs3_stub.InitiateFileUpload(request=req, metadata=[
+        init_file_upload_res = self.cs3_api.InitiateFileUpload(request=req, metadata=[
             ('x-access-token', self.auth.authenticate(user_id))])
 
         if init_file_upload_res.status.code != cs3code.CODE_OK:
@@ -175,7 +176,7 @@ class Cs3FileApi:
 
         reference = file_utils.get_reference(file_path, self.config['home_dir'], endpoint)
         req = cs3sp.DeleteRequest(ref=reference)
-        res = self.cs3_stub.Delete(request=req, metadata=[('x-access-token', self.auth.authenticate(user_id))])
+        res = self.cs3_api.Delete(request=req, metadata=[('x-access-token', self.auth.authenticate(user_id))])
 
         if res.status.code == cs3code.CODE_NOT_FOUND:
             self.log.info('msg="File or folder not found on remove" filepath="%s"' % file_path)
@@ -194,7 +195,7 @@ class Cs3FileApi:
         tstart = time.time()
         reference = file_utils.get_reference(path, self.config['home_dir'], endpoint)
         req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
-        res = self.cs3_stub.ListContainer(request=req, metadata=[('x-access-token', self.auth.authenticate(user_id))])
+        res = self.cs3_api.ListContainer(request=req, metadata=[('x-access-token', self.auth.authenticate(user_id))])
 
         if res.status.code != cs3code.CODE_OK:
             self.log.warning('msg="Failed to read container" filepath="%s" reason="%s"' % (path, res.status.message))
@@ -220,7 +221,7 @@ class Cs3FileApi:
         dest_reference = file_utils.get_reference(destination_path, self.config['home_dir'], endpoint)
 
         req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
-        res = self.cs3_stub.Move(request=req, metadata=[('x-access-token', self.auth.authenticate(user_id))])
+        res = self.cs3_api.Move(request=req, metadata=[('x-access-token', self.auth.authenticate(user_id))])
 
         if res.status.code != cs3code.CODE_OK:
             self.log.error('msg="Failed to move" source="%s" destination="%s" reason="%s"' % (
@@ -238,7 +239,7 @@ class Cs3FileApi:
         tstart = time.time()
         reference = file_utils.get_reference(path, self.config['home_dir'], endpoint)
         req = cs3sp.CreateContainerRequest(ref=reference)
-        res = self.cs3_stub.CreateContainer(request=req, metadata=[('x-access-token', self.auth.authenticate(user_id))])
+        res = self.cs3_api.CreateContainer(request=req, metadata=[('x-access-token', self.auth.authenticate(user_id))])
 
         if res.status.code != cs3code.CODE_OK:
             self.log.warning('msg="Failed to create container" filepath="%s" reason="%s"' % (path, res.status.message))

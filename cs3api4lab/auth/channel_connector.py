@@ -4,16 +4,11 @@ from traitlets.config import LoggingConfigurable
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 
-class ChannelConnector(LoggingConfigurable):
+class Channel(LoggingConfigurable):
     channel = None
 
-    def __new__(cls, *args, **kwargs):
-        if cls.channel is None:
-            cls.channel = super(ChannelConnector, cls).__new__(cls)
-        return cls.channel
-
     def __init__(self):
-        config = Cs3ConfigManager().config
+        config = Cs3ConfigManager.get_config()
         secure_channel = bool(config['secure_channel'])
         if secure_channel:
             try:
@@ -29,4 +24,15 @@ class ChannelConnector(LoggingConfigurable):
         else:
             channel = grpc.insecure_channel(config['reva_host'])
         self.channel = channel
+
+
+class ChannelConnector:
+    __channel_instance = None
+
+    @classmethod
+    def get_channel(cls):
+        if cls.__channel_instance is None:
+            cls.__channel_instance = Channel()
+        return cls.__channel_instance.channel
+
 

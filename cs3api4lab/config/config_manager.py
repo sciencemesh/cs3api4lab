@@ -1,18 +1,14 @@
 import os
+
 from jupyter_core.paths import jupyter_config_path
 from notebook.services.config import ConfigManager
 from traitlets.config import LoggingConfigurable
 
 
-class Cs3ConfigManager(LoggingConfigurable):
+class Config(LoggingConfigurable):
     config = None
     __config_dir = "\\jupyter-config"
     __config_file_name = 'jupyter_cs3_config'
-
-    def __new__(cls, *args, **kwargs):
-        if cls.config is None:
-            cls.config = super(Cs3ConfigManager, cls).__new__(cls)
-        return cls.config
 
     def __init__(self):
         #
@@ -39,3 +35,14 @@ class Cs3ConfigManager(LoggingConfigurable):
             if env_name in os.environ:
                 self.log.debug(f"Overwriting config value {name}")
                 self.config[name] = os.environ[env_name]
+
+
+class Cs3ConfigManager:
+    __config_instance = None
+
+    @classmethod
+    def get_config(cls):
+        if not cls.__config_instance:
+            cls.__config_instance = Config()
+        return cls.__config_instance.config
+
