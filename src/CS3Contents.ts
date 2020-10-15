@@ -1,12 +1,12 @@
 import { Contents, ServerConnection } from '@jupyterlab/services';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 // import { ISignal } from '@lumino/signaling';
-import {CS3ContainerFiles} from './CS3Drive';
+import {getDummyFilesForCS3Share} from './CS3Drive';
 import { Signal, ISignal } from '@lumino/signaling';
 import {IStateDB} from '@jupyterlab/statedb';
-import {IDocumentManager} from "@jupyterlab/docmanager";
 
 // import {ICheckpointModel, ICreateOptions, IModel} from "@jupyterlab/services/lib/contents";
+
 
 export class CS3Contents implements Contents.IDrive {
     private _docRegistry: DocumentRegistry;
@@ -15,11 +15,9 @@ export class CS3Contents implements Contents.IDrive {
     private _fileChanged = new Signal<this, Contents.IChangedArgs>(this);
     private _isDisposed = false;
     private _state :IStateDB;
-    private _docManager :IDocumentManager;
 
-    constructor(registry: DocumentRegistry, stateDB: IStateDB, docManager :IDocumentManager) {
+    constructor(registry: DocumentRegistry, stateDB: IStateDB) {
         this._docRegistry = registry;
-        this._docManager = docManager;
 
         // Construct a function to make a best-guess IFileType
         // for a given path.
@@ -69,7 +67,9 @@ export class CS3Contents implements Contents.IDrive {
         path: string,
         options?: Contents.IFetchOptions
     ): Promise<Contents.IModel> {
-        return await CS3ContainerFiles(this._state, path);
+        console.log('get content');
+        const contents = await getDummyFilesForCS3Share(this._state);
+        return contents;
     }
 
     /**
@@ -97,42 +97,42 @@ export class CS3Contents implements Contents.IDrive {
     }
 
     async getDownloadUrl(localPath: string): Promise<string> {
-        return this._docManager.services.contents.getDownloadUrl(localPath);
+        return new Promise<string>(resolve => { return '/'});
     };
 
     newUntitled(options?: Contents.ICreateOptions): Promise<Contents.IModel> {
-        return this._docManager.services.contents.newUntitled(options);
+        return getDummyFilesForCS3Share(this._state);
     }
 
     delete(localPath: string): Promise<void> {
-        return this._docManager.services.contents.delete(localPath);
+        return new Promise<void>(resolve => {});
     };
 
     rename(oldLocalPath: string, newLocalPath: string): Promise<Contents.IModel> {
-        return this._docManager.services.contents.rename(oldLocalPath, newLocalPath);
+        return getDummyFilesForCS3Share(this._state);
     }
-
     save(localPath: string, options?: Partial<Contents.IModel>): Promise<Contents.IModel> {
-        return this._docManager.services.contents.save(localPath, options);
+        return getDummyFilesForCS3Share(this._state);
     }
 
     copy(localPath: string, toLocalDir: string): Promise<Contents.IModel> {
-        return this._docManager.services.contents.copy(localPath, toLocalDir);
+        return getDummyFilesForCS3Share(this._state);
     }
 
     createCheckpoint(localPath: string): Promise<Contents.ICheckpointModel> {
-        return this._docManager.services.contents.createCheckpoint(localPath);
+        return getDummyFilesForCS3Share(this._state);
     }
 
     listCheckpoints(localPath: string): Promise<Contents.ICheckpointModel[]> {
-        return this._docManager.services.contents.listCheckpoints(localPath);
+        return getDummyFilesForCS3Share(this._state);
     }
 
     restoreCheckpoint(localPath: string, checkpointID: string): Promise<void> {
-        return this._docManager.services.contents.restoreCheckpoint(localPath, checkpointID);
+        return getDummyFilesForCS3Share(this._state);
     }
 
     deleteCheckpoint(localPath: string, checkpointID: string): Promise<void> {
-        return this._docManager.services.contents.deleteCheckpoint(localPath, checkpointID);
+        return getDummyFilesForCS3Share(this._state);
     }
+
 }
