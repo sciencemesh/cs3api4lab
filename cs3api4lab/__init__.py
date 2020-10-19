@@ -1,8 +1,7 @@
 from notebook.utils import url_path_join
 
-from ._version import __version__ 
-from .cs3apischeckpoint import CS3APIsCheckpoints
-from .cs3apismanager import CS3APIsManager
+from ._version import __version__
+from cs3api4lab.api.cs3apismanager import CS3APIsManager
 from .handlers import handlers
 
 
