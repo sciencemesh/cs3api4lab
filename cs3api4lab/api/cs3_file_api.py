@@ -60,7 +60,7 @@ class Cs3FileApi:
             }
 
         self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_id, stat_info.status.message))
-        raise IOError(stat_info.status.message)
+        raise FileNotFoundError(stat_info.status.message + ", file " + file_id + ", user " + user_id)
 
     def read_file(self, file_path, user_id, endpoint=None):
         """
