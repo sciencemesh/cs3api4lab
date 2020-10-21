@@ -6,6 +6,7 @@ CS3 Share API for the JupyterLab Extension
 Authors:
 """
 import mimetypes
+import re
 from datetime import datetime
 
 import urllib.parse
@@ -135,9 +136,9 @@ class Cs3ShareApi:
 
     def _purify_file_path(self, file_path):
         """
-        Removes 'fileid-' prefix included in file path from CS3 API response
+        Removes 'fileid-{client_id}' prefix included in file path from CS3 API response
         """
-        return self._decode_file_path(file_path.replace('fileid-' + self.config['client_id'], ''))
+        return re.sub(r'^(.*?)/', '/', self._decode_file_path(file_path))
 
     def remove(self, share_id):
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
@@ -181,7 +182,7 @@ class Cs3ShareApi:
         else:
             self.log.error("Error retrieving received shares for user: " + self.config['client_id'])
             self._handle_error(list_response)
-        return self._map_received_shares(list_response)
+        return self._map_shares_to_dir_model(list_response, received=True)
 
     def _map_received_shares(self, list_res):
         shares = []
@@ -346,12 +347,15 @@ class Cs3ShareApi:
     def get_token(self):
         return self.auth.authenticate(self.config['client_id'])
 
-    def _map_shares_to_dir_model(self, list_response):
+    def _map_shares_to_dir_model(self, list_response, received=False):
 
         model = self._create_dir_model()
         path_list = []
         for share in list_response.shares:
-            file_model = self._map_share_to_file_model(share)
+            if received:
+                file_model = self._map_share_to_file_model(share.share)
+            else:
+                file_model = self._map_share_to_file_model(share)
             if file_model['path'] not in path_list:
                 model['content'].append(file_model)
                 path_list.append(file_model['path'])
