@@ -37,7 +37,8 @@ setup_args = dict(
         "jupyterlab~=2.0",
         "cs3apis",
         "grpcio",
-        "grpcio-tools"
+        "grpcio-tools",
+        "jwt"
     ],
     zip_safe=False,
     include_package_data=True,

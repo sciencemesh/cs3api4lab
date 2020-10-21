@@ -7,6 +7,8 @@ Authors:
 """
 
 import http
+
+import grpc
 import time
 
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
@@ -14,6 +16,8 @@ import cs3.rpc.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 import cs3.types.v1beta1.types_pb2 as types
 import requests
+
+from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Authenticator
 from cs3api4lab.api.file_utils import FileUtils as file_utils
 from cs3api4lab.auth.channel_connector import ChannelConnector
@@ -28,13 +32,13 @@ class Cs3FileApi:
 
     def __init__(self, log):
         self.log = log
-        config = Cs3ConfigManager.get_config()
-        channel = ChannelConnector.get_channel()
-        self.config = config
-        self.auth = Authenticator(config, channel)
-        self.cs3_api = cs3gw_grpc.GatewayAPIStub(channel)
+        self.config = Cs3ConfigManager().get_config()
+        self.auth = Authenticator(config=self.config, log=self.log).instance
+        channel = ChannelConnector().get_channel()
+        auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
+        intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
+        self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         return
-
     def stat(self, file_id, user_id, endpoint=None):
         """
         Stat a file and returns (size, mtime) as well as other extended info using the given userid as access token.
