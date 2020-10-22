@@ -55,6 +55,36 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         finally:
             self._clear_shares()
 
+    def test_create_and_list_directory_model(self):
+
+        self._clear_shares()
+
+        created_share = self._create_share()
+        self.share_id = created_share['opaque_id']
+        share_list = self.api.list_dir_model()
+
+        try:
+            if not list(filter(lambda s: s['path'] == str(self.file_path), share_list['content'])):
+                raise Exception("Share not created")
+        finally:
+            self._clear_shares()
+
+    def test_create_duplicate_and_list_directory_model(self):
+
+        created_share = self._create_share()
+        self.share_id = created_share['opaque_id']
+
+        self._create_test_share(self.receiver2_id, self.receiver2_idp)
+
+        share_list = self.api.list_dir_model()
+        self.assertEqual(len(share_list['content']), 1)
+
+        try:
+            if not list(filter(lambda s: s['path'] == str(self.file_path), share_list['content'])):
+                raise Exception("Share not created")
+        finally:
+            self._clear_shares()
+
     def test_list_grantees_for_file(self):
         self._create_share()
         response = self.api.list_grantees_for_file(self.file_path)
