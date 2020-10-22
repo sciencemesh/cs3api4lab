@@ -15,9 +15,11 @@ import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
 import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
+import grpc
 
 from IPython.utils import tz
 
+from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Authenticator
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.api.file_utils import FileUtils
@@ -37,12 +39,15 @@ class Cs3ShareApi:
 
     def __init__(self, log):
         self.log = log
-        config = Cs3ConfigManager.get_config()
-        channel = ChannelConnector.get_channel()
-        self.config = config
-        self.auth = Authenticator(config, channel)
+        self.config = Cs3ConfigManager().get_config()
+        self.auth = Authenticator(config=self.config, log=self.log).instance
+
         self.file_api = Cs3FileApi(log)
-        self.cs3_api = grpc_gateway.GatewayAPIStub(channel)
+
+        channel = ChannelConnector().get_channel()
+        auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
+        intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
+        self.cs3_api = grpc_gateway.GatewayAPIStub(intercept_channel)
         return
 
     def create(self, endpoint, file_path, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
