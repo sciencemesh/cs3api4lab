@@ -11,6 +11,7 @@ from cs3api4lab.auth.channel_connector import ChannelConnector
 class RevaPassword(Authenticator):
     cs3_stub = None
     tokens = {}
+    default_login_type = "basic"
 
     def __init__(self, config=None, log=None):
         self.config = config
@@ -20,7 +21,7 @@ class RevaPassword(Authenticator):
 
     def authenticate(self, client_id):
         if client_id not in self.tokens or self.tokens[client_id]['exp'] < time.time():
-            auth_req = cs3gw.AuthenticateRequest(type=self.config['login_type'],
+            auth_req = cs3gw.AuthenticateRequest(type=self.default_login_type,
                                                  client_id=self.config['client_id'],
                                                  client_secret=self.config['client_secret'])
             auth_res = self.cs3_stub.Authenticate(auth_req)

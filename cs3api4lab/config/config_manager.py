@@ -24,7 +24,7 @@ class Config(LoggingConfigurable):
         self.config = config_file.get("cs3")
 
         if self.config is None:
-            self.log.error(f'Error while reading cs3 config file {self.__config_dir}{self.__config_file_name}')
+            self.log.error(f'Error while reading cs3 config file {self.__config_dir}\\{self.__config_file_name}')
             raise IOError(u'Error while reading cs3 config file')
         #
         # Overwriting configuration values with environment variables

@@ -156,10 +156,9 @@ and put necessary config values for authenticator class.
 {
   "cs3":{
     ...
-	"authenticator_class": "cs3api4lab.auth.reva_password.RevaPassword",
+	"authenticator_class": "cs3api4lab.auth.RevaPassword",
 	"client_id": "einstein",
-	"client_secret": "relativity",
-	"login_type": "basic"
+	"client_secret": "relativity"
 	}
 }
 ```
@@ -168,7 +167,7 @@ and put necessary config values for authenticator class.
 {
   "cs3":{
     ...
-	"authenticator_class": "cs3api4lab.auth.reva_token.RevaTokenAuth",
+	"authenticator_class": "cs3api4lab.auth.RevaTokenAuth",
 	"client_token":"AUTH_TOKEN",
 	"client_id": "einstein"
 	}
@@ -180,7 +179,7 @@ and put necessary config values for authenticator class.
 {
   "cs3":{
     ...
-	"authenticator_class": "cs3api4lab.auth.eos.Eos",
+	"authenticator_class": "cs3api4lab.auth.Eos",
 	"eos_token":"oauth2:<OAUTH_TOKEN>:<OAUTH_INSPECTION_ENDPOINT>",
 	"client_id": "einstein"
 	}
@@ -192,7 +191,7 @@ and put necessary config values for authenticator class.
 {
   "cs3":{
     ...
-	"authenticator_class": "cs3api4lab.auth.eos.Eos",
+	"authenticator_class": "cs3api4lab.auth.Eos",
 	"eos_file":"PATH TO FILE",
 	"client_id": "einstein"
 	}

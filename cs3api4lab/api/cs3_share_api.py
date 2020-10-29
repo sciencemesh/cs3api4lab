@@ -20,7 +20,7 @@ import grpc
 from IPython.utils import tz
 
 from cs3api4lab.auth import check_auth_interceptor
-from cs3api4lab.auth.authenticator import Authenticator
+from cs3api4lab.auth.authenticator import Authenticator, Auth
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.api.file_utils import FileUtils
 from cs3api4lab.common.strings import *
@@ -40,7 +40,7 @@ class Cs3ShareApi:
     def __init__(self, log):
         self.log = log
         self.config = Cs3ConfigManager().get_config()
-        self.auth = Authenticator(config=self.config, log=self.log).instance
+        self.auth = Auth.get_authenticator(config=self.config, log=self.log)
 
         self.file_api = Cs3FileApi(log)
 

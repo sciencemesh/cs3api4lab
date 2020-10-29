@@ -9,9 +9,8 @@
   	"client_cert": "",
   	"client_key": "",
   	"ca_cert": "",
-	"authenticator_class": "cs3api4lab.auth.reva_password.RevaPassword",
+	"authenticator_class": "cs3api4lab.auth.RevaPassword",
 	"client_id": "einstein",
-	"client_secret": "relativity",
-	"login_type": "basic"
+	"client_secret": "relativity"
 	}
 }
