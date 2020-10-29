@@ -149,14 +149,13 @@ Config file fields:
 
 ### Build docker image from local source code
 
-Clone repo and switch to “docker” branch 
+Clone repo 
 ```bash
 git clone https://github.com/sciencemesh/cs3api4lab.git
 cd cs3api4lab
-git switch docker
 ```
 
-Modify the configuration file, set reva host, user authorization data, etc in file: jupyter-config/jupyter_cs3_config.json
+Modify the configuration file, set Reva host, user authorization data, etc in the file: jupyter-config/jupyter_cs3_config.json
 
 ```bash
 nano jupyter-config/jupyter_cs3_config.json
