@@ -162,17 +162,6 @@ and put necessary config values for authenticator class.
 	}
 }
 ```
-  * Reva auth token
- ```json
-{
-  "cs3":{
-    ...
-	"authenticator_class": "cs3api4lab.auth.RevaTokenAuth",
-	"client_token":"AUTH_TOKEN",
-	"client_id": "einstein"
-	}
-}
-```
   
   * Eos token from config value
  ```json
