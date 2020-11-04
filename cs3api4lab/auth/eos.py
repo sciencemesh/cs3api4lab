@@ -1,21 +1,10 @@
-from cs3api4lab.auth.authenticator import Authenticator
+from cs3api4lab.auth.oauth import Oauth
 
 
-class Eos(Authenticator):
-    tokens = {}
+class Eos(Oauth):
 
     def __init__(self, config=None, log=None):
-        self.config = config
-
-    def authenticate(self, client_id):
-
-        if client_id not in self.tokens:
-            self._refresh_token_from_file_or_config(client_id)
-
-        if client_id in self.tokens and self.check_token(self.tokens[client_id][1]) is False:
-            self._refresh_token_from_file_or_config(client_id)
-
-        return self.tokens[client_id][1]
+        super().__init__(config, log)
 
     def _refresh_token_from_file_or_config(self, client_id):
 
@@ -31,6 +20,10 @@ class Eos(Authenticator):
             eos_token = self.config['eos_token']
         else:
             raise AttributeError("Config hasn't EOS token or token file.")
-        self.tokens[client_id] = eos_token.split(':')
-        if len(self.tokens[client_id]) != 3 or self.tokens[client_id][0] != 'oauth2':
-            raise AttributeError("It's not valid EOS token.")
+
+        eos_split_token = eos_token.split(':')
+        if len(eos_split_token) != 3 or eos_split_token[0] != 'oauth2' \
+                or self._check_token(eos_split_token[1]) is False:
+            raise self._raise_401_error(client_id)
+
+        return eos_split_token[1]

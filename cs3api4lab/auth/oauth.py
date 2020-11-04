@@ -1,0 +1,35 @@
+from cs3api4lab.auth.authenticator import Authenticator
+
+
+class Oauth(Authenticator):
+    login_type = "bearer"
+
+    def __init__(self, config=None, log=None):
+        super().__init__(config, log)
+
+    def refresh_token(self, client_id=None, client_secret_or_token=None):
+        oauth_token = self._refresh_token_from_file_or_config(client_id)
+        self.tokens[client_id] = self._auth_in_iop(client_id, oauth_token, self.login_type)
+
+    def _refresh_token_from_file_or_config(self, client_id):
+        """
+        Get OAuth token from file or config value and try to convert IOP token (authentication process)
+        """
+
+        if "oauth_file" in self.config and self.config['oauth_file'] is not "":
+
+            try:
+                with open(self.config['oauth_file'], "r") as file:
+                    oauth_token = file.read()
+            except IOError as e:
+                raise IOError(f"Error opening token file {self.config['oauth_file']} exception: {e}")
+
+        elif "oauth_token" in self.config and self.config['oauth_token'] is not "":
+            oauth_token = self.config['oauth_token']
+        else:
+            raise AttributeError("Config hasn't OAuth token or token file.")
+
+        if self._check_token(oauth_token) is False:
+            self._raise_401_error(client_id)
+
+        return oauth_token

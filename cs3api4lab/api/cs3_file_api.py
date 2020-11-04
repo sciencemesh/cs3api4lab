@@ -7,19 +7,18 @@ Authors:
 """
 
 import http
-
-import grpc
 import time
 
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 import cs3.types.v1beta1.types_pb2 as types
+import grpc
 import requests
 
-from cs3api4lab.auth import check_auth_interceptor
-from cs3api4lab.auth.authenticator import Authenticator, Auth
 from cs3api4lab.api.file_utils import FileUtils as file_utils
+from cs3api4lab.auth import check_auth_interceptor
+from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 

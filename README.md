@@ -151,7 +151,6 @@ If you want to use a different authentication method replace the "authenticator_
 and put necessary config values for authenticator class.  
 
   * Reva user and secret:
- 
  ```json
 {
   "cs3":{
@@ -162,7 +161,28 @@ and put necessary config values for authenticator class.
 	}
 }
 ```
-  
+  * Oauth token from config value
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Oauth",
+	"oauth_token":"OUATH TOKEN",
+	"client_id": "einstein"
+	}
+}
+```
+  * Oauth token from file
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Oauth",
+	"oauth_token":"PATH TO FILE",
+	"client_id": "einstein"
+	}
+}
+```
   * Eos token from config value
  ```json
 {
@@ -174,7 +194,6 @@ and put necessary config values for authenticator class.
 	}
 }
 ```
-
   * Eos token from file
  ```json
 {
