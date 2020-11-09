@@ -149,37 +149,19 @@ Config file fields:
 
 ### Build docker image from local source code
 
-Clone repo 
+Clone the repo: 
 ```bash
 git clone https://github.com/sciencemesh/cs3api4lab.git
 cd cs3api4lab
-```
-
-Modify the configuration file, set Reva host, user authorization data, etc in the file: jupyter-config/jupyter_cs3_config.json
-
-```bash
-nano jupyter-config/jupyter_cs3_config.json
 ```
 Build docker image:
 ```bash
 docker build -t cs3api4lab .
 ```
 
-Run docker image:
+Run docker image after overwriting the config variables explicitly or in the reva_config.env:
 ```bash
-docker run -p 8888:8888 cs3api4lab
-```
-
-Run docker image with overwriting config variables:
-
-- all supported value:
-```bash
-docker run -p 8888:8888 -e CS3_REVA_HOST=IP:PORT -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass -e CS3_HOME_DIR="/test" cs3api4lab
-```
-
-- user authorization data:
-```bash
-docker run -p 8888:8888 -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass cs3api4lab
+docker run -p 8888:8888 --env-file reva_config.env cs3api4lab
 ```
 
 ### Quick build
