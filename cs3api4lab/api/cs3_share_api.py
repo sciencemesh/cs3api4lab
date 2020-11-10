@@ -7,6 +7,7 @@ Authors:
 """
 import mimetypes
 from datetime import datetime
+import traceback
 
 import urllib.parse
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
@@ -27,6 +28,7 @@ from cs3api4lab.common.strings import *
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 from cs3api4lab.auth.channel_connector import ChannelConnector
+from cs3api4lab.exception.exceptions import *
 
 
 class Cs3ShareApi:
@@ -51,8 +53,6 @@ class Cs3ShareApi:
         return
 
     def create(self, endpoint, file_path, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
-        if grantee is None:
-            raise Exception("Grantee was not provided")
         share_permissions = self._get_share_permissions(role)
         grantee_type_enum = self._get_grantee_type(grantee_type)
         share_grant = self._get_share_grant(grantee_type_enum, share_permissions, idp, grantee)
@@ -61,13 +61,14 @@ class Cs3ShareApi:
         token = self.get_token()
         create_response = self.cs3_api.CreateShare(request=create_request,
                                                    metadata=[('x-access-token', token)])
-        if self._is_code_ok(create_response):
+        if create_response.status.code == cs3_code.CODE_OK:
             self.log.info("Created share: " + endpoint + file_path + " for " + idp + ":" + grantee)
             self.log.info(create_response)
-        else:
-            self.log.error("Error creating share: " + endpoint + file_path + " for " + idp + ":" + grantee)
-            self._handle_error(create_response)
-        return self._map_given_share(create_response.share)
+            return self._map_given_share(create_response.share)
+        if create_response.status.code == cs3_code.CODE_INTERNAL:
+            raise ShareAlreadyExistsError("Error creating share: "
+                                          + endpoint + file_path
+                                          + " for " + idp + ":" + grantee)
 
     def list_dir_model(self):
         list_response = self._list()
@@ -102,6 +103,8 @@ class Cs3ShareApi:
         else:
             self.log.error("Error retrieving grantees for file: " + file_path)
             self._handle_error(shares_response)
+        if not shares_response.shares:
+            return []
         share = shares_response.shares[0]
         file_info = {
             "resource_id": {
@@ -150,13 +153,12 @@ class Cs3ShareApi:
         remove_request = sharing.RemoveShareRequest(ref=ref)
         remove_response = self.cs3_api.RemoveShare(request=remove_request,
                                                    metadata=[('x-access-token', self.get_token())])
-        if self._is_code_ok(remove_response):
+        if remove_response.status.code == cs3_code.CODE_OK:
             self.log.info("Successfully removed share with ID: " + share_id)
             self.log.info(remove_response)
+            return
         else:
-            self.log.error("Error removing share with ID: " + share_id)
-            self._handle_error(remove_response)
-        return
+            raise ShareNotExistsError("Error removing share with ID: " + share_id)
 
     def update(self, share_id, role):
         share_permissions = self._get_share_permissions(role)
@@ -167,13 +169,13 @@ class Cs3ShareApi:
                                                         permissions=share_permissions))
         update_response = self.cs3_api.UpdateShare(request=update_request,
                                                    metadata=[('x-access-token', self.get_token())])
-        if self._is_code_ok(update_response):
+        if update_response.status.code == cs3_code.CODE_OK:
             self.log.info("Successfully updated share: " + share_id + " with role: " + role)
             self.log.info(update_response)
-        else:
-            self.log.error("Error updating share: " + share_id + " with role " + role)
-            self._handle_error(update_response)
-        return
+            return
+        if update_response.status.code == cs3_code.CODE_INTERNAL:
+            raise ShareNotExistsError("Error updating share: " + share_id)
+            # self._handle_error(update_response)
 
     def list_received(self):
         self.log.info("Listing received shares")
@@ -294,7 +296,7 @@ class Cs3ShareApi:
             return storage_resources.GranteeType.GRANTEE_TYPE_USER
         if grantee_type == Grantee.GROUP:
             return storage_resources.GranteeType.GRANTEE_TYPE_GROUP
-        raise Exception("Invalid grantee type")
+        raise InvalidTypeError("Invalid grantee type")
 
     def _get_share_permissions(self, role):
         if role == Role.VIEWER:
@@ -317,7 +319,7 @@ class Cs3ShareApi:
                                                                 move=True)
             return sharing_res.SharePermissions(permissions=permissions)
         else:
-            raise Exception("Invalid role")
+            raise InvalidTypeError("Invalid role")
 
     def _map_share_state(self, state):
         if isinstance(state, str):
@@ -339,7 +341,7 @@ class Cs3ShareApi:
             elif state == sharing_res.SHARE_STATE_INVALID:
                 return State.INVALID
 
-        raise Exception("Unknown share state")
+        raise InvalidTypeError("Invalid share state")
 
     def _is_code_ok(self, response):
         return response.status.code == cs3_code.CODE_OK

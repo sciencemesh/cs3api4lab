@@ -1,5 +1,6 @@
 import sys
 import grpc
+import distutils.util as utils
 from traitlets.config import LoggingConfigurable
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 
@@ -9,7 +10,10 @@ class Channel(LoggingConfigurable):
 
     def __init__(self):
         config = Cs3ConfigManager.get_config()
-        secure_channel = bool(config['secure_channel'])
+        if type(config['secure_channel']) == bool:
+            secure_channel = config['secure_channel']
+        else:
+            secure_channel = utils.strtobool(config['secure_channel'])
         if secure_channel:
             try:
                 cert = open(config['client_cert'], 'rb').read()
