@@ -1,8 +1,5 @@
-import http
-
-import cs3
-import grpc
 import cs3.rpc.code_pb2 as cs3code
+import grpc
 
 
 class CheckAuthInterceptor(grpc.UnaryUnaryClientInterceptor,
@@ -29,11 +26,9 @@ class CheckAuthInterceptor(grpc.UnaryUnaryClientInterceptor,
 
     def _intercept_call(self, continuation, client_call_details, request_or_iterator):
         response = continuation(client_call_details, request_or_iterator)
-        self._check_result(response.code(), response.result())
+        self._check_result(response.result())
         return response
 
-    def _check_result(self, code, result):
+    def _check_result(self, result):
         if result is not None and result.status is not None and result.status.code in self.unauth_codes:
-            if self.log is not None:
-                self.log.info("Refresh auth token")
-            self.authenticator.refresh_token()
+            self.authenticator.raise_401_error()

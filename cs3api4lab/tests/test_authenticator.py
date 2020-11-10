@@ -32,7 +32,7 @@ class TestAuthenticator(TestCase, LoggingConfigurable):
 
     def test_authenticate_riva_password(self):
         authenticator = Auth.get_authenticator(log=self.log)
-        token = authenticator.authenticate('einstein')
+        token = authenticator.authenticate()
         tokens = token.split('.')
         self.assertEqual(len(tokens), 3)
 
@@ -58,7 +58,7 @@ class TestAuthenticator(TestCase, LoggingConfigurable):
         }
 
         token_authenticator = Auth.get_authenticator(token_config, log=self.log)
-        token = token_authenticator.authenticate('einstein')
+        token = token_authenticator.authenticate()
         tokens = token.split('.')
         self.assertEqual(len(tokens), 3)
         decode = jwt.decode(jwt=token, verify=False)
@@ -70,23 +70,25 @@ class TestAuthenticator(TestCase, LoggingConfigurable):
     def test_authenticate_expire_eos_token(self):
         token_config = {
             'authenticator_class': 'cs3api4lab.auth.Eos',
+            'client_id': 'einstein',
             'eos_token': "oauth2:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJyZXZhIiwiZXhwIjoxNjAyMTQ1NjU0LCJpYXQiOjE2MDIwNTkyNTQsImlzcyI6ImNlcm5ib3guY2Vybi5jaCIsInVzZXIiOnsiaWQiOnsiaWRwIjoiY2VybmJveC5jZXJuLmNoIiwib3BhcXVlX2lkIjoiNGM1MTBhZGEtYzg2Yi00ODE1LTg4MjAtNDJjZGY4MmMzZDUxIn0sInVzZXJuYW1lIjoiZWluc3RlaW4iLCJtYWlsIjoiZWluc3RlaW5AY2Vybi5jaCIsImRpc3BsYXlfbmFtZSI6IkFsYmVydCBFaW5zdGVpbiIsImdyb3VwcyI6WyJzYWlsaW5nLWxvdmVycyIsInZpb2xpbi1oYXRlcnMiLCJwaHlzaWNzLWxvdmVycyJdfX0.g58Ll4MtpzvrZ5K8IqiMtUgy8gZgAfUDzl2r0e2vukc:<OAUTH_INSPECTION_ENDPOINT>"
         }
 
         with self.assertRaises(web.HTTPError):
             token_authenticator = Auth.get_authenticator(token_config, log=self.log)
-            token_authenticator.authenticate('einstein')
+            token_authenticator.authenticate()
 
     def test_authenticate_expire_eos_file(self):
         path = Path(os.getcwd() + "/jupyter-config/eos_token.txt")
         token_config = {
             'authenticator_class': 'cs3api4lab.auth.Eos',
+            'client_id': 'einstein',
             'eos_file': path
         }
 
         with self.assertRaises(web.HTTPError):
             token_authenticator = Auth.get_authenticator(token_config, log=self.log)
-            token_authenticator.authenticate('einstein')
+            token_authenticator.authenticate()
 
     def test_authenticate_non_eos_file(self):
         path = Path(os.getcwd() + "/jupyter-config/non_exits.txt")
@@ -97,17 +99,18 @@ class TestAuthenticator(TestCase, LoggingConfigurable):
 
         with self.assertRaises(IOError):
             token_authenticator = Auth.get_authenticator(token_config, log=self.log)
-            token_authenticator.authenticate('einstein')
+            token_authenticator.authenticate()
 
     def test_authenticate_expire_oauth_token(self):
         token_config = {
             'authenticator_class': 'cs3api4lab.auth.Oauth',
+            'client_id': 'einstein',
             'oauth_token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJyZXZhIiwiZXhwIjoxNjAyMTQ1NjU0LCJpYXQiOjE2MDIwNTkyNTQsImlzcyI6ImNlcm5ib3guY2Vybi5jaCIsInVzZXIiOnsiaWQiOnsiaWRwIjoiY2VybmJveC5jZXJuLmNoIiwib3BhcXVlX2lkIjoiNGM1MTBhZGEtYzg2Yi00ODE1LTg4MjAtNDJjZGY4MmMzZDUxIn0sInVzZXJuYW1lIjoiZWluc3RlaW4iLCJtYWlsIjoiZWluc3RlaW5AY2Vybi5jaCIsImRpc3BsYXlfbmFtZSI6IkFsYmVydCBFaW5zdGVpbiIsImdyb3VwcyI6WyJzYWlsaW5nLWxvdmVycyIsInZpb2xpbi1oYXRlcnMiLCJwaHlzaWNzLWxvdmVycyJdfX0.g58Ll4MtpzvrZ5K8IqiMtUgy8gZgAfUDzl2r0e2vukc"
         }
 
         with self.assertRaises(web.HTTPError):
             token_authenticator = Auth.get_authenticator(token_config, log=self.log)
-            token_authenticator.authenticate('einstein')
+            token_authenticator.authenticate()
 
     @staticmethod
     def _create_oauth_token():

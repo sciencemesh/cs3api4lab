@@ -7,7 +7,6 @@ Authors:
 """
 import mimetypes
 from datetime import datetime
-import traceback
 
 import urllib.parse
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
@@ -21,7 +20,7 @@ import grpc
 from IPython.utils import tz
 
 from cs3api4lab.auth import check_auth_interceptor
-from cs3api4lab.auth.authenticator import Authenticator, Auth
+from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.api.file_utils import FileUtils
 from cs3api4lab.common.strings import *
@@ -351,7 +350,7 @@ class Cs3ShareApi:
         raise Exception("Incorrect server response: " + response.status.message)
 
     def get_token(self):
-        return self.auth.authenticate(self.config['client_id'])
+        return self.auth.authenticate()
 
     def _map_shares_to_dir_model(self, list_response):
 

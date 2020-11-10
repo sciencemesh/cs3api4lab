@@ -6,7 +6,7 @@ class Eos(Oauth):
     def __init__(self, config=None, log=None):
         super().__init__(config, log)
 
-    def _refresh_token_from_file_or_config(self, client_id):
+    def _refresh_token_from_file_or_config(self):
 
         if "eos_file" in self.config and self.config['eos_file'] is not "":
 
@@ -24,6 +24,6 @@ class Eos(Oauth):
         eos_split_token = eos_token.split(':')
         if len(eos_split_token) != 3 or eos_split_token[0] != 'oauth2' \
                 or self._check_token(eos_split_token[1]) is False:
-            raise self._raise_401_error(client_id)
+            raise self.raise_401_error()
 
         return eos_split_token[1]

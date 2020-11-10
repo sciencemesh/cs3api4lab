@@ -8,7 +8,8 @@ from cs3api4lab.config.config_manager import Cs3ConfigManager
 class Channel(LoggingConfigurable):
     channel = None
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         config = Cs3ConfigManager.get_config()
         if type(config['secure_channel']) == bool:
             secure_channel = config['secure_channel']
@@ -38,5 +39,3 @@ class ChannelConnector:
         if cls.__channel_instance is None:
             cls.__channel_instance = Channel()
         return cls.__channel_instance.channel
-
-

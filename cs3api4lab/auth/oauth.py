@@ -2,16 +2,15 @@ from cs3api4lab.auth.authenticator import Authenticator
 
 
 class Oauth(Authenticator):
-    login_type = "bearer"
 
     def __init__(self, config=None, log=None):
         super().__init__(config, log)
 
-    def refresh_token(self, client_id=None, client_secret_or_token=None):
-        oauth_token = self._refresh_token_from_file_or_config(client_id)
-        self.tokens[client_id] = self._auth_in_iop(client_id, oauth_token, self.login_type)
+    def refresh_token(self):
+        oauth_token = self._refresh_token_from_file_or_config()
+        self.token = self._auth_in_iop(oauth_token, "bearer")
 
-    def _refresh_token_from_file_or_config(self, client_id):
+    def _refresh_token_from_file_or_config(self):
         """
         Get OAuth token from file or config value and try to convert IOP token (authentication process)
         """
@@ -30,6 +29,6 @@ class Oauth(Authenticator):
             raise AttributeError("Config hasn't OAuth token or token file.")
 
         if self._check_token(oauth_token) is False:
-            self._raise_401_error(client_id)
+            self.raise_401_error()
 
         return oauth_token
