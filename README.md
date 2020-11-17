@@ -89,7 +89,9 @@ git clone https://github.com/cs3org/reva
 cd reva
 make deps
 make
-cd examples/ocmd/ && mkdir -p /tmp/reva && && mkdir -p /var/tmp/reva 
+mkdir -p /var/tmp/reva
+cd examples/ocmd/
+../../cmd/revad/revad -c ocmd-server-1.toml
 ```
 
 #### Run test
