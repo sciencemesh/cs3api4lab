@@ -1,6 +1,6 @@
 import {ILabShell, ILayoutRestorer, IRouter, JupyterFrontEnd, JupyterFrontEndPlugin,} from '@jupyterlab/application';
-
-import {FileBrowser, FileBrowserModel, IFileBrowserFactory} from "@jupyterlab/filebrowser";
+// import {DOMUtils} from "@jupyterlab/apputils";
+// import { showErrorMessage, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
 import {ISettingRegistry} from '@jupyterlab/settingregistry';
 import {Dialog, ICommandPalette, showDialog, Toolbar, ToolbarButton, WidgetTracker} from '@jupyterlab/apputils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
@@ -13,9 +13,12 @@ import {each} from "@lumino/algorithm";
 // import {LabIcon} from "@jupyterlab/ui-components";
 
 // import {each} from "@lumino/algorithm";
-import {Widget} from "./containers/Widget";
+import {ShareWidget} from "./containers/ShareWidget";
 import {CreateShareWidget} from "./containers/CreateShareWidget";
 import {CS3Contents} from "./CS3Contents";
+import {IFileBrowserFactory} from "@jupyterlab/filebrowser/lib/tokens";
+import {FileBrowser, FileBrowserModel} from "@jupyterlab/filebrowser";
+import {Contents, ContentsManager} from "@jupyterlab/services";
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -25,10 +28,11 @@ namespace CommandIDs {
     export const createShare = 'filebrowser:cs3-create-share';
     // export const showBrowser = 'filebrowser:showBrowser';
 }
-console.log('test');
+
 /**
- * The JupyterLab plugin for the Google Drive Filebrowser.
+ * The JupyterLab plugin for the CS3api Filebrowser.
  */
+
 const browser: JupyterFrontEndPlugin<void> = {
     id: 'cs3_api_shares',
     requires: [
@@ -48,16 +52,18 @@ const browser: JupyterFrontEndPlugin<void> = {
              stateDB: IStateDB
     ): void {
         stateDB.save('share', {share_type: 'by_me'});
-        const drive = new CS3Contents(app.docRegistry, stateDB);
+        const drive = new CS3Contents(app.docRegistry, stateDB, docManager);
 
         const browser = factory.createFileBrowser('test', {
             driveName: drive.name,
         });
+
         docManager.services.contents.addDrive(drive);
 
         browser.title.caption = 'Shared by me';
         // console.log(browser);
         // browser.toolbar.addItem('cs3_tabbar',);
+
 
         browser.toolbar.addItem('cs3_item_shared_filelist', new ToolbarButton({
             onClick: () => {
@@ -132,9 +138,11 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
         ): any => {
             // const { commands } = app;
             const tracker = new WidgetTracker<FileBrowser>({namespace: 'cs3_test'});
+
             const createFileBrowser = (
                 id: string,
-                options: IFileBrowserFactory.IOptions = {}
+                options: IFileBrowserFactory.IOptions = {
+                }
             ) => {
                 const model = new FileBrowserModel({
                     auto: options.auto ?? true,
@@ -146,7 +154,21 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
                 });
 
                 const restore = options.restore;
+                // const restore = new DirListing({
+                //     model: model,
+                //     renderer:
+                // });
+                // const header = document.createElement('div');
+                // header.innerHTML = '<span>Title</span>';
+
+                // const renderer = new DirListing.Renderer();
                 const widget = new FileBrowser({id, model, restore});
+
+                // const header = renderer.createNode();
+                // const child = DOMUtils.findElement(header);
+                // child.innerText = 'test'
+                // header.appendChild(child);
+                // renderer.populateHeaderNode(header);
                 const cs3toolbar = new Toolbar();
 
                 // // cs3toolbar.addClass('cs3_tab_toolbar');
@@ -216,7 +238,7 @@ const cs3info: JupyterFrontEndPlugin<void> = {
         if (widget) {
           each(widget.selectedItems(), fileInfo => {
             showDialog({
-              body: new Widget({
+              body: new ShareWidget({
                   fileInfo: fileInfo
               }),
               buttons: [Dialog.okButton({label: 'Close'})]
@@ -272,8 +294,6 @@ const cs3share: JupyterFrontEndPlugin<void> = {
         });
     }
 };
-
-// export default extension;
 
 /**
  * Export the plugins as default.
