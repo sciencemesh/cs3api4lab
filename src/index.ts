@@ -2,7 +2,7 @@ import {ILabShell, ILayoutRestorer, IRouter, JupyterFrontEnd, JupyterFrontEndPlu
 // import {DOMUtils} from "@jupyterlab/apputils";
 // import { showErrorMessage, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
 import {ISettingRegistry} from '@jupyterlab/settingregistry';
-import {Dialog, ICommandPalette, showDialog, Toolbar, ToolbarButton, WidgetTracker} from '@jupyterlab/apputils';
+import {Dialog, ICommandPalette, showDialog, ToolbarButton, WidgetTracker} from '@jupyterlab/apputils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
 // import {IMainMenu} from '@jupyterlab/mainmenu';
 import {IStateDB} from '@jupyterlab/statedb';
@@ -18,7 +18,7 @@ import {CreateShareWidget} from "./containers/CreateShareWidget";
 import {CS3Contents} from "./CS3Contents";
 import {IFileBrowserFactory} from "@jupyterlab/filebrowser/lib/tokens";
 import {FileBrowser, FileBrowserModel} from "@jupyterlab/filebrowser";
-import {Contents, ContentsManager} from "@jupyterlab/services";
+// import {Contents, ContentsManager} from "@jupyterlab/services";
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -154,46 +154,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
                 });
 
                 const restore = options.restore;
-                // const restore = new DirListing({
-                //     model: model,
-                //     renderer:
-                // });
-                // const header = document.createElement('div');
-                // header.innerHTML = '<span>Title</span>';
-
-                // const renderer = new DirListing.Renderer();
                 const widget = new FileBrowser({id, model, restore});
-
-                // const header = renderer.createNode();
-                // const child = DOMUtils.findElement(header);
-                // child.innerText = 'test'
-                // header.appendChild(child);
-                // renderer.populateHeaderNode(header);
-                const cs3toolbar = new Toolbar();
-
-                // // cs3toolbar.addClass('cs3_tab_toolbar');
-                // cs3toolbar.insertBefore('launch', 'cs3_new_toolbar', new ToolbarButton({
-                //         label: 'Files',
-                //         icon: pythonIcon,
-                //         onClick: () => {
-                //             console.log('testing new button');
-                //         }
-                //     }
-                // ));
-                console.log(widget.toolbar.insertItem(0, 'cs3_test', cs3toolbar));
-
-
-                // Add a launcher toolbar item.
-                // const launcher = new ToolbarButton({
-                //     icon: addIcon,
-                //     onClick: () => {
-                //         if (commands.hasCommand('launcher:create')) {
-                //             return Private.createLauncher(commands, widget);
-                //         }
-                //     },
-                //     tooltip: 'New Launcher'
-                // });
-                // widget.toolbar.insertItem(0, 'launch', launcher);
 
                 // Track the newly created file browser.
                 void tracker.add(widget);

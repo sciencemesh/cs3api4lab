@@ -97,47 +97,42 @@ export class CS3Contents implements Contents.IDrive {
     }
 
     async getDownloadUrl(localPath: string): Promise<string> {
-
-        console.log('get download url');
-        return new Promise<string>(resolve => { return '/'});
+        return this._docManager.services.contents.getDownloadUrl(localPath);
     };
 
     newUntitled(options?: Contents.ICreateOptions): Promise<Contents.IModel> {
-        console.log('new untitled', options);
-        return this._docManager.newUntitled(options);
+        return this._docManager.services.contents.newUntitled(options);
     }
 
     delete(localPath: string): Promise<void> {
-        return this._docManager.deleteFile(localPath);
+        return this._docManager.services.contents.delete(localPath);
     };
 
     rename(oldLocalPath: string, newLocalPath: string): Promise<Contents.IModel> {
-        return this._docManager.rename(oldLocalPath, newLocalPath);
+        return this._docManager.services.contents.rename(oldLocalPath, newLocalPath);
     }
 
     save(localPath: string, options?: Partial<Contents.IModel>): Promise<Contents.IModel> {
-        console.log('save');
-        return CS3ContainerFiles(this._state);
+        return this._docManager.services.contents.save(localPath, options);
     }
 
     copy(localPath: string, toLocalDir: string): Promise<Contents.IModel> {
-        return this._docManager.copy(localPath, toLocalDir);
+        return this._docManager.services.contents.copy(localPath, toLocalDir);
     }
 
     createCheckpoint(localPath: string): Promise<Contents.ICheckpointModel> {
-        return CS3ContainerFiles(this._state);
+        return this._docManager.services.contents.createCheckpoint(localPath);
     }
 
     listCheckpoints(localPath: string): Promise<Contents.ICheckpointModel[]> {
-        return CS3ContainerFiles(this._state);
+        return this._docManager.services.contents.listCheckpoints(localPath);
     }
 
     restoreCheckpoint(localPath: string, checkpointID: string): Promise<void> {
-        return CS3ContainerFiles(this._state);
+        return this._docManager.services.contents.restoreCheckpoint(localPath, checkpointID);
     }
 
     deleteCheckpoint(localPath: string, checkpointID: string): Promise<void> {
-        return CS3ContainerFiles(this._state);
+        return this._docManager.services.contents.deleteCheckpoint(localPath, checkpointID);
     }
-
 }
