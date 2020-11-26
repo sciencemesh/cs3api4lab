@@ -59,6 +59,18 @@ const browser: JupyterFrontEndPlugin<void> = {
         browser.title.caption = 'Shared by me';
         // console.log(browser);
         // browser.toolbar.addItem('cs3_tabbar',);
+
+        browser.toolbar.addItem('cs3_item_shared_filelist', new ToolbarButton({
+            onClick: () => {
+                stateDB.save('share', {share_type: 'filelist'})
+                browser.model.refresh();
+                browser.title.caption = 'File list';
+            },
+            icon: pythonIcon,
+            tooltip: `File list`,
+            iconClass: 'cs3-item jp-Icon jp-Icon-16'
+        }));
+
         browser.toolbar.addItem('cs3_item_shared_with_me', new ToolbarButton({
             onClick: () => {
                 stateDB.save('share', {share_type: 'with_me'})
@@ -66,7 +78,7 @@ const browser: JupyterFrontEndPlugin<void> = {
                 browser.title.caption = 'Shared with me';
             },
             icon: pythonIcon,
-            tooltip: `cs3 item`,
+            tooltip: `Shared with me`,
             iconClass: 'cs3-item jp-Icon jp-Icon-16'
         }));
 
@@ -77,7 +89,7 @@ const browser: JupyterFrontEndPlugin<void> = {
                 browser.title.caption = 'Shared by me';
             },
             icon: pythonIcon,
-            tooltip: `cs3 item`,
+            tooltip: `Shared by me`,
             iconClass: 'cs3-item jp-Icon jp-Icon-16'
         }));
         // labShell.currentWidget.addClass('testing');

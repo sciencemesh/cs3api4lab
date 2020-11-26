@@ -67,8 +67,7 @@ export class CS3Contents implements Contents.IDrive {
         path: string,
         options?: Contents.IFetchOptions
     ): Promise<Contents.IModel> {
-        console.log('get content');
-        const contents = await getDummyFilesForCS3Share(this._state);
+        const contents = await getDummyFilesForCS3Share(this._state, path);
         return contents;
     }
 
