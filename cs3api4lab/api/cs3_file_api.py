@@ -85,15 +85,19 @@ class Cs3FileApi:
             raise IOError(init_file_download.status.message)
 
         self.log.debug(
-            'msg="readfile: InitiateFileDownloadRes returned" endpoint="%s"' % init_file_download.download_endpoint)
+            'msg="readfile: InitiateFileDownloadRes returned" protocols="%s"' % init_file_download.protocols)
 
         #
         # Download
         #
         file_get = None
         try:
-            file_get = requests.get(url=init_file_download.download_endpoint,
-                                    headers={'x-access-token': self.auth.authenticate(user_id)})
+            protocol = [p for p in init_file_download.protocols if p.protocol == "simple"][0]
+            headers = {
+                'x-access-token': self.auth.authenticate(user_id),
+                'X-Reva-Transfer': protocol.token    # needed if the downloads pass through the data gateway in reva
+            }
+            file_get = requests.get(url=protocol.download_endpoint, headers=headers)
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when downloading file from Reva" reason="%s"' % e)
             raise IOError(e)
@@ -139,20 +143,21 @@ class Cs3FileApi:
             raise IOError(init_file_upload_res.status.message)
 
         self.log.debug(
-            'msg="writefile: InitiateFileUploadRes returned" endpoint="%s"' % init_file_upload_res.upload_endpoint)
+            'msg="writefile: InitiateFileUploadRes returned" protocols="%s"' % init_file_upload_res.protocols)
 
         #
         # Upload
         #
         try:
+            protocol = [p for p in init_file_upload_res.protocols if p.protocol == "simple"][0]
             headers = {
                 'Tus-Resumable': '1.0.0',
                 'File-Path': file_path,
                 'File-Size': content_size,
                 'x-access-token': self.auth.authenticate(user_id),
-                'X-Reva-Transfer': init_file_upload_res.token
+                'X-Reva-Transfer': protocol.token
             }
-            put_res = requests.put(url=init_file_upload_res.upload_endpoint, data=content, headers=headers)
+            put_res = requests.put(url=protocol.upload_endpoint, data=content, headers=headers)
 
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when uploading file to Reva" reason="%s"' % e)
