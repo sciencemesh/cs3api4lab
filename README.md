@@ -147,6 +147,67 @@ Config file fields:
 - client_id - client login to authenticate in Reva
 - client_secret - client password to authenticate in Reva
 
+#### Examples of different authentication methods:
+
+If you want to use a different authentication method replace the "authenticator_class" in the config file 
+and put necessary config values for authenticator class.  
+
+  * Reva user and secret:
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.RevaPassword",
+	"client_id": "einstein",
+	"client_secret": "relativity"
+	}
+}
+```
+  * Oauth token from config value
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Oauth",
+	"oauth_token":"OUATH TOKEN",
+	"client_id": "einstein"
+	}
+}
+```
+  * Oauth token from file
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Oauth",
+	"oauth_token":"PATH TO FILE",
+	"client_id": "einstein"
+	}
+}
+```
+  * Eos token from config value
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Eos",
+	"eos_token":"oauth2:<OAUTH_TOKEN>:<OAUTH_INSPECTION_ENDPOINT>",
+	"client_id": "einstein"
+	}
+}
+```
+  * Eos token from file
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Eos",
+	"eos_file":"PATH TO FILE",
+	"client_id": "einstein"
+	}
+}
+```
+
 ## Setup for docker image
 
 ### Build docker image from local source code
