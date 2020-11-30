@@ -89,7 +89,7 @@ class Cs3FileApi:
             raise IOError(init_file_download.status.message)
 
         self.log.debug(
-            'msg="readfile: InitiateFileDownloadRes returned" endpoint="%s"' % init_file_download.download_endpoint)
+            'msg="readfile: InitiateFileDownloadRes returned" protocols="%s"' % init_file_download.protocols)
 
         #
         # Download
@@ -98,7 +98,7 @@ class Cs3FileApi:
         try:
             protocol = [p for p in init_file_download.protocols if p.protocol == "simple"][0]
             headers = {
-                'x-access-token': self.auth.authenticate(user_id),
+                'x-access-token': self.auth.authenticate(),
                 'X-Reva-Transfer': protocol.token    # needed if the downloads pass through the data gateway in reva
             }
             file_get = requests.get(url=protocol.download_endpoint, headers=headers)
