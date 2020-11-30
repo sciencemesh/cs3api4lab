@@ -24,7 +24,7 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
     def test_get_text_file(self):
         file_id = "/test_get_text_file.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.storage.write_file(file_id, self.user_id, message, self.endpoint)
+        self.storage.write_file(file_id, message, self.endpoint)
 
         model = self.contents_manager.get(file_id, True, None)
 
@@ -37,7 +37,7 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
         self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "file")
 
-        self.storage.remove(file_id, self.user_id, self.endpoint)
+        self.storage.remove(file_id, self.endpoint)
 
     def test_get_notebook_file(self):
         file_id = "/test_get_notebook_file.ipynb"
@@ -74,7 +74,7 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
 					"nbformat_minor": 4\
 					}'
 
-        self.storage.write_file(file_id, self.user_id, buffer, self.endpoint)
+        self.storage.write_file(file_id, buffer, self.endpoint)
 
         model = self.contents_manager.get(file_id, True, "notebook")
 
@@ -87,7 +87,7 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
         self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "notebook")
 
-        self.storage.remove(file_id, self.user_id, self.endpoint)
+        self.storage.remove(file_id, self.endpoint)
 
     def test_save_text_model(self):
         file_id = "/test_save_text_model.txt"
@@ -108,7 +108,7 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
         self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "file")
 
-        self.storage.remove(file_id, self.user_id, self.endpoint)
+        self.storage.remove(file_id, self.endpoint)
 
     def test_save_notebook_model(self):
         file_id = "/test_save_notebook_model.ipynb"
@@ -125,7 +125,7 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
         self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "notebook")
 
-        self.storage.remove(file_id, self.user_id, self.endpoint)
+        self.storage.remove(file_id, self.endpoint)
 
     def _create_notebook_model(self):
         model = {
@@ -168,12 +168,12 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
     def test_delete_file(self):
         file_path = "/test_delete_exits_file.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.storage.write_file(file_path, self.user_id, message, self.endpoint)
+        self.storage.write_file(file_path, message, self.endpoint)
 
         self.contents_manager.delete_file(file_path)
 
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.user_id, self.endpoint)
+            self.storage.stat(file_path, self.endpoint)
 
     def test_delete_non_exits_file(self):
         file_path = "/test_delete_non_exits_file.txt"
@@ -184,21 +184,21 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
     def test_rename_file(self):
         file_path = "/test_rename_file.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.storage.write_file(file_path, self.user_id, message, self.endpoint)
+        self.storage.write_file(file_path, message, self.endpoint)
 
         file_dest = "/test_after_rename_file.txt"
 
         self.contents_manager.rename_file(file_path, file_dest)
 
-        stat_info = self.storage.stat(file_dest, self.user_id, self.endpoint)
+        stat_info = self.storage.stat(file_dest, self.endpoint)
         self.assertIsInstance(stat_info, dict)
 
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.user_id, self.endpoint)
+            self.storage.stat(file_path, self.endpoint)
 
-        self.storage.remove(file_dest, self.user_id, self.endpoint)
+        self.storage.remove(file_dest, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(file_dest, self.user_id, self.endpoint)
+            self.storage.stat(file_dest, self.endpoint)
 
     def test_rename_file_non_exits_file(self):
         file_path = "/test_rename_file.txt"
@@ -227,7 +227,7 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
         self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "file")
 
-        self.storage.remove(file_path, self.user_id, self.endpoint)
+        self.storage.remove(file_path, self.endpoint)
 
     def test_new_notebook_model(self):
         file_path = "/test_new_notebook_model.ipynb"
@@ -244,19 +244,19 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
         self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "notebook")
 
-        self.storage.remove(file_path, self.user_id, self.endpoint)
+        self.storage.remove(file_path, self.endpoint)
 
     def test_file_exits(self):
         file_path = "/test_file_exits.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.storage.write_file(file_path, self.user_id, message, self.endpoint)
+        self.storage.write_file(file_path, message, self.endpoint)
 
         file_exists = self.contents_manager.file_exists(file_path)
         self.assertTrue(file_exists)
 
-        self.storage.remove(file_path, self.user_id, self.endpoint)
+        self.storage.remove(file_path, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.user_id, self.endpoint)
+            self.storage.stat(file_path, self.endpoint)
 
         file_exists = self.contents_manager.file_exists(file_path)
         self.assertFalse(file_exists)
@@ -296,36 +296,36 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
 
     def test_create_directory(self):
         file_path = "/test_create_directory"
-        self.storage.create_directory(file_path, self.user_id, self.endpoint)
+        self.storage.create_directory(file_path, self.endpoint)
 
         self.contents_manager.delete_file(file_path)
 
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.user_id, self.endpoint)
+            self.storage.stat(file_path, self.endpoint)
 
     def test_recreate_directory(self):
         file_path = "/test_recreate_directory"
-        self.storage.create_directory(file_path, self.user_id, self.endpoint)
+        self.storage.create_directory(file_path, self.endpoint)
 
         with self.assertRaises(IOError):
-            self.storage.create_directory(file_path, self.user_id, self.endpoint)
+            self.storage.create_directory(file_path, self.endpoint)
 
         self.contents_manager.delete_file(file_path)
 
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.user_id, self.endpoint)
+            self.storage.stat(file_path, self.endpoint)
 
     def test_create_subdirectory(self):
         file_path = "/test_create_directory"
-        self.storage.create_directory(file_path, self.user_id, self.endpoint)
+        self.storage.create_directory(file_path, self.endpoint)
 
         file_path2 = "/test_create_directory/test_subdir"
-        self.storage.create_directory(file_path2, self.user_id, self.endpoint)
+        self.storage.create_directory(file_path2, self.endpoint)
 
         self.contents_manager.delete_file(file_path2)
         with self.assertRaises(IOError):
-            self.storage.stat(file_path2, self.user_id, self.endpoint)
+            self.storage.stat(file_path2, self.endpoint)
 
         self.contents_manager.delete_file(file_path)
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.user_id, self.endpoint)
+            self.storage.stat(file_path, self.endpoint)
