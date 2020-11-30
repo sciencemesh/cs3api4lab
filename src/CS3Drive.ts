@@ -23,15 +23,6 @@ export async function CS3ContainerFiles(stateDB: IStateDB, path: string = null) 
     return fileList;
 }
 
-export async function CS3Rename(oldLocalPath: string, newLocalPath: string) {
-    // requestAPI('/api/contents/' + oldLocalPath, {
-    //     method: 'PATCH',
-    //     body: {
-    //         path: newLocalPath
-    //     }
-    // })
-}
-
 async function getFileList(path: string): Promise<any> {
     return await requestAPI('/api/contents/' + path, {
         method: 'get',

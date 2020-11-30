@@ -19,7 +19,7 @@ type ControlProps = {
 const ControlPanel = (props: ControlProps): JSX.Element => {
     const [formValues, setFormState] = useState({
         endpoint: '/',
-        file_path: '/home/' + props.fileInfo.path,
+        file_path: '/home/' + props.fileInfo.path.replace('cs3drive:', ''),
         grantee: '',
         idp: '',
         role: 'viewer',

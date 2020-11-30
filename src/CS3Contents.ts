@@ -46,8 +46,8 @@ export class CS3Contents implements Contents.IDrive {
     /**
      * The name of the drive.
      */
-    get name(): 'CS3Drive' {
-        return 'CS3Drive';
+    get name(): 'cs3drive' {
+        return 'cs3drive';
     }
 
     /**
