@@ -19,19 +19,19 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
         file_id = "/test.txt"
         message = "Lorem ipsum dolor sit amet..."
 
-        self.storage.write_file(file_id, self.client_id, message, self.endpoint)
+        self.storage.write_file(file_id, message, self.endpoint)
 
-        stat_info = self.storage.stat(file_id, self.client_id, self.endpoint)
+        stat_info = self.storage.stat(file_id, self.endpoint)
 
         self.assertIsInstance(stat_info, dict)
         self.assertTrue('mtime' in stat_info, 'Missing mtime from stat output')
         self.assertTrue('size' in stat_info, 'Missing size from stat output')
 
-        self.storage.remove(file_id, self.client_id, self.endpoint)
+        self.storage.remove(file_id, self.endpoint)
 
     def test_stat_no_file(self):
         with self.assertRaises(IOError, msg='No such file or directory'):
-            self.storage.stat('/hopefullynotexisting', self.client_id, self.endpoint)
+            self.storage.stat('/hopefullynotexisting', self.endpoint)
 
     def test_read_file(self):
 
@@ -39,16 +39,16 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
         content_check = 'bla\n'
         file_patch = "/test_read.txt"
 
-        self.storage.write_file(file_patch, self.client_id, content_to_write, self.endpoint)
+        self.storage.write_file(file_patch, content_to_write, self.endpoint)
         content = ''
 
-        for chunk in self.storage.read_file(file_patch, self.client_id, self.endpoint):
+        for chunk in self.storage.read_file(file_patch, self.endpoint):
             self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
             content += chunk.decode('utf-8')
 
         self.assertEqual(content, content_check, 'File ' + file_patch + ' should contain the string: ' + content_check)
 
-        self.storage.remove(file_patch, self.client_id, self.endpoint)
+        self.storage.remove(file_patch, self.endpoint)
 
     def test_read_file_no_file(self):
 
@@ -56,7 +56,7 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
         content = ''
 
         with self.assertRaises(IOError, msg='No such file or directory'):
-            for chunk in self.storage.read_file(file_patch, self.client_id, self.endpoint):
+            for chunk in self.storage.read_file(file_patch, self.endpoint):
                 content += chunk.decode('utf-8')
 
     def test_write_file(self):
@@ -64,38 +64,38 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
         buffer = b"Testu form cs3 Api"
         file_id = "/testfile.txt"
 
-        self.storage.write_file(file_id, self.client_id, buffer, self.endpoint)
+        self.storage.write_file(file_id, buffer, self.endpoint)
 
-        stat_info = self.storage.stat(file_id, self.client_id, self.endpoint)
+        stat_info = self.storage.stat(file_id, self.endpoint)
         self.assertIsInstance(stat_info, dict)
 
-        self.storage.remove(file_id, self.client_id, self.endpoint)
+        self.storage.remove(file_id, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(file_id, self.client_id, self.endpoint)
+            self.storage.stat(file_id, self.endpoint)
 
     def test_write_empty_file(self):
 
         buffer = b""
         file_id = "/zero_test_file.txt"
 
-        self.storage.write_file(file_id, self.client_id, buffer, self.endpoint)
+        self.storage.write_file(file_id, buffer, self.endpoint)
 
-        stat_info = self.storage.stat(file_id, self.client_id, self.endpoint)
+        stat_info = self.storage.stat(file_id, self.endpoint)
         self.assertIsInstance(stat_info, dict)
 
-        self.storage.remove(file_id, self.client_id, self.endpoint)
+        self.storage.remove(file_id, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(file_id, self.client_id, self.endpoint)
+            self.storage.stat(file_id, self.endpoint)
 
     def test_write_example(self):
 
         buffer = b"Example from cs3 API (Test X22)"
         file_id = "/example1.txt"
-        self.storage.write_file(file_id, self.client_id, buffer, self.endpoint)
+        self.storage.write_file(file_id, buffer, self.endpoint)
 
         buffer = b"Example2 from cs3 API"
         file_id = "/example2.txt"
-        self.storage.write_file(file_id, self.client_id, buffer, self.endpoint)
+        self.storage.write_file(file_id, buffer, self.endpoint)
 
         buffer = b'{\
 					"cells": [\
@@ -130,22 +130,22 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
 					"nbformat_minor": 4\
 					}'
         file_id = "/note1.ipynb"
-        self.storage.write_file(file_id, self.client_id, buffer, self.endpoint)
+        self.storage.write_file(file_id, buffer, self.endpoint)
 
     def test_remove_file(self):
         file_id = "/file_to_remove.txt"
         buffer = b"ebe5tresbsrdthbrdhvdtr"
 
-        self.storage.write_file(file_id, self.client_id, buffer, self.endpoint)
+        self.storage.write_file(file_id, buffer, self.endpoint)
 
-        self.storage.remove(file_id, self.client_id, self.endpoint)
+        self.storage.remove(file_id, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(file_id, self.client_id, self.endpoint)
+            self.storage.stat(file_id, self.endpoint)
 
     def test_read_directory(self):
 
         file_id = "/"
-        read_directory = self.storage.read_directory(file_id, self.client_id, self.endpoint)
+        read_directory = self.storage.read_directory(file_id, self.endpoint)
         self.assertIsNotNone(read_directory[0])
         self.assertIsNotNone(read_directory[0].path)
 
@@ -156,12 +156,12 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
 
         dest_id = "/file_after_rename.txt"
 
-        self.storage.write_file(src_id, self.client_id, buffer, self.endpoint)
-        self.storage.move(src_id, dest_id, self.client_id, self.endpoint)
+        self.storage.write_file(src_id, buffer, self.endpoint)
+        self.storage.move(src_id, dest_id, self.endpoint)
 
-        self.storage.remove(dest_id, self.client_id, self.endpoint)
+        self.storage.remove(dest_id, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(dest_id, self.client_id, self.endpoint)
+            self.storage.stat(dest_id, self.endpoint)
 
 
 if __name__ == '__main__':
