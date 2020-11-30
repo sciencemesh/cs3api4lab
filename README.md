@@ -221,7 +221,23 @@ Build docker image:
 ```bash
 docker build -t cs3api4lab .
 ```
-
+Available environmental variables:
+```
+- CS3_REVA_HOST - address and port on which the Reva server is listening [required]
+- CS3_CLIENT_ID - client login to authenticate in Reva [required]
+- CS3_CLIENT_SECRET - client password to authenticate in Reva [required in case of basic login]
+- CS3_AUTH_TOKEN_VALIDITY - the lifetime of the authenticating token
+- CS3_ENDPOINT - endpoint for Reva storage provider
+- CS3_CHUNK_SIZE - size of the downloaded fragment from Reva
+- CS3_SECURE_CHANNEL - secure channel flag
+- CS3_CLIENT_CERT - public key file path (PEM-encoded)
+- CS3_CLIENT_KEY - private key file path
+- CS3_CA_CERT - certificate authority file path
+```
+Run docker image providing necessary variables:
+```bash
+docker run -p 8888:8888 -e CS3_CLIENT_ID=einstein -e CS3_REVA_HOST=127.0.0.1:19000 cs3api4lab
+```
 Run docker image after overwriting the config variables explicitly or in the reva_config.env:
 ```bash
 docker run -p 8888:8888 --env-file reva_config.env cs3api4lab
