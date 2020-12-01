@@ -38,6 +38,8 @@ RUN cd /opt/cs3 && \
 
 RUN fix-permissions "/home/${NB_USER}"
 
+ENV JUPYTER_ENABLE_LAB = 1
+
 EXPOSE 8888
 
 USER $NB_UID

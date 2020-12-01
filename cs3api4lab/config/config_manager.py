@@ -17,7 +17,8 @@ class Config(LoggingConfigurable):
         "client_cert": "",
         "client_key": "",
         "ca_cert": "",
-        "login_type": "basic"
+        "login_type": "basic",
+        "authenticator_class": "cs3api4lab.auth.RevaPassword"
     }
     __config_dir = "\\jupyter-config"
     __config_file_name = 'jupyter_cs3_config'
@@ -35,7 +36,7 @@ class Config(LoggingConfigurable):
         # overwriting default values with config file
         if config is not None:
             for key in self.config.keys():
-                if key in config.keys() and config[key]:
+                if key in config.keys():
                     self.config[key] = config[key]
 
         # overwriting the values with env vars
