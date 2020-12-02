@@ -89,7 +89,9 @@ git clone https://github.com/cs3org/reva
 cd reva
 make deps
 make
-cd examples/ocmd/ && mkdir -p /tmp/reva && && mkdir -p /var/tmp/reva 
+mkdir -p /var/tmp/reva
+cd examples/ocmd/
+../../cmd/revad/revad -c ocmd-server-1.toml
 ```
 
 #### Run test
@@ -145,46 +147,89 @@ Config file fields:
 - client_id - client login to authenticate in Reva
 - client_secret - client password to authenticate in Reva
 
+#### Examples of different authentication methods:
+
+If you want to use a different authentication method replace the "authenticator_class" in the config file 
+and put necessary config values for authenticator class.  
+
+  * Reva user and secret:
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.RevaPassword",
+	"client_id": "einstein",
+	"client_secret": "relativity"
+	}
+}
+```
+  * Oauth token from config value
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Oauth",
+	"oauth_token":"OUATH TOKEN",
+	"client_id": "einstein"
+	}
+}
+```
+  * Oauth token from file
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Oauth",
+	"oauth_token":"PATH TO FILE",
+	"client_id": "einstein"
+	}
+}
+```
+  * Eos token from config value
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Eos",
+	"eos_token":"oauth2:<OAUTH_TOKEN>:<OAUTH_INSPECTION_ENDPOINT>",
+	"client_id": "einstein"
+	}
+}
+```
+  * Eos token from file
+ ```json
+{
+  "cs3":{
+    ...
+	"authenticator_class": "cs3api4lab.auth.Eos",
+	"eos_file":"PATH TO FILE",
+	"client_id": "einstein"
+	}
+}
+```
+
 ## Setup for docker image
 
 ### Build docker image from local source code
 
-Clone repo and switch to “docker” branch 
+Clone the repo: 
 ```bash
 git clone https://github.com/sciencemesh/cs3api4lab.git
 cd cs3api4lab
-git switch docker
-```
-
-Modify the configuration file, set reva host, user authorization data, etc in file: jupyter-config/jupyter_cs3_config.json
-
-```bash
-nano jupyter-config/jupyter_cs3_config.json
 ```
 Build docker image:
 ```bash
 docker build -t cs3api4lab .
 ```
 
-Run docker image:
+Run docker image after overwriting the config variables explicitly or in the reva_config.env:
 ```bash
-docker run -p 8888:8888 cs3api4lab
-```
-
-Run docker image with overwriting config variables:
-
-- all supported value:
-```bash
-docker run -p 8888:8888 -e CS3_REVA_HOST=IP:PORT -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass -e CS3_HOME_DIR="/test" cs3api4lab
-```
-
-- user authorization data:
-```bash
-docker run -p 8888:8888 -e CS3_CLIENT_ID=user_id -e CS3_CLIENT_SECRET=user_pass cs3api4lab
+docker run -p 8888:8888 --env-file reva_config.env cs3api4lab
 ```
 
 ### Quick build
 ```bash
+pip uninstall -y cs3api4lab
 pip install -e .
 jupyter serverextension enable --py cs3api4lab --sys-prefix
 jlpm

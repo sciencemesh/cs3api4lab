@@ -130,11 +130,9 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
     def _create_test_file(self):
         self.storage.write_file(self.file_path,
-                                self.config['client_id'],
                                 "Lorem ipsum dolor sit amet...",
                                 self.config['endpoint'])
 
     def _remove_test_file(self):
         self.storage.remove(self.file_path,
-                            self.config['client_id'],
                             self.config['endpoint'])
