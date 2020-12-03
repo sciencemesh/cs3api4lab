@@ -15,7 +15,7 @@ class Oauth(Authenticator):
         Get OAuth token from file or config value and try to convert IOP token (authentication process)
         """
 
-        if "oauth_file" in self.config and self.config['oauth_file'] is not "":
+        if "oauth_file" in self.config and self.config['oauth_file'] != "":
 
             try:
                 with open(self.config['oauth_file'], "r") as file:
@@ -23,7 +23,7 @@ class Oauth(Authenticator):
             except IOError as e:
                 raise IOError(f"Error opening token file {self.config['oauth_file']} exception: {e}")
 
-        elif "oauth_token" in self.config and self.config['oauth_token'] is not "":
+        elif "oauth_token" in self.config and self.config['oauth_token'] != "":
             oauth_token = self.config['oauth_token']
         else:
             raise AttributeError("Config hasn't OAuth token or token file.")

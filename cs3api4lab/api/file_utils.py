@@ -6,8 +6,8 @@ class FileUtils:
     def get_reference(file_id, home_dir, endpoint=None):
         if len(file_id) > 0 and file_id[0] == '/':
             # assume this is a filepath
-            if len(home_dir) > 0 and not file_id.startswith(home_dir):
-                file_id = home_dir + file_id
+            # if len(home_dir) > 0 and not file_id.startswith(home_dir):
+            #     file_id = home_dir + file_id
             file = storage_provider.Reference(path=file_id)
             return file
 

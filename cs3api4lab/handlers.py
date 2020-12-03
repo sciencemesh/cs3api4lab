@@ -2,7 +2,6 @@ from notebook.base.handlers import APIHandler
 from tornado import gen, web
 import json
 
-from cs3api4lab.api.cs3apismanager import CS3APIsManager
 from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 
 
