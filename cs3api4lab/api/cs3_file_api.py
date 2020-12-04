@@ -7,19 +7,18 @@ Authors:
 """
 
 import http
-
-import grpc
 import time
 
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 import cs3.types.v1beta1.types_pb2 as types
+import grpc
 import requests
 
-from cs3api4lab.auth import check_auth_interceptor
-from cs3api4lab.auth.authenticator import Authenticator, Auth
 from cs3api4lab.api.file_utils import FileUtils as file_utils
+from cs3api4lab.auth import check_auth_interceptor
+from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 
@@ -40,7 +39,7 @@ class Cs3FileApi:
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         return
 
-    def stat(self, file_id, user_id, endpoint=None):
+    def stat(self, file_id, endpoint=None):
         """
         Stat a file and returns (size, mtime) as well as other extended info using the given userid as access token.
         Note that endpoint here means the storage id. Note that fileid can be either a path (which MUST begin with /)
@@ -65,9 +64,9 @@ class Cs3FileApi:
             }
 
         self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_id, stat_info.status.message))
-        raise IOError(stat_info.status.message)
+        raise FileNotFoundError(stat_info.status.message + ", file " + file_id)
 
-    def read_file(self, file_path, user_id, endpoint=None):
+    def read_file(self, file_path, endpoint=None):
         """
         Read a file using the given userid as access token.
         """
@@ -120,7 +119,7 @@ class Cs3FileApi:
             for i in range(0, len(data), int(self.config['chunk_size'])):
                 yield data[i:i + int(self.config['chunk_size'])]
 
-    def write_file(self, file_path, user_id, content, endpoint=None):
+    def write_file(self, file_path, content, endpoint=None):
         """
         Write a file using the given userid as access token. The entire content is written
         and any pre-existing file is deleted (or moved to the previous version if supported).
@@ -179,7 +178,7 @@ class Cs3FileApi:
             'msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (
                 file_path, (time_end - time_start) * 1000))
 
-    def remove(self, file_path, user_id, endpoint=None):
+    def remove(self, file_path, endpoint=None):
         """
         Remove a file or container using the given userid as access token.
         """
@@ -198,7 +197,7 @@ class Cs3FileApi:
 
         self.log.debug('msg="Invoked remove" result="%s"' % res)
 
-    def read_directory(self, path, user_id, endpoint=None):
+    def read_directory(self, path, endpoint=None):
         """
         Read a directory.
         """
@@ -222,7 +221,7 @@ class Cs3FileApi:
             out.append(info)
         return out
 
-    def move(self, source_path, destination_path, user_id, endpoint=None):
+    def move(self, source_path, destination_path, endpoint=None):
         """
         Move a file or container.
         """
@@ -242,7 +241,7 @@ class Cs3FileApi:
         self.log.debug('msg="Invoked move" source="%s" destination="%s" elapsedTimems="%.1f"' % (
             source_path, destination_path, (tend - tstart) * 1000))
 
-    def create_directory(self, path, user_id, endpoint=None):
+    def create_directory(self, path, endpoint=None):
         """
         Create a directory.
         """
