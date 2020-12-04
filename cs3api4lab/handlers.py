@@ -1,7 +1,9 @@
 from notebook.base.handlers import APIHandler
 from tornado import gen, web
 import json
+from grpc._channel import _InactiveRpcError
 
+from cs3api4lab.exception.exceptions import *
 from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 
 
@@ -14,15 +16,18 @@ class ShareHandler(APIHandler):
     @gen.coroutine
     def post(self):
         request = self.get_json_body()
-        RequestHandler.handle_request(self,
-                                      self.share_api.create,
-                                      201,
-                                      request['endpoint'],
-                                      request['file_path'],
-                                      request['grantee'],
-                                      request['idp'],
-                                      request['role'],
-                                      request['grantee_type'])
+        try:
+            RequestHandler.handle_request(self,
+                                          self.share_api.create,
+                                          201,
+                                          request['endpoint'],
+                                          request['file_path'],
+                                          request['grantee'],
+                                          request['idp'],
+                                          request['role'],
+                                          request['grantee_type'])
+        except KeyError as err:
+            RequestHandler.handle_error(self, ParamError(err))
 
     @web.authenticated
     @gen.coroutine
@@ -32,11 +37,14 @@ class ShareHandler(APIHandler):
 
     def put(self):
         request = self.get_json_body()
-        RequestHandler.handle_request(self,
-                                      self.share_api.update,
-                                      204,
-                                      request['share_id'],
-                                      request['role'])
+        try:
+            RequestHandler.handle_request(self,
+                                          self.share_api.update,
+                                          204,
+                                          request['share_id'],
+                                          request['role'])
+        except KeyError as err:
+            RequestHandler.handle_error(self, ParamError(err))
 
 
 class ListSharesHandler(APIHandler):
@@ -95,15 +103,19 @@ class RequestHandler(APIHandler):
         try:
             response = api_function(*args)
         except Exception as err:
+            self.log.error(err)
             RequestHandler.handle_error(self, err)
         else:
             RequestHandler.handle_response(self, response, success_code)
 
     @staticmethod
     def handle_error(self, err):
-        # todo specify errors and response codes
-        self.set_status(500)
-        self.finish(json.dumps(str(err)))
+        response = {
+            'error_type': err.__class__.__name__,
+            'message': err.message if hasattr(err, 'message') else str(err)
+        }
+        self.set_status(RequestHandler.get_response_code(err))
+        self.finish(json.dumps(str(response)))
 
     @staticmethod
     def handle_response(self, response, success_code):
@@ -113,3 +125,16 @@ class RequestHandler(APIHandler):
             self.finish()
         else:
             self.finish(json.dumps(response))
+
+    @staticmethod
+    def get_response_code(err):
+        if isinstance(err, ShareAlreadyExistsError):
+            return 409
+        if isinstance(err, ShareNotExistsError):
+            return 404
+        if isinstance(err, (InvalidTypeError, KeyError, FileNotFoundError, ParamError)):
+            return 400
+        if isinstance(err, _InactiveRpcError):
+            return 503
+        else:
+            return 500
