@@ -137,15 +137,16 @@ to:
 
 Config file fields:
 - revahost - address and port on which the Reva server is listening
-- authtokenvalidity - the lifetime of the authenticating token
+- auth_token_validity - the lifetime of the authenticating token
 - endpoint - endpoint for Reva storage provider
-- chunksize - size of the downloaded fragment from Reva
+- chunk_size - size of the downloaded fragment from Reva
 - secure_channel - secure channel flag
 - client_cert - public key file path (PEM-encoded)
 - client_key - private key file path
 - ca_cert - certificate authority file path
 - client_id - client login to authenticate in Reva
 - client_secret - client password to authenticate in Reva
+- root_dir_list - list of root dirs, for example https://developer.sciencemesh.io/docs/iop/deployment/kubernetes/providers/ root dirs are "/home,/reva"
 
 #### Examples of different authentication methods:
 

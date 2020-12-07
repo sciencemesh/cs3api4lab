@@ -119,12 +119,10 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         print("Einstein - list_received: ", list_received)
 
         marie_list_received = self.api_ext.list_received()
+        print("Marie - list_received: ", marie_list_received)
 
-        try:
-            marie_stat = self.storage_ext.stat(marie_list_received[0]['id']['opaque_id'], marie_list_received[0]['id']['storage_id'])
-            print("Marie - marie_stat: ", marie_stat)
-        except IOError as e:
-            print("Error stat marie file:", e)
+        marie_stat = self.storage_ext.stat(marie_list_received[0]['id']['opaque_id'], marie_list_received[0]['id']['storage_id'])
+        print("Marie - marie_stat: ", marie_stat)
 
         file_path = marie_stat['filepath']
 

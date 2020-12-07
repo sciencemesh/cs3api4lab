@@ -50,6 +50,50 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
 
         self.storage.remove(file_patch, self.endpoint)
 
+
+    def test_read_file_by_id(self):
+
+        content_to_write = b'bla_by_share\n'
+        content_to_check = 'bla_by_share\n'
+        file_patch = "/test_read_by_share_link.txt"
+
+        self.storage.write_file(file_patch, content_to_write, self.endpoint)
+        stat = self.storage.stat(file_patch)
+
+        content = ''
+        for chunk in self.storage.read_file(stat['inode']['opaque_id'], stat['inode']['storage_id']):
+            self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
+            content += chunk.decode('utf-8')
+
+        self.storage.remove(file_patch, self.endpoint)
+
+        self.assertEqual(stat['inode']['opaque_id'], 'fileid-einstein%2Ftest_read_by_share_link.txt')
+        self.assertEqual(stat['inode']['storage_id'], '123e4567-e89b-12d3-a456-426655440000')
+
+        self.assertEqual(content, content_to_check, 'File ' + file_patch + ' should contain the string: ' + content_to_check)
+
+    def test_read_file_by_share_path(self):
+
+        content_to_write = b'bla_by_share\n'
+        content_to_check = 'bla_by_share\n'
+        file_patch = "/test_read_by_share_link.txt"
+
+        self.storage.write_file(file_patch, content_to_write, self.endpoint)
+
+        stat = self.storage.stat(file_patch)
+        stat_by_id = self.storage.stat(stat['inode']['opaque_id'], stat['inode']['storage_id'])
+
+        content = ''
+        for chunk in self.storage.read_file(file_patch, self.endpoint):
+            self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
+            content += chunk.decode('utf-8')
+
+        self.storage.remove(file_patch, self.endpoint)
+
+        self.assertEqual(stat_by_id['filepath'], '/reva/einstein/test_read_by_share_link.txt')
+        self.assertEqual(content, content_to_check, 'File ' + file_patch + ' should contain the string: ' + content_to_check)
+
+
     def test_read_file_no_file(self):
 
         file_patch = "/test_read_no_existing_file.txt"
