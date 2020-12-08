@@ -13,7 +13,7 @@ from cs3api4lab.config.config_manager import Cs3ConfigManager
 class CS3APIsManager(ContentsManager):
     cs3_config = None
     log = None
-    
+
     # ToDo: Change to cs3 Type
     TYPE_FILE = 1
     TYPE_DIRECTORY = 2
@@ -89,6 +89,10 @@ class CS3APIsManager(ContentsManager):
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
         path = self._normalize_path(path)
+
+        # print(f">>>>>>>>>>>>>>>>>>>> path: {path} content: {content} type: {type} format: {format}")
+        # print(f">>>>>>>>>>>>>>>>>>>> path: {path} is_dir: ", self._is_dir(path))
+
         if type in (None, 'directory') and self._is_dir(path):
             model = self._dir_model(path, content=content)
         elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
@@ -97,6 +101,9 @@ class CS3APIsManager(ContentsManager):
             if type == 'directory':
                 raise web.HTTPError(400, u'%s is a directory' % path, reason='bad type')
             model = self._file_model(path, content=content, format=format)
+
+        # if type != 'directory' and type != None:
+        #     print(">>>>>>>>>>>>>>>>>>>> model: ", model)
 
         return model
 
