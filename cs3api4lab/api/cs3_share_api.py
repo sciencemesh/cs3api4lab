@@ -279,7 +279,7 @@ class Cs3ShareApi:
             return Role.VIEWER
 
     def _get_resource_info(self, endpoint, file_id):
-        ref = FileUtils.get_reference(file_id, self.config['home_dir'], endpoint)
+        ref = FileUtils.get_reference(file_id, endpoint)
         token = self.get_token()
         stat_info = self.cs3_api.Stat(request=storage_provider.StatRequest(ref=ref),
                                       metadata=[('x-access-token', token)])
