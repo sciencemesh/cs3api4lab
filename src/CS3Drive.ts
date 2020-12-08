@@ -3,7 +3,7 @@ import {requestAPI} from './services/requestAPI';
 import {IStateDB} from '@jupyterlab/statedb';
 import { ReadonlyJSONObject } from '@lumino/coreutils';
 
-export async function getDummyFilesForCS3Share(stateDB: IStateDB, path: string = null) :Promise<any> {
+export async function CS3ContainerFiles(stateDB: IStateDB, path: string = null) :Promise<any> {
     let share = await stateDB.fetch('share');
     const shareType = (share as ReadonlyJSONObject)['share_type']
 
@@ -24,7 +24,7 @@ export async function getDummyFilesForCS3Share(stateDB: IStateDB, path: string =
 }
 
 async function getFileList(path: string): Promise<any> {
-    return await requestAPI('/api/contents/' + path + '?content=1', {
+    return await requestAPI('/api/contents/' + path, {
         method: 'get',
     });
 }

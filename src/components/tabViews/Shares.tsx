@@ -1,48 +1,40 @@
 import React, {useState, useEffect} from 'react';
-// import {Contents} from "@jupyterlab/services";
-// import searchIcon from '@jupyterlab/ui-components';
-
-// import {requestAPI} from "../../services/requestAPI"
 
 type SharesProps = {
-    grantees: Object
+    grantees: Map<string, string>
 }
 
 const Shares = (props :SharesProps) :JSX.Element => {
-    const [grantees, setGrantees] = useState(new Map(Object.entries(props.grantees)));
-    const granteesList :Array<object> = [];
+    const [grantees] = useState(props.grantees);
+    const [granteesList, setGranteesList] = useState([]);
 
-    const refresh = (granteesList :Array<object>) :void => {
-        grantees.forEach((permision, grantee) => {
-            const label :string = (permision == 'viewer') ? 'label read-label' : 'label write-label';
-
-            granteesList.push(<div className='jp-shares-element' key={grantee}>
+    const refresh = (grantees :Map<string,string>) :void => {
+        const granteesListArr :Array<Object> = [];
+        grantees.forEach(((permission, grantee) => {
+            granteesListArr.push(<div className='jp-shares-element' key={grantee}>
                 <div className='jp-shares-owner'>{grantee}</div>
                 <div className='jp-shares-label'>
-                    <span className={label}>{permision}</span>
+                <span className={permission}>{permission}</span>
                 </div>
             </div>);
-        });
-        console.log('1',granteesList);
+        }));
+
+        setGranteesList(granteesListArr);
     }
 
-    console.log('2', granteesList);
-
     useEffect(() => {
-        console.log('refresh grantee')
-        refresh(granteesList)
+        refresh(grantees)
     }, [grantees]);
 
     const showedValues = (event :React.ChangeEvent<HTMLInputElement>) :void => {
-        console.log('showed values changed')
-
-        grantees.forEach( (permission, grantee) => {
+        const granteesFiltered = new Map(grantees);
+        granteesFiltered.forEach( (permission, grantee) => {
             if (grantee.toString().search(event.target.value.toString()) == -1) {
-                grantees.delete(grantee);
+                granteesFiltered.delete(grantee);
             }
         });
 
-        setGrantees(grantees);
+        refresh(granteesFiltered);
     };
 
     return (

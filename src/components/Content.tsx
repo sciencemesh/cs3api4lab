@@ -6,7 +6,7 @@ import Shares from "./tabViews/Shares";
 type ContentProps = {
     content: Contents.IModel,
     contentType: string,
-    grantees: Object
+    grantees: Map<string,string>
 }
 
 

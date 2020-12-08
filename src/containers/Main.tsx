@@ -17,7 +17,7 @@ type MainProps = {
 class Main extends React.Component<any, any> {
     public state = {
         activeTab: 'info',
-        grantees: {}
+        grantees: new Map()
     }
 
     /**
@@ -45,13 +45,18 @@ class Main extends React.Component<any, any> {
     }
 
     protected getGranteesForResource = async () => {
-        let resource = '/home/' + this.props.fileInfo.path;
+        let resource = '/home/' + this.props.fileInfo.path.replace('cs3drive:', '');
 
-        const grantees  =  await requestAPI<any>('/api/cs3/shares/file?file_id=' + resource, {
+        const grantees  =  await requestAPI<any>('/api/cs3/shares/file?file_path=' + resource, {
             method: 'GET',
         });
 
-        this.setState({...this.state, grantees: grantees});
+        const granteesSet = new Map();
+        grantees.shares.forEach((item :any) => {
+            granteesSet.set(item.grantee.opaque_id, item.grantee.permissions);
+        });
+
+        this.setState({...this.state, grantees: granteesSet});
     }
 
     public componentDidMount() {

@@ -9,9 +9,9 @@ type WidgetProps = {
 }
 
 /**
- * Widget container.
+ * ShareWidget container.
  */
-export class Widget extends ReactWidget {
+export class ShareWidget extends ReactWidget {
     private readonly fileInfo: Contents.IModel;
 
     constructor(props :WidgetProps) {
