@@ -69,7 +69,7 @@ export class CS3Contents implements Contents.IDrive {
         path: string,
         options?: Contents.IFetchOptions
     ): Promise<Contents.IModel> {
-        return await CS3ContainerFiles(this._state, path);
+        return await CS3ContainerFiles(this._state, path, options);
     }
 
     /**

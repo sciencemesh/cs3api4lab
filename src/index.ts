@@ -55,18 +55,16 @@ const browser: JupyterFrontEndPlugin<void> = {
         const drive = new CS3Contents(app.docRegistry, stateDB, docManager);
 
         const browser = factory.createFileBrowser('test', {
-            driveName: drive.name,
+            driveName: drive.name
         });
 
         docManager.services.contents.addDrive(drive);
 
         browser.title.caption = 'Shared by me';
-        // console.log(browser);
-        // browser.toolbar.addItem('cs3_tabbar',);
-
 
         browser.toolbar.addItem('cs3_item_shared_filelist', new ToolbarButton({
             onClick: () => {
+                console.log('file list button');
                 stateDB.save('share', {share_type: 'filelist'})
                 browser.model.refresh();
                 browser.title.caption = 'File list';
