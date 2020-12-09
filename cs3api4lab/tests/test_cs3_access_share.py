@@ -209,6 +209,9 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
                             self.receiver_role,
                             self.receiver_grantee_type)
 
+    def test_list_received_share(self):
+        list_received = self.api_ext.list_received()
+        print(list_received)
 
     def _create_file_share(self):
         self._create_test_file()

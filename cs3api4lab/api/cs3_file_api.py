@@ -54,13 +54,20 @@ class Cs3FileApi:
 
         if stat_info.status.code == cs3code.CODE_OK:
             self.log.debug('msg="Stat result" data="%s"' % stat_info)
+
+            print(stat_info.info)
+
             return {
                 'inode': {'storage_id': stat_info.info.id.storage_id,
                           'opaque_id': stat_info.info.id.opaque_id},
                 'filepath': stat_info.info.path,
                 'userid': stat_info.info.owner.opaque_id,
                 'size': stat_info.info.size,
-                'mtime': stat_info.info.mtime.seconds
+                'mtime': stat_info.info.mtime.seconds,
+                'type': stat_info.info.type,
+                'mime_type': stat_info.info.mime_type,
+                'idp': stat_info.info.owner.idp,
+                'permissions': stat_info.info.permission_set
             }
 
         self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_id, stat_info.status.message))
