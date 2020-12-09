@@ -1,5 +1,5 @@
 import urllib.parse
-from unittest import TestCase
+from unittest import TestCase, skip
 
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 from traitlets.config import LoggingConfigurable
@@ -56,6 +56,9 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     receiver2_id = '932b4540-8d16-481e-8ef4-588e4b6b151c'
     receiver2_idp = 'example.org'
 
+    receiver3_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
+    receiver3_idp = 'example.org'
+
     receiver_role = 'viewer'
     receiver_grantee_type = 'user'
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
@@ -66,6 +69,9 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     container_path = '/home/test_share_dir'
     file_path = '/home/test_share_file.txt'
     content = f"Lorem ipsum..."
+
+    container2_path = '/home/test_einstein_share_dir'
+    file2_path = '/home/test_einstein_share_file.txt'
 
     first_client_id = "einstein"
     first_client_secret = "relativity"
@@ -168,6 +174,41 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         self._remove_test_container()
 
         self.assertEqual(marie_file_content, 'Lorem ipsum 111 ...')
+
+    @skip
+    def test_create_share_for_marie(self):
+        self._clear_shares(self.container_path)
+        self._remove_test_container()
+        self._create_file_share()
+        self._create_container_share()
+
+    @skip
+    def test_create_share_for_einstein(self):
+
+        self.storage_ext.write_file(self.file2_path,
+                                    self.content,
+                                    self.endpoint)
+
+        self.api_ext.create(self.endpoint,
+                            self.file2_path,
+                            self.receiver3_id,
+                            self.receiver3_idp,
+                            self.receiver_role,
+                            self.receiver_grantee_type)
+
+        self.storage_ext.create_directory(self.container2_path, self.endpoint)
+        self.storage_ext.write_file(self.container2_path + "/test1.txt", "Lorem ipsum 111 ...", self.endpoint)
+        self.storage_ext.write_file(self.container2_path + "/test2.txt", "Lorem ipsum 222 ...", self.endpoint)
+        self.storage_ext.write_file(self.container2_path + "/test3.txt", "Lorem ipsum 333 ...", self.endpoint)
+        self.storage_ext.write_file(self.container2_path + "/test4.txt", "Lorem ipsum 444 ...", self.endpoint)
+
+        self.api_ext.create(self.endpoint,
+                            self.container2_path,
+                            self.receiver3_id,
+                            self.receiver3_idp,
+                            self.receiver_role,
+                            self.receiver_grantee_type)
+
 
     def _create_file_share(self):
         self._create_test_file()
