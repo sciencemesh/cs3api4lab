@@ -1,8 +1,8 @@
-import {ILabShell, ILayoutRestorer,  JupyterFrontEnd, JupyterFrontEndPlugin,} from '@jupyterlab/application';
-
-import { IFileBrowserFactory} from "@jupyterlab/filebrowser";
+import {ILabShell, ILayoutRestorer, IRouter, JupyterFrontEnd, JupyterFrontEndPlugin,} from '@jupyterlab/application';
+// import {DOMUtils} from "@jupyterlab/apputils";
+// import { showErrorMessage, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
 import {ISettingRegistry} from '@jupyterlab/settingregistry';
-import {Dialog, ICommandPalette, showDialog,  ToolbarButton} from '@jupyterlab/apputils';
+import {Dialog, ICommandPalette, showDialog, ToolbarButton, WidgetTracker} from '@jupyterlab/apputils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
 // import {IMainMenu} from '@jupyterlab/mainmenu';
 import {IStateDB} from '@jupyterlab/statedb';
@@ -13,9 +13,12 @@ import {each} from "@lumino/algorithm";
 // import {LabIcon} from "@jupyterlab/ui-components";
 
 // import {each} from "@lumino/algorithm";
-import {Widget} from "./containers/Widget";
+import {ShareWidget} from "./containers/ShareWidget";
 import {CreateShareWidget} from "./containers/CreateShareWidget";
 import {CS3Contents} from "./CS3Contents";
+import {IFileBrowserFactory} from "@jupyterlab/filebrowser/lib/tokens";
+import {FileBrowser, FileBrowserModel} from "@jupyterlab/filebrowser";
+// import {Contents, ContentsManager} from "@jupyterlab/services";
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -25,10 +28,11 @@ namespace CommandIDs {
     export const createShare = 'filebrowser:cs3-create-share';
     // export const showBrowser = 'filebrowser:showBrowser';
 }
-console.log('test');
+
 /**
- * The JupyterLab plugin for the Google Drive Filebrowser.
+ * The JupyterLab plugin for the CS3api Filebrowser.
  */
+
 const browser: JupyterFrontEndPlugin<void> = {
     id: 'cs3_api_shares',
     requires: [
@@ -48,17 +52,28 @@ const browser: JupyterFrontEndPlugin<void> = {
              stateDB: IStateDB
     ): void {
         stateDB.save('share', {share_type: 'by_me'});
-        const drive = new CS3Contents(app.docRegistry, stateDB);
-        // let browser = factory.defaultBrowser;
+        const drive = new CS3Contents(app.docRegistry, stateDB, docManager);
 
         const browser = factory.createFileBrowser('test', {
-            driveName: drive.name,
+            driveName: drive.name
         });
+
         docManager.services.contents.addDrive(drive);
 
         browser.title.caption = 'Shared by me';
-        // console.log(browser);
-        // browser.toolbar.addItem('cs3_tabbar',);
+
+        browser.toolbar.addItem('cs3_item_shared_filelist', new ToolbarButton({
+            onClick: () => {
+                console.log('file list button');
+                stateDB.save('share', {share_type: 'filelist'})
+                browser.model.refresh();
+                browser.title.caption = 'File list';
+            },
+            icon: pythonIcon,
+            tooltip: `File list`,
+            iconClass: 'cs3-item jp-Icon jp-Icon-16'
+        }));
+
         browser.toolbar.addItem('cs3_item_shared_with_me', new ToolbarButton({
             onClick: () => {
                 stateDB.save('share', {share_type: 'with_me'})
@@ -66,7 +81,7 @@ const browser: JupyterFrontEndPlugin<void> = {
                 browser.title.caption = 'Shared with me';
             },
             icon: pythonIcon,
-            tooltip: `cs3 item`,
+            tooltip: `Shared with me`,
             iconClass: 'cs3-item jp-Icon jp-Icon-16'
         }));
 
@@ -77,15 +92,15 @@ const browser: JupyterFrontEndPlugin<void> = {
                 browser.title.caption = 'Shared by me';
             },
             icon: pythonIcon,
-            tooltip: `cs3 item`,
+            tooltip: `Shared by me`,
             iconClass: 'cs3-item jp-Icon jp-Icon-16'
         }));
         // labShell.currentWidget.addClass('testing');
 
         // const {commands} = app;
-        // restorer.add(browser, 'filebrowser');
-        restorer.add(browser, 'filebrowser');
-        // app.shell.add(browser, 'left', { rank: 101 });
+
+        restorer.add(browser, 'cs3_file_browser');
+        app.shell.add(browser, 'left', { rank: 101 });
 
         // browser.title.label = 'test';
         // browser.title.icon =  LabIcon.resolve({
@@ -107,81 +122,55 @@ const browser: JupyterFrontEndPlugin<void> = {
 /**
  * The default file browser factory provider.
  */
-// const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
-//         id: 'cs3_test_factory',
-//         provides: IFileBrowserFactory,
-//         requires: [IDocumentManager],
-//         optional: [IStateDB, IRouter, JupyterFrontEnd.ITreeResolver],
-//         activate: (
-//             app: JupyterFrontEnd,
-//             factory: IFileBrowserFactory,
-//             docManager: IDocumentManager,
-//             state: IStateDB | null,
-//             router: IRouter | null,
-//             tree: JupyterFrontEnd.ITreeResolver | null
-//         ): any => {
-//             // const { commands } = app;
-//             const tracker = new WidgetTracker<FileBrowser>({namespace: 'cs3_test'});
-//             const browser = factory.defaultBrowser;
-//
-//             const createFileBrowser = (
-//                 id: string,
-//                 options: IFileBrowserFactory.IOptions = {}
-//             ) => {
-//                 const model = new FileBrowserModel({
-//                     auto: options.auto ?? true,
-//                     manager: docManager,
-//                     driveName: options.driveName || '',
-//                     refreshInterval: options.refreshInterval,
-//                     state:
-//                         options.state === null ? undefined : options.state || state || undefined
-//                 });
-//
-//                 const restore = options.restore;
-//                 const widget = new FileBrowser({id, model, restore});
-//                 const cs3toolbar = new Toolbar();
-//
-//                 // // cs3toolbar.addClass('cs3_tab_toolbar');
-//                 // cs3toolbar.insertBefore('launch', 'cs3_new_toolbar', new ToolbarButton({
-//                 //         label: 'Files',
-//                 //         icon: pythonIcon,
-//                 //         onClick: () => {
-//                 //             console.log('testing new button');
-//                 //         }
-//                 //     }
-//                 // ));
-//                 console.log(widget.toolbar.insertItem(0, 'cs3_test', cs3toolbar));
-//
-//
-//                 // Add a launcher toolbar item.
-//                 // const launcher = new ToolbarButton({
-//                 //     icon: addIcon,
-//                 //     onClick: () => {
-//                 //         if (commands.hasCommand('launcher:create')) {
-//                 //             return Private.createLauncher(commands, widget);
-//                 //         }
-//                 //     },
-//                 //     tooltip: 'New Launcher'
-//                 // });
-//                 // widget.toolbar.insertItem(0, 'launch', launcher);
-//
-//                 // Track the newly created file browser.
-//                 void tracker.add(widget);
-//
-//                 return widget;
-//             };
-//
-// // Manually restore and load the default file browser.
-// //             const defaultBrowser = createFileBrowser('filebrowser', {
-// //                 auto: true,
-// //                 restore: false
-// //             });
-// // void Private.restoreBrowser(defaultBrowser, commands, router, tree);
-//
-//             return {createFileBrowser, browser, tracker};
-//         }
-//     }
-// ;
+const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
+        id: 'cs3_test_factory',
+        provides: IFileBrowserFactory,
+        requires: [IDocumentManager],
+        optional: [IStateDB, IRouter, JupyterFrontEnd.ITreeResolver],
+        activate: (
+            app: JupyterFrontEnd,
+            docManager: IDocumentManager,
+            state: IStateDB | null,
+            router: IRouter | null,
+            tree: JupyterFrontEnd.ITreeResolver | null
+        ): any => {
+            // const { commands } = app;
+            const tracker = new WidgetTracker<FileBrowser>({namespace: 'cs3_test'});
+
+            const createFileBrowser = (
+                id: string,
+                options: IFileBrowserFactory.IOptions = {
+                }
+            ) => {
+                const model = new FileBrowserModel({
+                    auto: options.auto ?? true,
+                    manager: docManager,
+                    driveName: options.driveName || '',
+                    refreshInterval: options.refreshInterval,
+                    state:
+                        options.state === null ? undefined : options.state || state || undefined
+                });
+
+                const restore = options.restore;
+                const widget = new FileBrowser({id, model, restore});
+
+                // Track the newly created file browser.
+                void tracker.add(widget);
+
+                return widget;
+            };
+
+// Manually restore and load the default file browser.
+            const defaultBrowser = createFileBrowser('filebrowser', {
+                auto: true,
+                restore: false
+            });
+// void Private.restoreBrowser(defaultBrowser, commands, router, tree);
+
+            return {createFileBrowser, defaultBrowser, tracker};
+        }
+    }
+;
 
 /**
  * Initialization data for the cs3api4lab extension.
@@ -208,7 +197,7 @@ const cs3info: JupyterFrontEndPlugin<void> = {
         if (widget) {
           each(widget.selectedItems(), fileInfo => {
             showDialog({
-              body: new Widget({
+              body: new ShareWidget({
                   fileInfo: fileInfo
               }),
               buttons: [Dialog.okButton({label: 'Close'})]
@@ -265,13 +254,11 @@ const cs3share: JupyterFrontEndPlugin<void> = {
     }
 };
 
-// export default extension;
-
 /**
  * Export the plugins as default.
  */
 const plugins: JupyterFrontEndPlugin<any>[] = [
-    // factory,
+    factory,
     browser,
     cs3info,
     cs3share
