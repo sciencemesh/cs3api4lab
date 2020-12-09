@@ -54,6 +54,9 @@ class Cs3FileApi:
 
         if stat_info.status.code == cs3code.CODE_OK:
             self.log.debug('msg="Stat result" data="%s"' % stat_info)
+
+            print(stat_info.info)
+
             return {
                 'inode': {'storage_id': stat_info.info.id.storage_id,
                           'opaque_id': stat_info.info.id.opaque_id},
