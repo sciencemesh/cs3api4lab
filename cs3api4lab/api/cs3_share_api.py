@@ -36,7 +36,7 @@ class Cs3ShareApi:
     auth = None
     config = {}
     file_api = None
-    date_fmt = '%d-%b-%Y (%H:%M:%S.%f)'
+    date_fmt = '%Y-%m-%dT%H:%M:%SZ'
 
     TYPE_FILE = 1
     TYPE_DIRECTORY = 2
@@ -365,8 +365,6 @@ class Cs3ShareApi:
 
             stat = self.file_api.stat(share.resource_id.opaque_id, share.resource_id.storage_id)
 
-            print(">>>>>>>>> share: ", share)
-            print(">>>>>>>>> stat: ", stat)
             file_model = self._map_share_to_file_model(share, stat)
 
             if file_model['path'] not in path_list:
@@ -394,13 +392,8 @@ class Cs3ShareApi:
 
     def _map_share_to_file_model(self, share, stat):
 
-        # created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
-        # last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
-
-        created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
-        last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime('%d-%b-%Y (%H:%M:%S.%f)')
-
-        # file_id = self._purify_file_path(share.resource_id.opaque_id)
+        created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime(self.date_fmt)
+        last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime(self.date_fmt)
 
         model = {}
         model['name'] = stat['filepath'].rsplit('/', 1)[-1]
