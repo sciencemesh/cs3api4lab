@@ -1,4 +1,3 @@
-// import {Contents} from "@jupyterlab/services";
 import {requestAPI} from './services/requestAPI';
 import {IStateDB} from '@jupyterlab/statedb';
 import { ReadonlyJSONObject } from '@lumino/coreutils';
@@ -8,7 +7,6 @@ export async function CS3ContainerFiles(stateDB: IStateDB, path: string = null, 
     let share = await stateDB.fetch('share');
     const shareType = (share as ReadonlyJSONObject)['share_type']
 
-    console.log('construct path', path);
     if (path != '') {
         return await getFileList(path, options);
     }
@@ -25,18 +23,15 @@ export async function CS3ContainerFiles(stateDB: IStateDB, path: string = null, 
 }
 
 async function getFileList(path: string, options :Contents.IFetchOptions): Promise<any> {
-    console.log('list path', path);
-
     const {type, format, content} = options;
 
     let url :string = '';
         url += '?content=' + (content  ? 1 : 0);
     if (type)
         url += '&type=' + type;
-    if (format)
+    if (format && type != 'notebook')
         url += '&format=' + format;
 
-    console.log('path', path);
     return await requestAPI('/api/contents/' + path + ''  + url, {
         method: 'get'
     });

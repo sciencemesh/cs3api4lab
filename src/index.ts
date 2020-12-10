@@ -64,7 +64,6 @@ const browser: JupyterFrontEndPlugin<void> = {
 
         browser.toolbar.addItem('cs3_item_shared_filelist', new ToolbarButton({
             onClick: () => {
-                console.log('file list button');
                 stateDB.save('share', {share_type: 'filelist'})
                 browser.model.refresh();
                 browser.title.caption = 'File list';
