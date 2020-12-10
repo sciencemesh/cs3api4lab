@@ -357,7 +357,7 @@ class Cs3ShareApi:
 
     def _map_shares_to_dir_model(self, list_response, received=False):
 
-        model = self._create_dir_model()
+        dir_model = self._create_dir_model()
         path_list = []
         for share in list_response.shares:
             if received:
@@ -365,13 +365,16 @@ class Cs3ShareApi:
 
             stat = self.file_api.stat(share.resource_id.opaque_id, share.resource_id.storage_id)
 
-            file_model = self._map_share_to_file_model(share, stat)
+            if stat['type']==self.TYPE_FILE:
+                model = self._map_share_to_file_model(share, stat)
+            else:
+                model = self._map_share_to_dir_model(share, stat)
 
-            if file_model['path'] not in path_list:
-                model['content'].append(file_model)
-                path_list.append(file_model['path'])
+            if model['path'] not in path_list:
+                dir_model['content'].append(model)
+                path_list.append(model['path'])
 
-        return model
+        return dir_model
 
     def _create_dir_model(self):
 
@@ -407,5 +410,24 @@ class Cs3ShareApi:
         model['writable'] = False
         model['type'] = 'file'
         model['mimetype'] = mimetypes.guess_type(stat['filepath'])[0]
+
+        return model
+
+    def _map_share_to_dir_model(self, share, stat):
+        created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime(self.date_fmt)
+        last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime(self.date_fmt)
+
+        model = {}
+        model['name'] = stat['filepath'].rsplit('/', 1)[-1]
+        model['path'] = stat['filepath']
+
+        model['last_modified'] = last_modified
+        model['created'] = created
+        model['content'] = None
+        model['format'] = None
+        model['size'] = None
+        model['writable'] = False
+        model['type'] = 'directory'
+        model['mimetype'] = None
 
         return model

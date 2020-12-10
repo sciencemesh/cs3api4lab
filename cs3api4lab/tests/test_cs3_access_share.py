@@ -209,6 +209,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
                             self.receiver_role,
                             self.receiver_grantee_type)
 
+    @skip
     def test_list_received_share(self):
         list_received = self.api_ext.list_received()
         print(list_received)
@@ -250,11 +251,50 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         return self._create_test_container_share()
 
     def _create_test_container(self):
-        self.storage.create_directory(self.container_path, self.endpoint)
+        try:
+            self.storage.create_directory(self.container_path, self.endpoint)
+        except:
+            print("Error create test dir.")
+
         self.storage.write_file(self.container_path + "/test1.txt", "Lorem ipsum 111 ...", self.endpoint)
         self.storage.write_file(self.container_path + "/test2.txt", "Lorem ipsum 222 ...", self.endpoint)
         self.storage.write_file(self.container_path + "/test3.txt", "Lorem ipsum 333 ...", self.endpoint)
         self.storage.write_file(self.container_path + "/test4.txt", "Lorem ipsum 444 ...", self.endpoint)
+
+        buffer = b'{\
+					"cells": [\
+						{\
+							"cell_type": "markdown",\
+							"metadata": {},\
+							"source": [\
+								"### Markdown example"\
+							]\
+						}\
+					],\
+					"metadata": {\
+						"kernelspec": {\
+							"display_name": "Python 3",\
+							"language": "python",\
+							"name": "python3"\
+						},\
+						"language_info": {\
+							"codemirror_mode": {\
+								"name": "ipython",\
+								"version": 3\
+							},\
+							"file_extension": ".py",\
+							"mimetype": "text/x-python",\
+							"name": "python",\
+							"nbconvert_exporter": "python",\
+							"pygments_lexer": "ipython3",\
+							"version": "3.7.4"\
+						}\
+					},\
+					"nbformat": 4,\
+					"nbformat_minor": 4\
+					}'
+        file_id = self.container_path + "/example.ipynb"
+        self.storage.write_file(file_id, buffer, self.endpoint)
 
     def _remove_test_container(self):
         try:
