@@ -12,6 +12,7 @@ class Config(LoggingConfigurable):
         "auth_token_validity": "3600",
         "endpoint": "/",
         "home_dir": "/home",
+        "root_dir_list": "/home,/reva", # List of root dirs. Example: Exaple config "/home,/reva" for storage-references: https://developer.sciencemesh.io/docs/iop/deployment/kubernetes/providers/
         "chunk_size": "4194304",
         "secure_channel": False,
         "client_cert": "",
@@ -44,6 +45,12 @@ class Config(LoggingConfigurable):
             env_name = "CS3_" + key.upper()
             if env_name in os.environ:
                 self.config[key] = os.environ[env_name]
+
+        if len(self.config["root_dir_list"]) > 0:
+            root_dir_list = tuple(k.strip() for k in self.config["root_dir_list"].split(','))
+            self.config["root_dir_list"] = root_dir_list
+        else:
+            self.config["root_dir_list"] = tuple()
 
         if not self.config["reva_host"]:
             raise KeyError("Reva host not provided")
