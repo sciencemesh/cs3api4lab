@@ -5,7 +5,7 @@ import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 from traitlets.config import LoggingConfigurable
 
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
-from cs3api4lab.api.cs3_share_api import Cs3ShareApi
+from cs3api4lab.api.cs3_share_api import Cs3ShareApi, ShareAlreadyExistsError
 from cs3api4lab.auth import RevaPassword
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
@@ -102,15 +102,11 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
         self._write_test_files()
 
-        einstein_dir = self.storage.read_directory(self.container, self.endpoint)
-        einstein_stat = self.storage.stat(self.first_file_name)
-
         file_content = self._read_storage_file(self.first_file_name)
         share_file_content = self._read_storage_file(self.share_first_file_name)
 
         self._remove_test_files()
         self.assertEqual(file_content, share_file_content)
-
 
     def test_share_file_and_read(self):
         self._clear_shares(self.file_path)
@@ -127,13 +123,8 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         marie_list_received = self.api_ext.list_received()
         print("Marie - list_received: ", marie_list_received)
 
-        marie_stat = self.storage_ext.stat(marie_list_received[0]['id']['opaque_id'], marie_list_received[0]['id']['storage_id'])
-        print("Marie - marie_stat: ", marie_stat)
-
-        file_path = marie_stat['filepath']
-
         file_content = self._read_storage_file(self.file_path)
-        marie_file_content = self._read_storage_ext_file(file_path)
+        marie_file_content = self._read_storage_ext_file(marie_list_received['content'][0]['path'])
 
         self._clear_shares(self.file_path)
         self._remove_test_file()
@@ -157,7 +148,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         print("Marie - list_received: ", marie_list_received)
 
         try:
-            marie_stat = self.storage_ext.stat(marie_list_received[0]['id']['opaque_id'], marie_list_received[0]['id']['storage_id'])
+            marie_stat = self.storage_ext.stat(marie_list_received['content'][0]['path'])
             print("Marie - marie_stat: ", marie_stat)
         except IOError as e:
             print("Error stat marie container:", e)
@@ -168,7 +159,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         except IOError as e:
             print("Error read marie container:", e)
 
-        marie_file_content = self._read_storage_ext_file(marie_directory[0].path)
+        marie_file_content = self._read_storage_ext_file(marie_directory[1].path)
 
         self._clear_shares(self.container_path)
         self._remove_test_container()
@@ -189,28 +180,38 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
                                     self.content,
                                     self.endpoint)
 
-        self.api_ext.create(self.endpoint,
-                            self.file2_path,
-                            self.receiver3_id,
-                            self.receiver3_idp,
-                            self.receiver_role,
-                            self.receiver_grantee_type)
+        try:
+            self.api_ext.create(self.endpoint,
+                                self.file2_path,
+                                self.receiver3_id,
+                                self.receiver3_idp,
+                                self.receiver_role,
+                                self.receiver_grantee_type)
+        except ShareAlreadyExistsError as e:
+            print("Error create share...", e)
 
-        self.storage_ext.create_directory(self.container2_path, self.endpoint)
+        try:
+            self.storage_ext.create_directory(self.container2_path, self.endpoint)
+        except IOError as e:
+            print("Error create dir...", e)
+
         self.storage_ext.write_file(self.container2_path + "/test1.txt", "Lorem ipsum 111 ...", self.endpoint)
         self.storage_ext.write_file(self.container2_path + "/test2.txt", "Lorem ipsum 222 ...", self.endpoint)
         self.storage_ext.write_file(self.container2_path + "/test3.txt", "Lorem ipsum 333 ...", self.endpoint)
         self.storage_ext.write_file(self.container2_path + "/test4.txt", "Lorem ipsum 444 ...", self.endpoint)
 
-        self.api_ext.create(self.endpoint,
-                            self.container2_path,
-                            self.receiver3_id,
-                            self.receiver3_idp,
-                            self.receiver_role,
-                            self.receiver_grantee_type)
+        try:
+            self.api_ext.create(self.endpoint,
+                                self.container2_path,
+                                self.receiver3_id,
+                                self.receiver3_idp,
+                                self.receiver_role,
+                                self.receiver_grantee_type)
+        except ShareAlreadyExistsError as e:
+            print("Error create share...", e)
 
     @skip
-    def test_list_received_share(self):
+    def test_print_list_received_share(self):
         list_received = self.api_ext.list_received()
         print(list_received)
 
