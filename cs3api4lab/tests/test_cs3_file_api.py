@@ -53,9 +53,9 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
 
     def test_read_file_by_id(self):
 
-        content_to_write = b'bla_by_share\n'
-        content_to_check = 'bla_by_share\n'
-        file_patch = "/test_read_by_share_link.txt"
+        content_to_write = b'bla_by_id\n'
+        content_to_check = 'bla_by_id\n'
+        file_patch = "/test_read_by_id.txt"
 
         self.storage.write_file(file_patch, content_to_write, self.endpoint)
         stat = self.storage.stat(file_patch)
@@ -67,7 +67,7 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
 
         self.storage.remove(file_patch, self.endpoint)
 
-        self.assertEqual(stat['inode']['opaque_id'], 'fileid-einstein%2Ftest_read_by_share_link.txt')
+        self.assertEqual(stat['inode']['opaque_id'], 'fileid-einstein%2Ftest_read_by_id.txt')
         self.assertEqual(stat['inode']['storage_id'], '123e4567-e89b-12d3-a456-426655440000')
 
         self.assertEqual(content, content_to_check, 'File ' + file_patch + ' should contain the string: ' + content_to_check)
@@ -76,7 +76,7 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
 
         content_to_write = b'bla_by_share\n'
         content_to_check = 'bla_by_share\n'
-        file_patch = "/test_read_by_share_link.txt"
+        file_patch = "/test_read_by_share_path.txt"
 
         self.storage.write_file(file_patch, content_to_write, self.endpoint)
 
@@ -90,7 +90,7 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
 
         self.storage.remove(file_patch, self.endpoint)
 
-        self.assertEqual(stat_by_id['filepath'], '/reva/einstein/test_read_by_share_link.txt')
+        self.assertEqual(stat_by_id['filepath'], '/reva/einstein/test_read_by_share_path.txt')
         self.assertEqual(content, content_to_check, 'File ' + file_patch + ' should contain the string: ' + content_to_check)
 
 
