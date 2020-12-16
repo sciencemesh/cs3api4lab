@@ -39,6 +39,24 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
 
         self.storage.remove(file_id, self.endpoint)
 
+    def test_get_text_file_with_share_path(self):
+        file_id = "/test_get_text_file.txt"
+        share_file_id = "/reva/einstein/test_get_text_file.txt"
+        message = "Lorem ipsum dolor sit amet..."
+        self.storage.write_file(file_id, message, self.endpoint)
+
+        model = self.contents_manager.get(share_file_id, True, None)
+        self.assertEqual(model["name"], "test_get_text_file.txt")
+        self.assertEqual(model["path"], share_file_id)
+        self.assertEqual(model["content"], message)
+        self.assertEqual(model["format"], "text")
+        self.assertEqual(model["mimetype"], "text/plain")
+        self.assertEqual(model["size"], 29)
+        self.assertEqual(model["writable"], True)
+        self.assertEqual(model["type"], "file")
+
+        self.storage.remove(file_id, self.endpoint)
+
     def test_get_notebook_file(self):
         file_id = "/test_get_notebook_file.ipynb"
         buffer = b'{\

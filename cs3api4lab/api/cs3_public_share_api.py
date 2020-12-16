@@ -227,7 +227,7 @@ class Cs3PublicShareApi:
         return cs3_types.Timestamp(seconds=self._date_to_seconds(exp_date), nanos=0)
 
     def _get_resource_info(self, endpoint, file_id):
-        ref = FileUtils.get_reference(file_id, self.config['home_dir'], endpoint)
+        ref = FileUtils.get_reference(file_id, endpoint)
         stat_info = self.cs3_api.Stat(request=storage_provider.StatRequest(ref=ref),
                                       metadata=[('x-access-token', self.auth.authenticate())])
         return stat_info.info

@@ -60,7 +60,11 @@ class Cs3FileApi:
                 'filepath': stat_info.info.path,
                 'userid': stat_info.info.owner.opaque_id,
                 'size': stat_info.info.size,
-                'mtime': stat_info.info.mtime.seconds
+                'mtime': stat_info.info.mtime.seconds,
+                'type': stat_info.info.type,
+                'mime_type': stat_info.info.mime_type,
+                'idp': stat_info.info.owner.idp,
+                'permissions': stat_info.info.permission_set
             }
 
         self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_id, stat_info.status.message))
