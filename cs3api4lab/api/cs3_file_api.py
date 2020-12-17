@@ -46,7 +46,7 @@ class Cs3FileApi:
         or an id (which MUST NOT start with a /).
         """
         time_start = time.time()
-        ref = file_utils.get_reference(file_id, self.config['home_dir'], endpoint)
+        ref = file_utils.get_reference(file_id, endpoint)
         stat_info = self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
                                       metadata=[('x-access-token', self.auth.authenticate())])
         time_end = time.time()
@@ -60,7 +60,11 @@ class Cs3FileApi:
                 'filepath': stat_info.info.path,
                 'userid': stat_info.info.owner.opaque_id,
                 'size': stat_info.info.size,
-                'mtime': stat_info.info.mtime.seconds
+                'mtime': stat_info.info.mtime.seconds,
+                'type': stat_info.info.type,
+                'mime_type': stat_info.info.mime_type,
+                'idp': stat_info.info.owner.idp,
+                'permissions': stat_info.info.permission_set
             }
 
         self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_id, stat_info.status.message))
@@ -74,7 +78,7 @@ class Cs3FileApi:
         #
         # Prepare endpoint
         #
-        reference = file_utils.get_reference(file_path, self.config['home_dir'], endpoint)
+        reference = file_utils.get_reference(file_path, endpoint)
         req = cs3sp.InitiateFileDownloadRequest(ref=reference)
         init_file_download = self.cs3_api.InitiateFileDownload(request=req, metadata=[
             ('x-access-token', self.auth.authenticate())])
@@ -128,7 +132,7 @@ class Cs3FileApi:
         # Prepare endpoint
         #
         time_start = time.time()
-        reference = file_utils.get_reference(file_path, self.config['home_dir'], endpoint)
+        reference = file_utils.get_reference(file_path, endpoint)
 
         if isinstance(content, str):
             content_size = str(len(content))
@@ -183,7 +187,7 @@ class Cs3FileApi:
         Remove a file or container using the given userid as access token.
         """
 
-        reference = file_utils.get_reference(file_path, self.config['home_dir'], endpoint)
+        reference = file_utils.get_reference(file_path, endpoint)
         req = cs3sp.DeleteRequest(ref=reference)
         res = self.cs3_api.Delete(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 
@@ -202,7 +206,7 @@ class Cs3FileApi:
         Read a directory.
         """
         tstart = time.time()
-        reference = file_utils.get_reference(path, self.config['home_dir'], endpoint)
+        reference = file_utils.get_reference(path, endpoint)
         req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
         res = self.cs3_api.ListContainer(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 
@@ -226,8 +230,8 @@ class Cs3FileApi:
         Move a file or container.
         """
         tstart = time.time()
-        src_reference = file_utils.get_reference(source_path, self.config['home_dir'], endpoint)
-        dest_reference = file_utils.get_reference(destination_path, self.config['home_dir'], endpoint)
+        src_reference = file_utils.get_reference(source_path, endpoint)
+        dest_reference = file_utils.get_reference(destination_path, endpoint)
 
         req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
         res = self.cs3_api.Move(request=req, metadata=[('x-access-token', self.auth.authenticate())])
@@ -246,7 +250,7 @@ class Cs3FileApi:
         Create a directory.
         """
         tstart = time.time()
-        reference = file_utils.get_reference(path, self.config['home_dir'], endpoint)
+        reference = file_utils.get_reference(path, endpoint)
         req = cs3sp.CreateContainerRequest(ref=reference)
         res = self.cs3_api.CreateContainer(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 

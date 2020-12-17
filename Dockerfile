@@ -34,13 +34,8 @@ RUN cd /opt/cs3 && \
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/opt/cs3" && \
     fix-permissions "/home/${NB_USER}" && \
-	sed -i 's/#c.NotebookApp.contents_manager_class/c.NotebookApp.contents_manager_class/g' /home/${NB_USER}/.jupyter/jupyter_notebook_config.py && \
-	sed -i 's/notebook.services.contents.largefilemanager.LargeFileManager/cs3api4lab.CS3APIsManager/g' /home/${NB_USER}/.jupyter/jupyter_notebook_config.py
+    sed -i -e '$ac.NotebookApp.contents_manager_class = \x27cs3api4lab.CS3APIsManager\x27' /etc/jupyter/jupyter_notebook_config.py
 
-#
-# Copy cs3Api plugin config
-#	
-COPY jupyter-config/jupyter_cs3_config.json /home/${NB_USER}/.jupyter/jupyter_cs3_config.json
 RUN fix-permissions "/home/${NB_USER}"
 
 ENV JUPYTER_ENABLE_LAB = 1
