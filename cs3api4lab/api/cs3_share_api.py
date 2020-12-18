@@ -366,8 +366,12 @@ class Cs3ShareApi:
             stat = self.file_api.stat(share.resource_id.opaque_id, share.resource_id.storage_id)
 
             if stat['type'] == self.TYPE_FILE:
+                if hasattr(share.permissions.permissions, 'initiate_file_download') and share.permissions.permissions.initiate_file_download is False:
+                    continue
                 model = self._map_share_to_file_model(share, stat)
             else:
+                if hasattr(share.permissions.permissions, 'list_container') and share.permissions.permissions.list_container is False:
+                    continue
                 model = self._map_share_to_dir_model(share, stat)
 
             if model['path'] not in path_list:
@@ -398,6 +402,10 @@ class Cs3ShareApi:
         created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime(self.date_fmt)
         last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime(self.date_fmt)
 
+        writable = False
+        if hasattr(share.permissions.permissions, 'initiate_file_upload') and share.permissions.permissions.initiate_file_upload is True:
+            writable = True
+
         model = {}
         model['name'] = stat['filepath'].rsplit('/', 1)[-1]
         model['path'] = stat['filepath']
@@ -405,7 +413,7 @@ class Cs3ShareApi:
         model['created'] = created
         model['content'] = None
         model['format'] = None
-        model['writable'] = False
+        model['writable'] = writable
         return model
 
     def _map_share_to_file_model(self, share, stat):
