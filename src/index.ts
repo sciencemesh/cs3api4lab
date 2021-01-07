@@ -1,13 +1,22 @@
-import {ILabShell, ILayoutRestorer, IRouter, JupyterFrontEnd, JupyterFrontEndPlugin,} from '@jupyterlab/application';
+import {
+    ILabShell,
+    ILayoutRestorer,
+    IRouter,
+    JupyterFrontEnd,
+    JupyterFrontEndPlugin,
+} from '@jupyterlab/application';
 // import {DOMUtils} from "@jupyterlab/apputils";
 // import { showErrorMessage, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
+import {MainAreaWidget} from '@jupyterlab/apputils';
 import {ISettingRegistry} from '@jupyterlab/settingregistry';
 import {Dialog, ICommandPalette, showDialog, ToolbarButton, WidgetTracker} from '@jupyterlab/apputils';
+// import {PageConfig} from '@jupyterlab/coreutils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
 // import {IMainMenu} from '@jupyterlab/mainmenu';
 import {IStateDB} from '@jupyterlab/statedb';
-import {pythonIcon} from '@jupyterlab/ui-components';
+import {pythonIcon, addIcon} from '@jupyterlab/ui-components';
 import {ILauncher} from "@jupyterlab/launcher";
+import { Launcher } from '@jupyterlab/launcher';
 import {each} from "@lumino/algorithm";
 
 // import {LabIcon} from "@jupyterlab/ui-components";
@@ -19,6 +28,7 @@ import {CS3Contents} from "./CS3Contents";
 import {IFileBrowserFactory} from "@jupyterlab/filebrowser/lib/tokens";
 import {FileBrowser, FileBrowserModel} from "@jupyterlab/filebrowser";
 // import {Contents, ContentsManager} from "@jupyterlab/services";
+
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -51,12 +61,16 @@ const browser: JupyterFrontEndPlugin<void> = {
              settings: ISettingRegistry,
              stateDB: IStateDB
     ): void {
-        stateDB.save('share', {share_type: 'by_me'});
+        stateDB.save('share', {share_type: 'filelist'});
         const drive = new CS3Contents(app.docRegistry, stateDB, docManager);
 
         const browser = factory.createFileBrowser('test', {
             driveName: drive.name
         });
+
+        const { commands } = app;
+        const { model } = browser;
+
 
         docManager.services.contents.addDrive(drive);
 
@@ -101,6 +115,39 @@ const browser: JupyterFrontEndPlugin<void> = {
         restorer.add(browser, 'cs3_file_browser');
         app.shell.add(browser, 'left', { rank: 101 });
 
+        if (labShell) {
+            const launcher = new ToolbarButton({
+                icon: addIcon,
+                onClick: () => {
+                    return commands
+                        .execute('launcher:create', { cwd: model.path })
+                        .then((launcher: MainAreaWidget<Launcher>) => {
+                            model.pathChanged.connect(() => {
+                                if (launcher.content) {
+                                    launcher.content.cwd = model.path;
+                                }
+                            }, launcher);
+                            return launcher;
+                        });
+                    // if (
+                    //     labShell.mode === 'multiple-document' &&
+                    //     commands.hasCommand('launcher:create')
+                    // ) {
+                    //
+                    // } else {
+                        // const newUrl = PageConfig.getUrl({
+                        //     mode: labShell.mode,
+                        //     workspace: PageConfig.defaultWorkspace,
+                        //     treePath: model.path
+                        // });
+                        // window.open(newUrl, '_blank');
+                    // }
+                },
+                tooltip: 'New Launcher'
+            });
+
+            browser.toolbar.insertItem(0, 'launch', launcher);
+        }
         // browser.title.label = 'test';
         // browser.title.icon =  LabIcon.resolve({
         //     icon: 'ui-components:file'
@@ -159,11 +206,18 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
                 return widget;
             };
 
+
+
+
+
 // Manually restore and load the default file browser.
             const defaultBrowser = createFileBrowser('filebrowser', {
                 auto: true,
-                restore: false
+                restore: true
             });
+
+
+
 // void Private.restoreBrowser(defaultBrowser, commands, router, tree);
 
             return {createFileBrowser, defaultBrowser, tracker};
