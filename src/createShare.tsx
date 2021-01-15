@@ -51,7 +51,7 @@ const ShareForm = (props: ShareFormProps): JSX.Element => {
     }
 
     return (
-        <div className='ShareForm'>
+        <div className='controlPanel'>
             <div>
                 <div>Grantee</div>
                 <div>
