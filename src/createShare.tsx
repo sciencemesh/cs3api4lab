@@ -1,22 +1,36 @@
+import {ReactWidget} from '@jupyterlab/apputils';
 import React, {useState} from 'react';
 import {Contents} from "@jupyterlab/services";
+import {requestAPI} from "./services";
+import {CreateShareProps, ResultProps, ShareFormProps, WidgetProps} from "./types";
+
 
 /**
- * Type definition for control props.
- */
-type ControlProps = {
-    makeRequest: (params :object) => void;
-    fileInfo: Contents.IModel;
-}
-
-/**
- * Control widget.
+ * Request results panel.
  *
  * @param props
  *
  * @constructor
  */
-const ControlPanel = (props: ControlProps): JSX.Element => {
+const Results = (props: ResultProps): JSX.Element => {
+    return (
+        <div className='resultWindow'>
+            <pre>
+                {props.message}
+            </pre>
+        </div>
+    );
+}
+
+
+/**
+ * Share form widget.
+ *
+ * @param props
+ *
+ * @constructor
+ */
+const ShareForm = (props: ShareFormProps): JSX.Element => {
     const [formValues, setFormState] = useState({
         endpoint: '/',
         file_path: '/home/' + props.fileInfo.path.replace('cs3drive:', ''),
@@ -76,4 +90,55 @@ const ControlPanel = (props: ControlProps): JSX.Element => {
     )
 }
 
-export default ControlPanel;
+/**
+ * Main container.
+ *
+ * @constructor
+ */
+const CreateShare = (props: CreateShareProps): JSX.Element => {
+    const [message, setMessage] = useState(null);
+
+    return (<>
+        <ShareForm fileInfo={props.fileInfo}
+                      makeRequest={async (params: object) => {
+                          try {
+                              const data = await requestAPI<any>('/api/cs3/shares', {
+                                  method: 'POST',
+                                  body: JSON.stringify(params)
+                              });
+
+                              setMessage(JSON.stringify(data));
+                          } catch (e) {
+                              console.log('request errors', e);
+                          }
+                      }}
+
+        />
+
+        <Results message={message} />
+    </>);
+};
+
+
+/**
+ * ShareWidget container.
+ */
+export class ShareWidget extends ReactWidget {
+    private readonly fileInfo: Contents.IModel;
+
+    constructor(props :WidgetProps) {
+        super();
+        this.addClass('jp-ReactWidget');
+        this.fileInfo = props.fileInfo;
+    }
+
+    protected render(): JSX.Element {
+        return (
+            <CreateShare fileInfo={this.fileInfo}/>
+        )
+    }
+}
+
+
+
+

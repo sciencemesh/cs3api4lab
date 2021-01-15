@@ -1,6 +1,22 @@
+import {Contents} from "@jupyterlab/services";
+import {LabIcon} from "@jupyterlab/ui-components";
+import {DocumentRegistry} from "@jupyterlab/docregistry";
 import { URLExt } from '@jupyterlab/coreutils';
-
 import { ServerConnection } from '@jupyterlab/services';
+
+export const findFileIcon = (fileInfo :Contents.IModel) :LabIcon => {
+    let splitName = fileInfo.name.split('.');
+    let fileExtension = '.' + splitName[splitName.length-1];
+
+    let fileType = DocumentRegistry.defaultFileTypes
+        .filter( (fileType: Partial<DocumentRegistry.IFileType>) => {
+            return fileType.contentType == "directory" || fileType.extensions.lastIndexOf(fileExtension) >= 0;
+        });
+
+    return (fileType.length > 0 ) ? fileType[0].icon : LabIcon.resolve({
+        icon: 'ui-components:file'
+    });
+}
 
 /**
  * Call the API extension

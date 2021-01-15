@@ -112,3 +112,5 @@ dmypy.json
 *.iml
 .idea/
 yarn-error.log
+
+.github
