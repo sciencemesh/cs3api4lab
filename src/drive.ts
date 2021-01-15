@@ -1,12 +1,10 @@
+import {requestAPI} from './services';
+import { ReadonlyJSONObject } from '@lumino/coreutils';
 import { Contents, ServerConnection } from '@jupyterlab/services';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
-// import { ISignal } from '@lumino/signaling';
-import {CS3ContainerFiles} from './CS3Drive';
 import { Signal, ISignal } from '@lumino/signaling';
 import {IStateDB} from '@jupyterlab/statedb';
 import {IDocumentManager} from "@jupyterlab/docmanager";
-
-// import {ICheckpointModel, ICreateOptions, IModel} from "@jupyterlab/services/lib/contents";
 
 export class CS3Contents implements Contents.IDrive {
     private _docRegistry: DocumentRegistry;
@@ -135,4 +133,51 @@ export class CS3Contents implements Contents.IDrive {
     deleteCheckpoint(localPath: string, checkpointID: string): Promise<void> {
         return this._docManager.services.contents.deleteCheckpoint(localPath, checkpointID);
     }
+}
+
+
+export async function CS3ContainerFiles(stateDB: IStateDB, path: string = null, options :Contents.IFetchOptions = null) :Promise<any> {
+    let share = await stateDB.fetch('share');
+    const shareType = (share as ReadonlyJSONObject)['share_type']
+
+    if (path != '') {
+        return await getFileList(path, options);
+    }
+
+    switch (shareType) {
+        case 'by_me':
+            return await getSharedByMe();
+        case 'with_me':
+            return await getSharedWithMe();
+        case 'filelist':
+        default:
+            return await getFileList(path, options);
+    }
+}
+
+async function getFileList(path: string, options :Contents.IFetchOptions): Promise<any> {
+    const {type, format, content} = options;
+
+    let url :string = '';
+        url += '?content=' + (content  ? 1 : 0);
+    if (type)
+        url += '&type=' + type;
+    if (format && type != 'notebook')
+        url += '&format=' + format;
+
+    return await requestAPI('/api/contents/' + path + ''  + url, {
+        method: 'get'
+    });
+}
+
+async function getSharedByMe(): Promise<any>{
+    return await requestAPI('/api/cs3/shares/list', {
+        method: 'get'
+    });
+}
+
+async function getSharedWithMe(): Promise<any>{
+    return await requestAPI('/api/cs3/shares/received', {
+        method: 'get'
+    });
 }

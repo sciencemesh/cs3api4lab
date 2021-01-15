@@ -5,30 +5,20 @@ import {
     JupyterFrontEnd,
     JupyterFrontEndPlugin,
 } from '@jupyterlab/application';
-// import {DOMUtils} from "@jupyterlab/apputils";
-// import { showErrorMessage, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
 import {MainAreaWidget} from '@jupyterlab/apputils';
 import {ISettingRegistry} from '@jupyterlab/settingregistry';
 import {Dialog, ICommandPalette, showDialog, ToolbarButton, WidgetTracker} from '@jupyterlab/apputils';
-// import {PageConfig} from '@jupyterlab/coreutils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
-// import {IMainMenu} from '@jupyterlab/mainmenu';
 import {IStateDB} from '@jupyterlab/statedb';
 import {pythonIcon, addIcon} from '@jupyterlab/ui-components';
 import {ILauncher} from "@jupyterlab/launcher";
 import { Launcher } from '@jupyterlab/launcher';
+import {IFileBrowserFactory} from "@jupyterlab/filebrowser/lib/tokens";
 import {each} from "@lumino/algorithm";
 
-// import {LabIcon} from "@jupyterlab/ui-components";
-
-// import {each} from "@lumino/algorithm";
-import {ShareWidget} from "./containers/ShareWidget";
-import {CreateShareWidget} from "./containers/CreateShareWidget";
-import {CS3Contents} from "./CS3Contents";
-import {IFileBrowserFactory} from "@jupyterlab/filebrowser/lib/tokens";
+import {CS3Contents} from "./drive";
 import {FileBrowser, FileBrowserModel} from "@jupyterlab/filebrowser";
-// import {Contents, ContentsManager} from "@jupyterlab/services";
-
+import {ShareWidget} from "./createShare";
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -36,7 +26,6 @@ import {FileBrowser, FileBrowserModel} from "@jupyterlab/filebrowser";
 namespace CommandIDs {
     export const info = 'filebrowser:cs3-info';
     export const createShare = 'filebrowser:cs3-create-share';
-    // export const showBrowser = 'filebrowser:showBrowser';
 }
 
 /**
@@ -108,9 +97,6 @@ const browser: JupyterFrontEndPlugin<void> = {
             tooltip: `Shared by me`,
             iconClass: 'cs3-item jp-Icon jp-Icon-16'
         }));
-        // labShell.currentWidget.addClass('testing');
-
-        // const {commands} = app;
 
         restorer.add(browser, 'cs3_file_browser');
         app.shell.add(browser, 'left', { rank: 101 });
@@ -129,37 +115,12 @@ const browser: JupyterFrontEndPlugin<void> = {
                             }, launcher);
                             return launcher;
                         });
-                    // if (
-                    //     labShell.mode === 'multiple-document' &&
-                    //     commands.hasCommand('launcher:create')
-                    // ) {
-                    //
-                    // } else {
-                        // const newUrl = PageConfig.getUrl({
-                        //     mode: labShell.mode,
-                        //     workspace: PageConfig.defaultWorkspace,
-                        //     treePath: model.path
-                        // });
-                        // window.open(newUrl, '_blank');
-                    // }
                 },
                 tooltip: 'New Launcher'
             });
 
             browser.toolbar.insertItem(0, 'launch', launcher);
         }
-        // browser.title.label = 'test';
-        // browser.title.icon =  LabIcon.resolve({
-        //     icon: 'ui-components:file'
-        // });
-
-        // If the layout is a fresh session without saved data, open file browser.
-        // void labShell.restored.then(layout => {
-        //     if (layout.fresh) {
-        //         console.log('restore filebrwoser');
-        //         void commands.execute(CommandIDs.showBrowser, void 0);
-        //     }
-        // });
     },
     autoStart: true
 }
@@ -177,10 +138,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
             app: JupyterFrontEnd,
             docManager: IDocumentManager,
             state: IStateDB | null,
-            router: IRouter | null,
-            tree: JupyterFrontEnd.ITreeResolver | null
         ): any => {
-            // const { commands } = app;
             const tracker = new WidgetTracker<FileBrowser>({namespace: 'cs3_test'});
 
             const createFileBrowser = (
@@ -206,19 +164,11 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
                 return widget;
             };
 
-
-
-
-
-// Manually restore and load the default file browser.
+            // Manually restore and load the default file browser.
             const defaultBrowser = createFileBrowser('filebrowser', {
                 auto: true,
                 restore: true
             });
-
-
-
-// void Private.restoreBrowser(defaultBrowser, commands, router, tree);
 
             return {createFileBrowser, defaultBrowser, tracker};
         }
@@ -291,7 +241,7 @@ const cs3share: JupyterFrontEndPlugin<void> = {
                 if (widget) {
                     each(widget.selectedItems(), fileInfo => {
                         showDialog({
-                            body: new CreateShareWidget({
+                            body: new ShareWidget({
                                 fileInfo: fileInfo
                             }),
                             buttons: [Dialog.okButton({label: 'Close'})]
