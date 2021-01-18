@@ -10,7 +10,7 @@ import {ISettingRegistry} from '@jupyterlab/settingregistry';
 import {Dialog, ICommandPalette, showDialog, ToolbarButton, WidgetTracker} from '@jupyterlab/apputils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
 import {IStateDB} from '@jupyterlab/statedb';
-import {pythonIcon, addIcon} from '@jupyterlab/ui-components';
+import {checkIcon, circleEmptyIcon, circleIcon, addIcon} from '@jupyterlab/ui-components';
 import {ILauncher} from "@jupyterlab/launcher";
 import { Launcher } from '@jupyterlab/launcher';
 import {IFileBrowserFactory} from "@jupyterlab/filebrowser/lib/tokens";
@@ -63,15 +63,16 @@ const browser: JupyterFrontEndPlugin<void> = {
 
         docManager.services.contents.addDrive(drive);
 
-        browser.title.caption = 'Shared by me';
+        browser.title.icon = checkIcon;
 
+        browser.title.caption = 'Shared by me';
         browser.toolbar.addItem('cs3_item_shared_filelist', new ToolbarButton({
             onClick: () => {
                 stateDB.save('share', {share_type: 'filelist'})
                 browser.model.refresh();
                 browser.title.caption = 'File list';
             },
-            icon: pythonIcon,
+            icon: checkIcon,
             tooltip: `File list`,
             iconClass: 'cs3-item jp-Icon jp-Icon-16'
         }));
@@ -82,7 +83,7 @@ const browser: JupyterFrontEndPlugin<void> = {
                 browser.model.refresh();
                 browser.title.caption = 'Shared with me';
             },
-            icon: pythonIcon,
+            icon: circleIcon,
             tooltip: `Shared with me`,
             iconClass: 'cs3-item jp-Icon jp-Icon-16'
         }));
@@ -93,7 +94,7 @@ const browser: JupyterFrontEndPlugin<void> = {
                 browser.model.refresh();
                 browser.title.caption = 'Shared by me';
             },
-            icon: pythonIcon,
+            icon: circleEmptyIcon,
             tooltip: `Shared by me`,
             iconClass: 'cs3-item jp-Icon jp-Icon-16'
         }));
@@ -167,7 +168,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
             // Manually restore and load the default file browser.
             const defaultBrowser = createFileBrowser('filebrowser', {
                 auto: true,
-                restore: true
+                restore: true,
             });
 
             return {createFileBrowser, defaultBrowser, tracker};
