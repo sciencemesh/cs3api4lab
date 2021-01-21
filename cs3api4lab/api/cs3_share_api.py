@@ -19,6 +19,7 @@ import grpc
 
 from IPython.utils import tz
 
+from cs3api4lab.api.share_mapper import ShareMapper
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
@@ -36,6 +37,8 @@ class Cs3ShareApi:
     auth = None
     config = {}
     file_api = None
+    share_mapper = None
+
     date_fmt = '%Y-%m-%dT%H:%M:%SZ'
 
     TYPE_FILE = 1
@@ -52,6 +55,7 @@ class Cs3ShareApi:
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = grpc_gateway.GatewayAPIStub(intercept_channel)
+        self.share_mapper = ShareMapper().get_mapper()
         return
 
     def create(self, endpoint, file_path, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
@@ -82,7 +86,7 @@ class Cs3ShareApi:
                                                 metadata=[('x-access-token', self.get_token())])
         if self._is_code_ok(list_response):
             self.log.info("List shares response for user: " + self.config['client_id'])
-            self.log.info(list_response)
+            # self.log.info(list_response)
         else:
             self.log.error("Error listing shares response for user: " + self.config['client_id'])
             self._handle_error(list_response)
@@ -366,15 +370,19 @@ class Cs3ShareApi:
             stat = self.file_api.stat(share.resource_id.opaque_id, share.resource_id.storage_id)
 
             if stat['type'] == self.TYPE_FILE:
+                if hasattr(share.permissions.permissions, 'initiate_file_download') and share.permissions.permissions.initiate_file_download is False:
+                    continue
                 model = self._map_share_to_file_model(share, stat)
             else:
+                if hasattr(share.permissions.permissions, 'list_container') and share.permissions.permissions.list_container is False:
+                    continue
                 model = self._map_share_to_dir_model(share, stat)
 
             if model['path'] not in path_list:
                 respond_model['content'].append(model)
                 path_list.append(model['path'])
 
-        return respond_model
+        return self.share_mapper.remap_dir_model(respond_model)
 
     def _create_respond_model(self):
 
@@ -398,6 +406,10 @@ class Cs3ShareApi:
         created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime(self.date_fmt)
         last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime(self.date_fmt)
 
+        writable = False
+        if hasattr(share.permissions.permissions, 'initiate_file_upload') and share.permissions.permissions.initiate_file_upload is True:
+            writable = True
+
         model = {}
         model['name'] = stat['filepath'].rsplit('/', 1)[-1]
         model['path'] = stat['filepath']
@@ -405,7 +417,7 @@ class Cs3ShareApi:
         model['created'] = created
         model['content'] = None
         model['format'] = None
-        model['writable'] = False
+        model['writable'] = writable
         return model
 
     def _map_share_to_file_model(self, share, stat):

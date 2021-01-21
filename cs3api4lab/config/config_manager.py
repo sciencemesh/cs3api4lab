@@ -18,6 +18,7 @@ class Config(LoggingConfigurable):
         "client_cert": "",
         "client_key": "",
         "ca_cert": "",
+        "map_share_path": False,
         "login_type": "basic",
         "authenticator_class": "cs3api4lab.auth.RevaPassword"
     }

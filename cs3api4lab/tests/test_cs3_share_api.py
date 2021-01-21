@@ -19,7 +19,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
     receiver_role = 'viewer'
     receiver_grantee_type = 'user'
-    file_path = '/test.txt'
+    file_path = '/share_test_file.txt'
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
 
     def setUp(self):
@@ -80,6 +80,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         share_list = self.api.list_dir_model()
         if list(filter(lambda s: s['path'] == self.file_path, share_list['content'])):
             raise Exception("Share not removed")
+        self._remove_test_file()
 
     def test_update(self):
         created_share = self._create_share()
@@ -111,10 +112,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         shares = self.api.list_grantees_for_file(self.file_path)
         for share in shares['shares']:
             self._remove_test_share(share['opaque_id'])
-        try:
-            self._remove_test_file()
-        except IOError as e:
-            print("Error remove file:", e)
+        self._remove_test_file()
 
     def _create_test_share(self, receiver_id='f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c', receiver_idp='cesnet.cz'):
         file_path = self.config['home_dir'] + self.file_path
@@ -134,5 +132,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
                                 self.config['endpoint'])
 
     def _remove_test_file(self):
-        self.storage.remove(self.file_path,
-                            self.config['endpoint'])
+        try:
+            self.storage.remove(self.file_path, self.config['endpoint'])
+        except IOError as e:
+            print("Error remove file:", e)

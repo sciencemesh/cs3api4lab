@@ -7,13 +7,15 @@ from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from tornado import web
 from notebook import _tz as tz
 from nbformat.v4 import new_notebook
+
+from cs3api4lab.api.share_mapper import ShareMapper
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 
 class CS3APIsManager(ContentsManager):
     cs3_config = None
     log = None
-    
+
     # ToDo: Change to cs3 Type
     TYPE_FILE = 1
     TYPE_DIRECTORY = 2
@@ -24,6 +26,7 @@ class CS3APIsManager(ContentsManager):
         self.cs3_config = Cs3ConfigManager.get_config()
         self.log = log
         self.file_api = Cs3FileApi(self.log)
+        self.share_mapper = ShareMapper().get_mapper()
 
     def dir_exists(self, path):
         """Does a directory exist at the given path?
@@ -89,6 +92,7 @@ class CS3APIsManager(ContentsManager):
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
         path = self._normalize_path(path)
+
         if type in (None, 'directory') and self._is_dir(path):
             model = self._dir_model(path, content=content)
         elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
@@ -224,6 +228,8 @@ class CS3APIsManager(ContentsManager):
 
     def _normalize_path(self, path):
 
+        path = self.share_mapper.remap_path(path)
+
         if len(path) > 0 and path[0] != '/':
             path = '/' + path
         elif path == '' or path is None:
@@ -256,7 +262,7 @@ class CS3APIsManager(ContentsManager):
 
         cs3_container = self.file_api.read_directory(path, self.cs3_config['endpoint'])
         model = self._convert_container_to_directory_model(path, cs3_container, content)
-
+        model = self.share_mapper.remap_dir_model(model)
         return model
 
     def _file_model(self, path, content, format):

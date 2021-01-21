@@ -9,6 +9,7 @@
   	"client_cert": "",
   	"client_key": "",
   	"ca_cert": "",
+	"map_share_path": true,
 	"authenticator_class": "cs3api4lab.auth.RevaPassword",
 	"client_id": "einstein",
 	"client_secret": "relativity"
