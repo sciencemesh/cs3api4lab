@@ -13,7 +13,7 @@ from cs3api4lab.config.config_manager import Cs3ConfigManager
 class CS3APIsManager(ContentsManager):
     cs3_config = None
     log = None
-    
+
     # ToDo: Change to cs3 Type
     TYPE_FILE = 1
     TYPE_DIRECTORY = 2
@@ -108,6 +108,8 @@ class CS3APIsManager(ContentsManager):
         writing any data.
         """
         path = self._normalize_path(path)
+        self._check_write_permissions(path)
+
         if 'type' not in model:
             raise web.HTTPError(400, u'No file type provided')
         if 'content' not in model and model['type'] != 'directory':
@@ -197,6 +199,8 @@ class CS3APIsManager(ContentsManager):
     def new(self, model=None, path=''):
 
         path = path.strip('/')
+        self._check_write_permissions(path)
+
         if model is None:
             model = {}
 
@@ -468,7 +472,15 @@ class CS3APIsManager(ContentsManager):
 
         self.file_api.create_directory(path, self.cs3_config['endpoint'])
 
-    #
+    def _check_write_permissions(self, path):
+
+        parent = self._get_parent_path(path)
+        stat = self.file_api.stat(parent)
+
+        if hasattr(stat['permissions'], 'initiate_file_upload') and stat['permissions'].initiate_file_upload is False:
+            raise web.HTTPError(400, u'The path %s is not writable' % parent)
+
+#
     # Notebook hack - disable checkpoint
     #
     def delete(self, path):
