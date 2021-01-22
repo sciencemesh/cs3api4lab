@@ -4,6 +4,7 @@ from unittest import TestCase, skip
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 from traitlets.config import LoggingConfigurable
 
+from cs3api4lab import CS3APIsManager
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.api.cs3_share_api import Cs3ShareApi, ShareAlreadyExistsError
 from cs3api4lab.auth import RevaPassword
@@ -45,6 +46,14 @@ class ExtCs3ShareApi(Cs3ShareApi):
         return self._map_given_shares(list_response)
 
 
+class ExtCS3APIsManager(CS3APIsManager):
+
+    def __init__(self, parent, log, config):
+        self.cs3_config = config
+        self.log = log
+        self.file_api = ExtCs3File(log, config)
+
+
 class TestCs3ShareApi(TestCase, LoggingConfigurable):
     api = None
     config = None
@@ -62,6 +71,9 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     receiver_role = 'viewer'
     receiver_grantee_type = 'user'
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
+
+    viewer_role = 'viewer'
+    editor_role = 'editor'
 
     endpoint = "/"
 
@@ -98,6 +110,8 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         self.storage_ext = ExtCs3File(self.log, self.config_ext)
         self.api_ext = ExtCs3ShareApi(self.log, self.config_ext)
 
+        self.manager_ext = ExtCS3APIsManager(None, self.log, self.config_ext)
+
     def test_read_file_by_share_path(self):
 
         self._write_test_files()
@@ -112,16 +126,9 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         self._clear_shares(self.file_path)
         self._remove_test_file()
 
-        created_share = self._create_file_share()
-        share_list = self.api.list()
-        list_received = self.api.list_received()
-
-        print("Einstein - created_share: ", created_share)
-        print("Einstein - share_list: ", share_list)
-        print("Einstein - list_received: ", list_received)
+        self._create_file_share()
 
         marie_list_received = self.api_ext.list_received()
-        print("Marie - list_received: ", marie_list_received)
 
         file_content = self._read_storage_file(self.file_path)
         marie_file_content = self._read_storage_ext_file(marie_list_received['content'][0]['path'])
@@ -136,16 +143,12 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         self._clear_shares(self.container_path)
         self._remove_test_container()
 
-        created_share = self._create_container_share()
-        share_list = self.api.list()
-        list_received = self.api.list_received()
-
-        print("Einstein - created_share: ", created_share)
-        print("Einstein - share_list: ", share_list)
-        print("Einstein - list_received: ", list_received)
+        try:
+            self._create_container_share()
+        except ShareAlreadyExistsError as e:
+            print("Error create share:", e)
 
         marie_list_received = self.api_ext.list_received()
-        print("Marie - list_received: ", marie_list_received)
 
         try:
             marie_stat = self.storage_ext.stat(marie_list_received['content'][0]['path'])
@@ -165,6 +168,149 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         self._remove_test_container()
 
         self.assertEqual(marie_file_content, 'Lorem ipsum 111 ...')
+
+    def test_create_folder_in_share_folder(self):
+
+        self._clear_shares(self.container_path)
+        self._remove_test_container()
+
+        self._create_container_share()
+
+        marie_list_received = self.api_ext.list_received()
+        share_dir = marie_list_received['content'][0]['path']
+        self.storage_ext.create_directory(share_dir + "/test_share_subdir")
+
+        directory_list = self.storage_ext.read_directory(share_dir)
+
+        try:
+            if not list(filter(lambda s: s.path == "/reva/einstein/test_share_dir/test_share_subdir", directory_list)):
+                raise Exception("Subfolder in share folder not created")
+        finally:
+            self._clear_shares(self.container_path)
+            self._remove_test_container()
+
+    def test_create_file_in_share_folder(self):
+
+        self._clear_shares(self.container_path)
+        self._remove_test_container()
+
+        self._create_container_share()
+
+        marie_list_received = self.api_ext.list_received()
+        share_dir = marie_list_received['content'][0]['path']
+        file_path = share_dir + "/test_share.txt"
+        self.storage_ext.write_file(file_path, "Lorem ipsum ...")
+        share_file_content = self._read_storage_file(file_path)
+
+        self._clear_shares(self.container_path)
+        self._remove_test_container()
+
+        self.assertEqual(share_file_content, "Lorem ipsum ...")
+
+    def test_create_empty_file_in_share_folder(self):
+
+        self._clear_shares(self.container_path)
+        self._remove_test_container()
+
+        self._create_container_share()
+
+        marie_list_received = self.api_ext.list_received()
+        share_dir = marie_list_received['content'][0]['path']
+        file_path = share_dir + "/test_empty_share.txt"
+        self.storage_ext.write_file(file_path, "")
+        share_file_content = self._read_storage_file(file_path)
+
+        self._clear_shares(self.container_path)
+        self._remove_test_container()
+
+        self.assertEqual(share_file_content, "")
+
+    def test_read_write_flag_in_share_folder(self):
+
+        share_folder = '/home/test_share_dir/'
+        write_folder_id = '/home/test_share_dir/test_write_folder'
+        read_folder_id = '/home/test_share_dir/test_read_folder'
+
+        self._create_dir(share_folder)
+        self._create_dir(write_folder_id)
+        self._create_dir(read_folder_id)
+
+        try:
+            self.api.create(self.endpoint,
+                            write_folder_id,
+                            self.receiver_id,
+                            self.receiver_idp,
+                            self.editor_role,
+                            self.receiver_grantee_type)
+        except ShareAlreadyExistsError as e:
+            print("Error create share: ", e)
+
+        try:
+            self.api.create(self.endpoint,
+                            read_folder_id,
+                            self.receiver_id,
+                            self.receiver_idp,
+                            self.viewer_role,
+                            self.receiver_grantee_type)
+        except ShareAlreadyExistsError as e:
+            print("Error create share: ", e)
+
+        marie_list_received = self.api_ext.list_received()
+        marie_read_dir = list(filter(lambda s: s['path'] == "/reva/einstein/test_share_dir/test_read_folder", marie_list_received['content']))
+        marie_write_dir = list(filter(lambda s: s['path'] == "/reva/einstein/test_share_dir/test_write_folder", marie_list_received['content']))
+
+        self._clear_shares(write_folder_id)
+        self._clear_shares(read_folder_id)
+        self.storage.remove(share_folder)
+
+        self.assertTrue(marie_write_dir[0]['writable'])
+        self.assertFalse(marie_read_dir[0]['writable'])
+
+    def test_create_notebook_file_in_share_folder(self):
+
+        self._clear_shares(self.container_path)
+        self._remove_test_container()
+
+        self._create_container_share()
+
+        marie_list_received = self.api_ext.list_received()
+        share_dir = marie_list_received['content'][0]['path']
+        file_path = share_dir + "/test_share_notebook.ipynb"
+
+        buffer = b'{\
+					"cells": [\
+						{\
+							"cell_type": "markdown",\
+							"metadata": {},\
+							"source": [\
+								"### Markdown example"\
+							]\
+						}\
+					],\
+					"metadata": {\
+						"kernelspec": {\
+							"display_name": "Python 3",\
+							"language": "python",\
+							"name": "python3"\
+						},\
+						"language_info": {\
+							"codemirror_mode": {\
+								"name": "ipython",\
+								"version": 3\
+							},\
+							"file_extension": ".py",\
+							"mimetype": "text/x-python",\
+							"name": "python",\
+							"nbconvert_exporter": "python",\
+							"pygments_lexer": "ipython3",\
+							"version": "3.7.4"\
+						}\
+					},\
+					"nbformat": 4,\
+					"nbformat_minor": 4\
+					}'
+
+        self.storage.write_file(file_path, buffer, self.endpoint)
 
     @skip
     def test_create_share_for_marie(self):
@@ -238,6 +384,12 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
                                 self.endpoint)
         except IOError as e:
             print("Error remove_test file:", e)
+
+    def _create_dir(self, path):
+        try:
+            self.storage.create_directory(path, self.endpoint)
+        except Exception as e:
+            print(f"Error create dir: {path}", e)
 
     def _clear_shares(self, path):
         try:
