@@ -64,11 +64,9 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.CreateOCMShare(request=request,
                                                      metadata=self._token())
         if self._is_code_ok(response):
-            self.log.info("OCM share created:")
-            self.log.info(response)
+            self.log.info("OCM share created:\n" + response)
         else:
-            self.log.error("Error creating OCM share")
-            self._handle_error(response)
+            self._handle_error(response, "Error creating OCM share")
         return self._map_share(response.share)
 
     def remove_ocm_share(self, share_id):
@@ -78,12 +76,10 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.RemoveOCMShare(request=request,
                                                      metadata=self._token())
         if self._is_code_ok(response):
-            self.log.info("OCM share deleted:")
-            self.log.info(response)
+            self.log.info("OCM share deleted:\n" + response)
             return
         else:
-            self.log.error("Error removing OCM share")
-            self._handle_error(response)
+            self._handle_error(response, "Error removing OCM share")
 
     def update_ocm_share(self, share_id, field, value):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
@@ -106,12 +102,10 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.UpdateOCMShare(request=request,
                                                      metadata=self._token())
         if self._is_code_ok(response):
-            self.log.info("OCM share updated:")
-            self.log.info(response)
+            self.log.info("OCM share updated:\n" + response)
             return
         else:
-            self.log.error("Error updating OCM share:")
-            self._handle_error(response)
+            self._handle_error(response, "Error updating OCM share:")
 
     def update_received_ocm_share(self, share_id, field, value):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
@@ -134,12 +128,10 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.UpdateReceivedOCMShare(request=request,
                                                              metadata=self._token())
         if self._is_code_ok(response):
-            self.log.info("OCM received share updated:")
-            self.log.info(response)
+            self.log.info("OCM received share updated:\n" + response)
             return
         else:
-            self.log.error("Error updating OCM received share:")
-            self._handle_error(response)
+            self._handle_error(response, "Error updating OCM received share:")
         return response
 
     def get_ocm_shares(self, share_id):
@@ -153,8 +145,7 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.ListOCMShares(request=request,
                                                     metadata=self._token())
         if not self._is_code_ok(response):
-            self.log.error("Error listing OCM share:")
-            self._handle_error(response)
+            self._handle_error(response, "Error listing OCM share:")
         return self._map_ocm_shares(response)
 
     def _get_ocm_share(self, share_id):
@@ -175,8 +166,7 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.ListReceivedOCMShares(request=request,
                                                             metadata=self._token())
         if not self._is_code_ok(response):
-            self.log.error("Error listing OCM received shares:")
-            self._handle_error(response)
+            self._handle_error("Error listing OCM received shares:", response)
         return self._map_ocm_shares(response, received=True)
 
     def _get_received_share(self, share_id):
@@ -186,8 +176,7 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.GetReceivedOCMShare(request=request,
                                                           metadata=self._token())
         if not self._is_code_ok(response):
-            self.log.error("Error listing OCM received share:")
-            self._handle_error(response)
+            self._handle_error("Error listing OCM received share:", response)
         return self._map_share(response.share.share, response.share.state)
 
     def _map_ocm_shares(self, list_response, received=False):
@@ -241,8 +230,8 @@ class Cs3OcmShareApi:
     def _is_code_ok(self, response):
         return response.status.code == cs3_code.CODE_OK
 
-    def _handle_error(self, response):
-        self.log.error(response)
+    def _handle_error(self, response, msg=''):
+        self.log.error(msg + '\n' + response)
         raise Exception("Incorrect server response: " + response.status.message)
 
     def _token(self):
