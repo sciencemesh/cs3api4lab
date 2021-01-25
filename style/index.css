@@ -1,0 +1,159 @@
+.jp-file-info div {
+    display: flex;
+}
+
+.jp-file-info {
+    flex-direction: column;
+    min-width: 350px;
+    min-height: 250px;
+
+    background: var(--jp-layout-color1);
+    color: var(--jp-ui-font-color1);
+}
+
+.jp-file-info-header {
+    margin-bottom: 15px;
+}
+
+.jp-file-detail td {
+    text-transform: capitalize;
+}
+
+.jp-file-info-header .jp-file-info-header-icon {
+    flex-grow: 0;
+    width: 64px;
+    height: 64px;
+}
+
+.jp-file-info-header .jp-file-info-header-icon svg{
+    width: 64px;
+    height: 64px;
+}
+
+.jp-file-info-header .file-info-header-title {
+    margin-left: 5px;
+    flex-grow: 1;
+    vertical-align: middle;
+    align-items: center;
+
+    font-weight: bold;
+    font-size: var(--jp-ui-font-size2);
+}
+
+.jp-file-info-header {
+    flex-direction: row;
+}
+
+.jp-file-info-menu ul {
+    display: flex;
+    list-style-type: none;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.jp-file-info-menu li {
+    flex: 3;
+    cursor: pointer;
+    background: var(--jp-layout-color1);
+    padding: 7px;
+    text-align: center;
+}
+
+.jp-file-info li.active {
+    background: var(--jp-layout-color2);
+    border-radius: 6px 6px 0 0;
+    font-weight: bold;
+    font-size: var(--jp-ui-font-size1);
+}
+
+.jp-file-info-menu-separator {
+    margin: 0;
+    padding: 0;
+
+    width: 100%;
+    height: 2px;
+
+    background: var(--jp-layout-color2);
+    border: 0;
+}
+
+.jp-file-info-content {
+    margin: 5px 5px 5px 5px;
+    padding-top: 10px;
+
+    font-size: var(--jp-ui-font-size1);
+    font-family: var(--jp-ui-font-family);
+}
+
+.jp-file-info-content th {
+    text-align: left;
+}
+
+.jp-shares {
+    width: 100%;
+    flex-direction: column;
+}
+
+.jp-shares-list-container {
+    width: 100%;
+    flex-direction: column;
+}
+
+.jp-shares-list-container .jp-shares-element {
+    flex-direction: row;
+    padding: 10px 0 0 0;
+}
+.jp-shares-list-container .jp-shares-element > div {
+    flex-grow: 1;
+}
+
+.jp-shares-element .jp-shares-owner {
+    width: 90%;
+    justify-content: left;
+}
+
+.jp-shares-element .jp-shares-label {
+    justify-content: right;
+}
+
+.jp-shares-list-container .label {
+    color: white;
+    padding: 3px;
+}
+
+.jp-shares-list-container .write-label {
+    background: var(--jp-accent-color1);
+}
+
+.jp-shares-list-container .read-label {
+    background: var(--jp-brand-color1);
+}
+
+.jp-shares-search-container {
+    width: 100%;
+    justify-content: center;
+    padding-bottom: 10px;
+}
+
+.jp-shares-search {
+    width: 96%;
+
+    background: var(--jp-layout-color1);
+    color: var(--jp-ui-font-color1);
+    border: 1px solid;
+    border-color: var(--jp-layout-color2);
+    padding: 7px;
+    background-image: var(--jp-icon-search);
+    background-repeat: no-repeat;
+    background-position: 97%;
+}
+
+.jp-shares-list-container {
+    width: 100%;
+}
+
+.cs3_tab_toolbar {
+    width: 100%;
+}
+

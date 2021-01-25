@@ -17,11 +17,23 @@ class Channel(LoggingConfigurable):
             secure_channel = utils.strtobool(config['secure_channel'])
         if secure_channel:
             try:
-                cert = open(config['client_cert'], 'rb').read()
-                key = open(config['client_key'], 'rb').read()
-                ca_cert = open(config['ca_cert'], 'rb').read()
-                credentials = grpc.ssl_channel_credentials(ca_cert, key, cert)
+
+                cert = None
+                key = None
+                ca_cert = None
+
+                if config['client_cert'] is not None and len(config['client_cert']) > 0:
+                    cert = open(config['client_cert'], 'rb').read()
+
+                if config['client_cert'] is not None and len(config['client_key']) > 0:
+                    key = open(config['client_key'], 'rb').read()
+
+                if config['client_cert'] is not None and len(config['ca_cert']) > 0:
+                    ca_cert = open(config['ca_cert'], 'rb').read()
+
+                credentials = grpc.ssl_channel_credentials(root_certificates=ca_cert, private_key=key, certificate_chain=cert)
                 channel = grpc.secure_channel(config['reva_host'], credentials)
+
             except:
                 ex = sys.exc_info()[0]
                 self.log.error('msg="Error create secure channel" reason="%s"' % ex)

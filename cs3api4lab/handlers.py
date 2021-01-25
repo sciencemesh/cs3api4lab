@@ -7,6 +7,7 @@ from cs3api4lab.exception.exceptions import *
 from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
+from cs3api4lab.api.cs3_user_api import Cs3UserApi
 
 
 class ShareHandler(APIHandler):
@@ -226,6 +227,41 @@ class OcmReceivedSharesHandler(APIHandler):
                                       request['field'],
                                       request['value'])
 
+class UserInfoHandler(APIHandler):
+    @property
+    def user_api(self):
+        return Cs3UserApi(self.log)
+
+    @web.authenticated
+    @gen.coroutine
+    def get(self):
+        idp = self.get_query_argument('idp')
+        opaque_id = self.get_query_argument('opaque_id')
+        RequestHandler.handle_request(self, self.user_api.get_user_info, 200, idp, opaque_id)
+
+class UserInfoClaimHandler(APIHandler):
+    @property
+    def user_api(self):
+        return Cs3UserApi(self.log)
+
+    @web.authenticated
+    @gen.coroutine
+    def get(self):
+        claim = self.get_query_argument('claim')
+        value = self.get_query_argument('value')
+        RequestHandler.handle_request(self, self.user_api.get_user_info_by_claim, 200, claim, value)
+
+class UserQueryHandler(APIHandler):
+    @property
+    def user_api(self):
+        return Cs3UserApi(self.log)
+
+    @web.authenticated
+    @gen.coroutine
+    def get(self):
+        query = self.get_query_argument('query')
+        RequestHandler.handle_request(self, self.user_api.find_users_by_query, 200, query)
+
 handlers = [
     (r"/api/cs3/shares", ShareHandler),
     (r"/api/cs3/shares/list", ListSharesHandler),
@@ -236,6 +272,10 @@ handlers = [
     (r"/api/cs3/public/share", GetPublicShareByTokenHandler),
     (r"/api/cs3/ocm", OcmSharesHandler),
     (r"/api/cs3/ocm/received", OcmReceivedSharesHandler)
+    (r"/api/cs3/public/share", GetPublicShareByTokenHandler),
+    (r"/api/cs3/user", UserInfoHandler),
+    (r"/api/cs3/user/claim", UserInfoClaimHandler),
+    (r"/api/cs3/user/query", UserQueryHandler)
 ]
 
 
