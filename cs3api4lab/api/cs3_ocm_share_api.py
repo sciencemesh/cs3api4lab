@@ -69,7 +69,7 @@ class Cs3OcmShareApi:
         else:
             self.log.error("Error creating OCM share")
             self._handle_error(response)
-        return self._map_ocm_share(response.share)
+        return self._map_share(response.share)
 
     def remove_ocm_share(self, share_id):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
@@ -162,7 +162,7 @@ class Cs3OcmShareApi:
         ref = sharing_res.ShareReference(id=share_id_obj)
         request = ocm_api.GetOCMShareRequest(ref=ref)
         response = self.ocm_share_api.GetOCMShare(request=request, metadata=self._token())
-        return self._map_ocm_share(response.share)
+        return self._map_share(response.share)
 
     def get_received_ocm_shares(self, share_id):
         if share_id is None:
@@ -188,20 +188,20 @@ class Cs3OcmShareApi:
         if not self._is_code_ok(response):
             self.log.error("Error listing OCM received share:")
             self._handle_error(response)
-        return self._map_ocm_received_share(response.share)
+        return self._map_share(response.share.share, response.share.state)
 
     def _map_ocm_shares(self, list_response, received=False):
         shares = []
         if received:
             for share in list_response.shares:
-                shares.append(self._map_ocm_received_share(share))
+                shares.append(self._map_share(share.share, share.state))
         else:
             for share in list_response.shares:
-                shares.append(self._map_ocm_share(share))
+                shares.append(self._map_share(share))
         return shares
 
-    def _map_ocm_share(self, share):
-        return {
+    def _map_share(self, share, state=None):
+        response = {
             "id": share.id.opaque_id,
             "storage_id": share.resource_id.storage_id,
             "opaque_id": share.resource_id.opaque_id,
@@ -221,29 +221,10 @@ class Cs3OcmShareApi:
                 "opaque_id": share.creator.opaque_id
             }
         }
-    
-    def _map_ocm_received_share(self, share):
-        return {
-            "id": share.share.id.opaque_id,
-            "storage_id": share.share.resource_id.storage_id,
-            "opaque_id": share.share.resource_id.opaque_id,
-            "name": share.share.name,
-            "permissions": ShareUtils.map_permissions_to_role(share.share.permissions.permissions),
-            "grantee": {
-                "type": ShareUtils.map_grantee_type(share.share),
-                "idp": share.share.grantee.id.idp,
-                "opaque_id": share.share.grantee.id.opaque_id
-            },
-            "owner": {
-                "idp": share.share.owner.idp,
-                "opaque_id": share.share.owner.opaque_id
-            },
-            "creator": {
-                "idp": share.share.creator.idp,
-                "opaque_id": share.share.creator.opaque_id
-            },
-            "state": ShareUtils.map_state(share.state)
-        }
+        if state:
+            response.update({"state": ShareUtils.map_state(state)})
+
+        return response
 
     def _get_provider_info(self, domain):
         request = ocm_provider_api.GetInfoByDomainRequest(domain=domain)
