@@ -38,7 +38,7 @@ setup_args = dict(
         "cs3apis",
         "grpcio",
         "grpcio-tools",
-        "pyjwt"
+        "PyJWT==1.7.1"
     ],
     zip_safe=False,
     include_package_data=True,
