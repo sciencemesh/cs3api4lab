@@ -20,6 +20,8 @@ class Cs3UserApi:
         response = self.api.GetUser(request=request)
         return {"username": response.user.username,
                 "display_name": response.user.display_name,
+                "idp": response.user.id.idp,
+                "opaque_id": response.user.id.opaque_id,
                 "mail": response.user.mail}
 
     def get_user_info_by_claim(self, claim, value):
@@ -28,6 +30,8 @@ class Cs3UserApi:
         response = self.api.GetUserByClaim(request=request)
         return {"username": response.user.username,
                 "display_name": response.user.display_name,
+                "idp": response.user.id.idp,
+                "opaque_id": response.user.id.opaque_id,
                 "mail": response.user.mail}
 
     def find_users_by_query(self, query):
@@ -37,5 +41,7 @@ class Cs3UserApi:
         for user in response.users:
             users.append({"username": user.username,
                           "display_name": user.display_name,
+                          "idp": user.id.idp,
+                          "opaque_id": user.id.opaque_id,
                           "mail": user.mail})
         return users
