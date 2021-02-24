@@ -477,10 +477,11 @@ class CS3APIsManager(ContentsManager):
         parent = self._get_parent_path(path)
         stat = self.file_api.stat(parent)
 
-        if hasattr(stat['permissions'], 'initiate_file_upload') and stat['permissions'].initiate_file_upload is False:
+        if hasattr(stat['permissions'], 'initiate_file_upload') and stat['permissions'].initiate_file_upload is False \
+                and hasattr(stat['permissions'], 'create_container') and stat['permissions'].create_container is False:
             raise web.HTTPError(400, u'The path %s is not writable' % parent)
 
-#
+    #
     # Notebook hack - disable checkpoint
     #
     def delete(self, path):
