@@ -271,8 +271,7 @@ handlers = [
     (r"/api/cs3/public/shares/list", ListPublicSharesHandler),
     (r"/api/cs3/public/share", GetPublicShareByTokenHandler),
     (r"/api/cs3/ocm", OcmSharesHandler),
-    (r"/api/cs3/ocm/received", OcmReceivedSharesHandler)
-    (r"/api/cs3/public/share", GetPublicShareByTokenHandler),
+    (r"/api/cs3/ocm/received", OcmReceivedSharesHandler),
     (r"/api/cs3/user", UserInfoHandler),
     (r"/api/cs3/user/claim", UserInfoClaimHandler),
     (r"/api/cs3/user/query", UserQueryHandler)
