@@ -42,7 +42,7 @@ class ExtCs3ShareApi(Cs3ShareApi):
         self.log = log
 
     def list(self):
-        list_response = self._list()
+        list_response = self.list()
         return self._map_given_shares(list_response)
 
 

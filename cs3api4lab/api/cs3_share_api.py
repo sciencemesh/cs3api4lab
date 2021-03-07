@@ -41,11 +41,16 @@ class Cs3ShareApi:
     TYPE_FILE = 1
     TYPE_DIRECTORY = 2
 
-    def __init__(self, log):
+    def __init__(self, log, config=None, auth=None):
         self.log = log
-        self.config = Cs3ConfigManager().get_config()
-        self.auth = Auth.get_authenticator(config=self.config, log=self.log)
-
+        if not config:
+            self.config = Cs3ConfigManager().get_config()
+        else:
+            self.config = config
+        if not auth:
+            self.auth = Auth.get_authenticator(config=self.config, log=self.log)
+        else:
+            self.auth = auth
         self.file_api = Cs3FileApi(log)
 
         channel = ChannelConnector().get_channel()
@@ -73,10 +78,10 @@ class Cs3ShareApi:
                                           + " for " + idp + ":" + grantee)
 
     def list_dir_model(self):
-        list_response = self._list()
+        list_response = self.list()
         return self._map_shares_to_model(list_response)
 
-    def _list(self):
+    def list(self):
         list_request = sharing.ListSharesRequest()
         list_response = self.cs3_api.ListShares(request=list_request,
                                                 metadata=[('x-access-token', self.get_token())])
@@ -181,9 +186,7 @@ class Cs3ShareApi:
 
     def list_received(self):
         self.log.info("Listing received shares")
-        list_request = sharing.ListReceivedSharesRequest()
-        list_response = self.cs3_api.ListReceivedShares(request=list_request,
-                                                        metadata=[('x-access-token', self.get_token())])
+        list_response = self.get_received_shares()
         if self._is_code_ok(list_response):
             self.log.info("Retrieved received shares for user: " + self.config['client_id'])
             self.log.info(list_response)
@@ -191,6 +194,12 @@ class Cs3ShareApi:
             self.log.error("Error retrieving received shares for user: " + self.config['client_id'])
             self._handle_error(list_response)
         return self._map_shares_to_model(list_response, received=True)
+
+    def get_received_shares(self):
+        list_request = sharing.ListReceivedSharesRequest()
+        list_response = self.cs3_api.ListReceivedShares(request=list_request,
+                                                        metadata=[('x-access-token', self.get_token())])
+        return list_response
 
     def _map_received_shares(self, list_res):
         shares = []
