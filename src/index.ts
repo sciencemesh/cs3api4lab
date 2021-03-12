@@ -1,25 +1,26 @@
 import {
     ILabShell,
-    ILayoutRestorer,
+    // ILayoutRestorer,
     IRouter,
     JupyterFrontEnd,
     JupyterFrontEndPlugin,
 } from '@jupyterlab/application';
-import {MainAreaWidget} from '@jupyterlab/apputils';
 import {ISettingRegistry} from '@jupyterlab/settingregistry';
-import {Dialog, ICommandPalette, showDialog, ToolbarButton, WidgetTracker} from '@jupyterlab/apputils';
+import {Dialog, ICommandPalette, showDialog, WidgetTracker} from '@jupyterlab/apputils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
 import {IStateDB} from '@jupyterlab/statedb';
-import {checkIcon, circleEmptyIcon, circleIcon, addIcon} from '@jupyterlab/ui-components';
-import {ILauncher} from "@jupyterlab/launcher";
-import { Launcher } from '@jupyterlab/launcher';
-import {IFileBrowserFactory} from "@jupyterlab/filebrowser/lib/tokens";
-import {each} from "@lumino/algorithm";
+import {ILauncher} from '@jupyterlab/launcher';
+import {IFileBrowserFactory} from '@jupyterlab/filebrowser/lib/tokens';
+import {each} from '@lumino/algorithm';
 
-import {CS3Contents} from "./drive";
-import {FileBrowser, FileBrowserModel} from "@jupyterlab/filebrowser";
-import {ShareWidget} from "./createShare";
-import {InfoboxWidget} from "./infobox";
+import {CS3Contents, CS3ContentsShareByMe, CS3ContentsShareWithMe} from './drive';
+import {FileBrowser, FileBrowserModel} from '@jupyterlab/filebrowser';
+import {ShareWidget} from './createShare';
+import {InfoboxWidget} from './infobox';
+import {Cs3BottomWidget, Cs3HeaderWidget, Cs3Panel, Cs3TabWidget} from './cs3panel';
+import {addLaunchersButton, createShareBox} from './utils';
+import {SplitPanel} from '@lumino/widgets';
+import {kernelIcon, caseSensitiveIcon, inspectorIcon, newFolderIcon} from '@jupyterlab/ui-components';
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -28,105 +29,6 @@ namespace CommandIDs {
     export const info = 'filebrowser:cs3-info';
     export const createShare = 'filebrowser:cs3-create-share';
 }
-
-/**
- * The JupyterLab plugin for the CS3api Filebrowser.
- */
-
-const browser: JupyterFrontEndPlugin<void> = {
-    id: 'cs3_api_shares',
-    requires: [
-        IDocumentManager,
-        IFileBrowserFactory,
-        ILayoutRestorer,
-        ISettingRegistry,
-        ILabShell,
-        IStateDB
-    ],
-    activate(app: JupyterFrontEnd,
-             docManager: IDocumentManager,
-             factory: IFileBrowserFactory,
-             restorer: ILayoutRestorer,
-             labShell: ILabShell,
-             settings: ISettingRegistry,
-             stateDB: IStateDB
-    ): void {
-        stateDB.save('share', {share_type: 'filelist'});
-        const drive = new CS3Contents(app.docRegistry, stateDB, docManager);
-
-        const browser = factory.createFileBrowser('test', {
-            driveName: drive.name
-        });
-
-        const { commands } = app;
-        const { model } = browser;
-
-
-        docManager.services.contents.addDrive(drive);
-
-        browser.title.icon = checkIcon;
-
-        browser.title.caption = 'Shared by me';
-        browser.toolbar.addItem('cs3_item_shared_filelist', new ToolbarButton({
-            onClick: () => {
-                stateDB.save('share', {share_type: 'filelist'})
-                browser.model.refresh();
-                browser.title.caption = 'File list';
-            },
-            icon: checkIcon,
-            tooltip: `File list`,
-            iconClass: 'cs3-item jp-Icon jp-Icon-16'
-        }));
-
-        browser.toolbar.addItem('cs3_item_shared_with_me', new ToolbarButton({
-            onClick: () => {
-                stateDB.save('share', {share_type: 'with_me'})
-                browser.model.refresh();
-                browser.title.caption = 'Shared with me';
-            },
-            icon: circleIcon,
-            tooltip: `Shared with me`,
-            iconClass: 'cs3-item jp-Icon jp-Icon-16'
-        }));
-
-        browser.toolbar.addItem('cs3_item_shared_by_me', new ToolbarButton({
-            onClick: () => {
-                stateDB.save('share', {share_type: 'by_me'});
-                browser.model.refresh();
-                browser.title.caption = 'Shared by me';
-            },
-            icon: circleEmptyIcon,
-            tooltip: `Shared by me`,
-            iconClass: 'cs3-item jp-Icon jp-Icon-16'
-        }));
-
-        restorer.add(browser, 'cs3_file_browser');
-        app.shell.add(browser, 'left', { rank: 101 });
-
-        if (labShell) {
-            const launcher = new ToolbarButton({
-                icon: addIcon,
-                onClick: () => {
-                    return commands
-                        .execute('launcher:create', { cwd: model.path })
-                        .then((launcher: MainAreaWidget<Launcher>) => {
-                            model.pathChanged.connect(() => {
-                                if (launcher.content) {
-                                    launcher.content.cwd = model.path;
-                                }
-                            }, launcher);
-                            return launcher;
-                        });
-                },
-                tooltip: 'New Launcher'
-            });
-
-            browser.toolbar.insertItem(0, 'launch', launcher);
-        }
-    },
-    autoStart: true
-}
-
 
 /**
  * The default file browser factory provider.
@@ -145,8 +47,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
 
             const createFileBrowser = (
                 id: string,
-                options: IFileBrowserFactory.IOptions = {
-                }
+                options: IFileBrowserFactory.IOptions = {}
             ) => {
                 const model = new FileBrowserModel({
                     auto: options.auto ?? true,
@@ -181,41 +82,41 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
  * Initialization data for the cs3api4lab extension.
  */
 const cs3info: JupyterFrontEndPlugin<void> = {
-  id: 'cs3api4lab',
-  autoStart: true,
-  requires: [IFileBrowserFactory, ISettingRegistry, ICommandPalette],
-  optional: [ILauncher],
-  activate: async (app: JupyterFrontEnd, factory: IFileBrowserFactory) => {
-    const { commands } = app;
-    const { tracker } = factory;
+    id: 'cs3api4lab',
+    autoStart: true,
+    requires: [IFileBrowserFactory, ISettingRegistry, ICommandPalette],
+    optional: [ILauncher],
+    activate: async (app: JupyterFrontEnd, factory: IFileBrowserFactory) => {
+        const {commands} = app;
+        const {tracker} = factory;
 
-    app.contextMenu.addItem({
-      command: CommandIDs.info,
-      selector: '.jp-DirListing-item', // show only for file/directory items.
-      rank: 3
-    });
+        app.contextMenu.addItem({
+            command: CommandIDs.info,
+            selector: '.jp-DirListing-item', // show only for file/directory items.
+            rank: 3
+        });
 
-    // Add the CS3 share to file browser context menu
-    commands.addCommand(CommandIDs.info, {
-      execute: () => {
-        const widget = tracker.currentWidget;
-        if (widget) {
-          each(widget.selectedItems(), fileInfo => {
-            showDialog({
-              body: new ShareWidget({
-                  fileInfo: fileInfo
-              }),
-              buttons: [Dialog.okButton({label: 'Close'})]
-            });
-          });
-        }
-      },
-      iconClass: () => "jp-MaterialIcon jp-FileUploadIcon",
-      label: () => {
-        return "CS3 share";
-      }
-    });
-  }
+        // Add the CS3 share to file browser context menu
+        commands.addCommand(CommandIDs.info, {
+            execute: () => {
+                const widget = tracker.currentWidget;
+                if (widget) {
+                    each(widget.selectedItems(), fileInfo => {
+                        showDialog({
+                            body: new ShareWidget({
+                                fileInfo: fileInfo
+                            }),
+                            buttons: [Dialog.okButton({label: 'Close'})]
+                        });
+                    });
+                }
+            },
+            iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
+            label: () => {
+                return 'CS3 share';
+            }
+        });
+    }
 };
 
 /**
@@ -227,8 +128,8 @@ const cs3share: JupyterFrontEndPlugin<void> = {
     requires: [IFileBrowserFactory, ISettingRegistry, ICommandPalette],
     optional: [ILauncher],
     activate: async (app: JupyterFrontEnd, factory: IFileBrowserFactory) => {
-        const { commands } = app;
-        const { tracker } = factory;
+        const {commands} = app;
+        const {tracker} = factory;
 
         app.contextMenu.addItem({
             command: CommandIDs.createShare,
@@ -251,21 +152,127 @@ const cs3share: JupyterFrontEndPlugin<void> = {
                     });
                 }
             },
-            iconClass: () => "jp-MaterialIcon jp-FileUploadIcon",
+            iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
             label: () => {
-                return "CS3 info";
+                return 'CS3 info';
             }
         });
     }
 };
 
 /**
+ * The JupyterLab plugin for the CS3api Filebrowser.
+ * New filemanager layout version
+ */
+const cs3browser: JupyterFrontEndPlugin<void> = {
+    id: 'cs3_api_shares_v2',
+    requires: [
+        IDocumentManager,
+        IFileBrowserFactory,
+        ILabShell,
+        IStateDB
+    ],
+    autoStart: true,
+    activate(app: JupyterFrontEnd,
+             docManager: IDocumentManager,
+             factory: IFileBrowserFactory,
+             labShell: ILabShell,
+             stateDB: IStateDB,
+    ): void {
+        const cs3Panel = new Cs3Panel('cs3 panel', 'cs3-panel', kernelIcon);
+
+        //
+        // Header
+        //
+        const cs3HeaderWidget = new Cs3HeaderWidget('cs3Api4Lab', 'cs3-header-widget');
+        cs3Panel.addHeader(cs3HeaderWidget);
+
+        //
+        // Bottom
+        //
+        const cs3BottomWidget = new Cs3BottomWidget('cs3Api Bottom', 'cs3-bottom-widget');
+        cs3Panel.addBottom(cs3BottomWidget);
+
+        //
+        // CS3 File browser
+        //
+        const drive = new CS3Contents(app.docRegistry, stateDB, docManager);
+        const fileBrowser = factory.createFileBrowser('test_v2', {
+            driveName: drive.name
+        });
+
+        fileBrowser.title.label = 'My Files';
+        fileBrowser.title.caption = 'My Files';
+        fileBrowser.title.icon = caseSensitiveIcon;
+        docManager.services.contents.addDrive(drive);
+
+        addLaunchersButton(app, fileBrowser, labShell);
+
+        //
+        // Share split panel
+        //
+        const splitPanel = new SplitPanel();
+        splitPanel.id = 'split-panel-example';
+        splitPanel.spacing = 5;
+        splitPanel.orientation = 'vertical';
+        splitPanel.title.iconClass = 'jp-example-view';
+        splitPanel.title.caption = 'Shares';
+        splitPanel.title.label = 'Shares';
+        splitPanel.title.icon = inspectorIcon;
+
+        //
+        // ShareByMe
+        //
+        const driveShareByMe = new CS3ContentsShareByMe(app.docRegistry, stateDB, docManager);
+        const fileBrowserShareByMe: FileBrowser = factory.createFileBrowser('test_v2_share_by_me', {
+            driveName: driveShareByMe.name
+        });
+        fileBrowserShareByMe.toolbar.hide();
+
+        const shareByMePanel = createShareBox('cs3-share-by-me', 'Share by Me', fileBrowserShareByMe);
+        splitPanel.addWidget(shareByMePanel)
+
+        docManager.services.contents.addDrive(driveShareByMe);
+
+        //
+        // ShareWithMe
+        //
+        const driveShareWithMe = new CS3ContentsShareWithMe(app.docRegistry, stateDB, docManager);
+        const fileBrowserShareWithMe: FileBrowser = factory.createFileBrowser('test_v2_share_with_me', {
+            driveName: driveShareWithMe.name
+        });
+        fileBrowserShareWithMe.toolbar.hide();
+
+        const shareWithMePanel = createShareBox('cs3-share-with-me', 'Share with Me', fileBrowserShareWithMe);
+        splitPanel.addWidget(shareWithMePanel)
+
+        docManager.services.contents.addDrive(driveShareWithMe);
+
+        //
+        // Example tab
+        //
+        const cs3TabWidget3 = new Cs3TabWidget('Projects', newFolderIcon);
+
+        cs3Panel.addTab(fileBrowser);
+        cs3Panel.addTab(cs3TabWidget3);
+        cs3Panel.addTab(splitPanel);
+
+        window.addEventListener('resize', () => {
+            cs3Panel.fit();
+        });
+
+        app.shell.add(cs3Panel, 'left', {rank: 103});
+    }
+}
+
+
+/**
  * Export the plugins as default.
  */
 const plugins: JupyterFrontEndPlugin<any>[] = [
     factory,
-    browser,
     cs3info,
-    cs3share
+    cs3share,
+    cs3browser
 ];
 export default plugins;

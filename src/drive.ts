@@ -1,21 +1,27 @@
 import {requestAPI} from './services';
-import { ReadonlyJSONObject } from '@lumino/coreutils';
-import { Contents, ServerConnection } from '@jupyterlab/services';
-import { DocumentRegistry } from '@jupyterlab/docregistry';
-import { Signal, ISignal } from '@lumino/signaling';
+import {ReadonlyJSONObject} from '@lumino/coreutils';
+import {Contents, ServerConnection} from '@jupyterlab/services';
+import {DocumentRegistry} from '@jupyterlab/docregistry';
+import {Signal, ISignal} from '@lumino/signaling';
 import {IStateDB} from '@jupyterlab/statedb';
-import {IDocumentManager} from "@jupyterlab/docmanager";
+import {IDocumentManager} from '@jupyterlab/docmanager';
 
 export class CS3Contents implements Contents.IDrive {
-    private _docRegistry: DocumentRegistry;
-    private _fileTypeForPath: (path: string) => DocumentRegistry.IFileType;
-    private _fileTypeForContentsModel: (model: Partial<Contents.IModel>) => DocumentRegistry.IFileType;
-    private _fileChanged = new Signal<this, Contents.IChangedArgs>(this);
-    private _isDisposed = false;
-    private _state :IStateDB;
-    private _docManager :IDocumentManager;
+    protected _docRegistry: DocumentRegistry;
+    protected _fileTypeForPath: (path: string) => DocumentRegistry.IFileType;
+    protected _fileTypeForContentsModel: (
+        model: Partial<Contents.IModel>
+    ) => DocumentRegistry.IFileType;
+    protected _fileChanged = new Signal<this, Contents.IChangedArgs>(this);
+    protected _isDisposed = false;
+    protected _state: IStateDB;
+    protected _docManager: IDocumentManager;
 
-    constructor(registry: DocumentRegistry, stateDB: IStateDB, docManager :IDocumentManager) {
+    constructor(
+        registry: DocumentRegistry,
+        stateDB: IStateDB,
+        docManager: IDocumentManager
+    ) {
         this._docRegistry = registry;
         this._docManager = docManager;
 
@@ -34,7 +40,13 @@ export class CS3Contents implements Contents.IDrive {
         };
 
         this._state = stateDB;
-        console.log(this._docRegistry, this._fileTypeForPath, this._fileTypeForContentsModel);
+
+        console.log(
+            'CS3Contents: ',
+            this._docRegistry,
+            this._fileTypeForPath,
+            this._fileTypeForContentsModel
+        );
     }
 
     refresh() {
@@ -44,7 +56,7 @@ export class CS3Contents implements Contents.IDrive {
     /**
      * The name of the drive.
      */
-    get name(): 'cs3drive' {
+    get name(): string {
         return 'cs3drive';
     }
 
@@ -52,7 +64,6 @@ export class CS3Contents implements Contents.IDrive {
      * Server settings (unused for interfacing with Google Drive).
      */
     readonly serverSettings: ServerConnection.ISettings;
-
 
     /**
      * Get a file or directory.
@@ -67,7 +78,7 @@ export class CS3Contents implements Contents.IDrive {
         path: string,
         options?: Contents.IFetchOptions
     ): Promise<Contents.IModel> {
-        return await CS3ContainerFiles(this._state, path, options);
+        return await CS3ContainerFiles('filelist', this._state, path, options);
     }
 
     /**
@@ -76,6 +87,7 @@ export class CS3Contents implements Contents.IDrive {
     get fileChanged(): ISignal<this, Contents.IChangedArgs> {
         return this._fileChanged;
     }
+
     /**
      * Test whether the manager has been disposed.
      */
@@ -96,7 +108,7 @@ export class CS3Contents implements Contents.IDrive {
 
     async getDownloadUrl(localPath: string): Promise<string> {
         return this._docManager.services.contents.getDownloadUrl(localPath);
-    };
+    }
 
     newUntitled(options?: Contents.ICreateOptions): Promise<Contents.IModel> {
         return this._docManager.services.contents.newUntitled(options);
@@ -104,13 +116,19 @@ export class CS3Contents implements Contents.IDrive {
 
     delete(localPath: string): Promise<void> {
         return this._docManager.services.contents.delete(localPath);
-    };
-
-    rename(oldLocalPath: string, newLocalPath: string): Promise<Contents.IModel> {
-        return this._docManager.services.contents.rename(oldLocalPath, newLocalPath);
     }
 
-    save(localPath: string, options?: Partial<Contents.IModel>): Promise<Contents.IModel> {
+    rename(oldLocalPath: string, newLocalPath: string): Promise<Contents.IModel> {
+        return this._docManager.services.contents.rename(
+            oldLocalPath,
+            newLocalPath
+        );
+    }
+
+    save(
+        localPath: string,
+        options?: Partial<Contents.IModel>
+    ): Promise<Contents.IModel> {
         return this._docManager.services.contents.save(localPath, options);
     }
 
@@ -127,23 +145,66 @@ export class CS3Contents implements Contents.IDrive {
     }
 
     restoreCheckpoint(localPath: string, checkpointID: string): Promise<void> {
-        return this._docManager.services.contents.restoreCheckpoint(localPath, checkpointID);
+        return this._docManager.services.contents.restoreCheckpoint(
+            localPath,
+            checkpointID
+        );
     }
 
     deleteCheckpoint(localPath: string, checkpointID: string): Promise<void> {
-        return this._docManager.services.contents.deleteCheckpoint(localPath, checkpointID);
+        return this._docManager.services.contents.deleteCheckpoint(
+            localPath,
+            checkpointID
+        );
     }
 }
 
+export class CS3ContentsShareByMe extends CS3Contents {
+    get name(): string {
+        return 'cs3driveShareByMe';
+    }
 
-export async function CS3ContainerFiles(stateDB: IStateDB, path: string = null, options :Contents.IFetchOptions = null) :Promise<any> {
-    let share = await stateDB.fetch('share');
-    const shareType = (share as ReadonlyJSONObject)['share_type']
+    async get(
+        path: string,
+        options?: Contents.IFetchOptions
+    ): Promise<Contents.IModel> {
+        return await CS3ContainerFiles('by_me', this._state, path, options);
+    }
+}
+
+export class CS3ContentsShareWithMe extends CS3Contents {
+    get name(): string {
+        return 'cs3driveShareWithMe';
+    }
+
+    async get(
+        path: string,
+        options?: Contents.IFetchOptions
+    ): Promise<Contents.IModel> {
+        return await CS3ContainerFiles('with_me', this._state, path, options);
+    }
+}
+
+export async function CS3ContainerFiles(
+    readType: string,
+    stateDB: IStateDB,
+    path: string = null,
+    options: Contents.IFetchOptions = null
+): Promise<any> {
+    const share = await stateDB.fetch('share');
+
+    let shareType;
+    if (readType != 'filelist') {
+        shareType = readType;
+    } else {
+        shareType = (share as ReadonlyJSONObject)['share_type'];
+    }
 
     if (path != '') {
         return await getFileList(path, options);
     }
 
+    // switch (shareType) {
     switch (shareType) {
         case 'by_me':
             return await getSharedByMe();
@@ -155,28 +216,33 @@ export async function CS3ContainerFiles(stateDB: IStateDB, path: string = null, 
     }
 }
 
-async function getFileList(path: string, options :Contents.IFetchOptions): Promise<any> {
+async function getFileList(
+    path: string,
+    options: Contents.IFetchOptions
+): Promise<any> {
     const {type, format, content} = options;
 
-    let url :string = '';
-        url += '?content=' + (content  ? 1 : 0);
-    if (type)
+    let url = '';
+    url += '?content=' + (content ? 1 : 0);
+    if (type) {
         url += '&type=' + type;
-    if (format && type != 'notebook')
+    }
+    if (format && type != 'notebook') {
         url += '&format=' + format;
+    }
 
-    return await requestAPI('/api/contents/' + path + ''  + url, {
+    return await requestAPI('/api/contents/' + path + '' + url, {
         method: 'get'
     });
 }
 
-async function getSharedByMe(): Promise<any>{
+async function getSharedByMe(): Promise<any> {
     return await requestAPI('/api/cs3/shares/list', {
         method: 'get'
     });
 }
 
-async function getSharedWithMe(): Promise<any>{
+async function getSharedWithMe(): Promise<any> {
     return await requestAPI('/api/cs3/shares/received', {
         method: 'get'
     });
