@@ -157,3 +157,37 @@
     width: 100%;
 }
 
+.c3-panel-header{
+    height: 75px !important;
+}
+
+.c3-panel-bottom{
+    height: 25px !important;
+}
+
+.c3-panel-bottom > div
+{
+    padding-left: 10px;
+}
+
+#cs3-dock-panel-header h1
+{
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 10px;
+}
+
+.c3-title-widget
+{
+    padding-left: 10px;
+    font-weight: bold;
+}
+
+#cs3-share-with-me-box-panel{
+    border-top: 3px solid #AAAAAA;
+    padding-top: 5px;
+}
+
+#cs3-share-by-me-box-panel{
+    padding-top: 5px;
+}
