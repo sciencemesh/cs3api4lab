@@ -1,10 +1,18 @@
 import React, {useEffect, useState} from 'react';
-import {Contents} from "@jupyterlab/services";
-import {ReactWidget} from "@jupyterlab/apputils";
+import {Contents} from '@jupyterlab/services';
+import {ReactWidget} from '@jupyterlab/apputils';
 import {findFileIcon, requestAPI} from './services';
-import moment from "moment";
-import {ContentProps, HeaderProps, InfoProps, MainProps, MenuProps, ShareProps, SharesProps} from "./types";
-
+import moment from 'moment';
+import {
+    ContentProps,
+    HeaderProps,
+    InfoProps,
+    MainProps,
+    MenuProps,
+    ShareProps,
+    SharesProps,
+    UsersRequest
+} from './types';
 
 /**
  * Main container.
@@ -15,7 +23,7 @@ class Main extends React.Component<any, any> {
     public state = {
         activeTab: 'info',
         grantees: new Map()
-    }
+    };
 
     /**
      * Main component constructor.
@@ -39,36 +47,22 @@ class Main extends React.Component<any, any> {
         this.setState({
             activeTab: tabname
         });
-    }
+    };
 
-    protected getGranteesForResource = async () => {
-        let resource = '/home/' + this.props.fileInfo.path.replace('cs3drive:', '');
-
-        const grantees = await requestAPI<any>('/api/cs3/shares/file?file_path=' + resource, {
-            method: 'GET',
-        });
-
-        const granteesSet = new Map();
-        grantees.shares.forEach((item: any) => {
-            granteesSet.set(item.grantee.opaque_id, item.grantee.permissions);
-        });
-
-        this.setState({...this.state, grantees: granteesSet});
-    }
-
-    public componentDidMount() {
-        this.getGranteesForResource();
-    }
+    // protected getGranteesForResource = async () :Promise<Map<string, string>> => {
+    //
+    //     // return grantees;
+    // }
 
     public render() {
         return (
-            <div className='jp-file-info'>
+            <div className="jp-file-info">
                 <Header fileInfo={this.props.fileInfo}/>
                 <Menu tabHandler={this.switchTabs}/>
                 <Content
                     contentType={this.state.activeTab}
                     content={this.props.fileInfo}
-                    grantees={this.state.grantees}
+                    // getGrantees={this.getGranteesForResource}
                 />
             </div>
         );
@@ -78,34 +72,42 @@ class Main extends React.Component<any, any> {
 export const Menu = (props: MenuProps): JSX.Element => {
     const [activeTab, setActiveTab] = useState('info');
 
-    return (<>
-            <nav className='jp-file-info-menu'>
+    return (
+        <>
+            <nav className="jp-file-info-menu">
                 <ul>
-                    <li className={activeTab == 'info' ? 'active' : ''} onClick={() => {
-                        setActiveTab('info');
-                        props.tabHandler('info')
-                    }}>INFO
+                    <li
+                        className={activeTab == 'info' ? 'active' : ''}
+                        onClick={() => {
+                            setActiveTab('info');
+                            props.tabHandler('info');
+                        }}
+                    >
+                        INFO
                     </li>
-                    <li className={activeTab == 'share' ? 'active' : ''} onClick={() => {
-                        setActiveTab('share');
-                        props.tabHandler('shares')
-                    }}>SHARES
+                    <li
+                        className={activeTab == 'share' ? 'active' : ''}
+                        onClick={() => {
+                            setActiveTab('share');
+                            props.tabHandler('shares');
+                        }}
+                    >
+                        SHARES
                     </li>
                     <li>LINKS</li>
                 </ul>
             </nav>
-            <hr className='jp-file-info-menu-separator'/>
+            <hr className="jp-file-info-menu-separator"/>
         </>
     );
-}
-
+};
 
 const Content = (props: ContentProps): JSX.Element => {
     let elementToDisplay: JSX.Element;
 
     switch (props.contentType) {
         case 'shares':
-            elementToDisplay = Shares({grantees: props.grantees});
+            elementToDisplay = Shares({content: props.content});
             break;
 
         case 'info':
@@ -113,27 +115,19 @@ const Content = (props: ContentProps): JSX.Element => {
             elementToDisplay = Info({content: props.content});
     }
 
-    return (
-        <div className='jp-file-info-content'>
-            {elementToDisplay}
-        </div>
-    );
-}
-
+    return <div className="jp-file-info-content">{elementToDisplay}</div>;
+};
 
 const Header = (props: HeaderProps): JSX.Element => {
     const Icon = findFileIcon(props.fileInfo);
 
     return (
-        <div className='jp-file-info-header'>
-            <Icon.react className='jp-file-info-header-icon'/>
-            <div className='file-info-header-title'>
-                {props.fileInfo.name}
-            </div>
+        <div className="jp-file-info-header">
+            <Icon.react className="jp-file-info-header-icon"/>
+            <div className="file-info-header-title">{props.fileInfo.name}</div>
         </div>
     );
-}
-
+};
 
 /**
  * InfoboxWidget container.
@@ -148,34 +142,32 @@ export class InfoboxWidget extends ReactWidget {
     }
 
     protected render(): JSX.Element {
-        return (
-            <Main fileInfo={this.fileInfo}/>
-        )
+        return <Main fileInfo={this.fileInfo}/>;
     }
 }
 
 // TABS
 
-const Info = (props :InfoProps) :JSX.Element => {
+const Info = (props: InfoProps): JSX.Element => {
     return (
-        <table className='jp-file-detail'>
+        <table className="jp-file-detail">
             <tbody>
-            { props.content.mimetype ?
-                (
-                    <tr>
-                        <th>Mimetype:</th>
-                        <td>{props.content.mimetype}</td>
-                    </tr>
-                ) : ''
-            }
-            { props.content.size ?
-                (
-                    <tr>
-                        <th>Size:</th>
-                        <td>{props.content.size} Bytes</td>
-                    </tr>
-                ) : ''
-            }
+            {props.content.mimetype ? (
+                <tr>
+                    <th>Mimetype:</th>
+                    <td>{props.content.mimetype}</td>
+                </tr>
+            ) : (
+                ''
+            )}
+            {props.content.size ? (
+                <tr>
+                    <th>Size:</th>
+                    <td>{props.content.size} Bytes</td>
+                </tr>
+            ) : (
+                ''
+            )}
             <tr>
                 <th>Type:</th>
                 <td>{props.content.type}</td>
@@ -190,12 +182,14 @@ const Info = (props :InfoProps) :JSX.Element => {
             </tr>
             <tr>
                 <th>Last Modified:</th>
-                <td>{moment(Date.parse(props.content.last_modified)).format('LLLL')}</td>
+                <td>
+                    {moment(Date.parse(props.content.last_modified)).format('LLLL')}
+                </td>
             </tr>
             </tbody>
         </table>
     );
-}
+};
 
 // type PublicLinksProps = {
 //
@@ -204,53 +198,124 @@ const Info = (props :InfoProps) :JSX.Element => {
 //     return (<div>PUBLIC LINKS</div>);
 // }
 
-
-const Shares = (props :SharesProps) :JSX.Element => {
-    const [grantees] = useState(props.grantees);
-    const [granteesList, setGranteesList] = useState([]);
-
-    const refresh = (grantees :Map<string,string>) :void => {
-        const granteesListArr :Array<Object> = [];
-        grantees.forEach(((permission, grantee) => {
-            granteesListArr.push(<div className='jp-shares-element' key={grantee}>
-                <div className='jp-shares-owner'>{grantee}</div>
-                <div className='jp-shares-label'>
-                    <span className={permission}>{permission}</span>
-                </div>
-            </div>);
-        }));
-
-        setGranteesList(granteesListArr);
-    }
+const Shares = (props: SharesProps): JSX.Element => {
+    const [grantees, setGrantees] = useState([]);
+    const [filteredGrantees, setFilteredGrantees] = useState([]);
 
     useEffect(() => {
-        refresh(grantees)
-    }, [grantees]);
+        const getGrantees = async (): Promise<any> => {
+            const resource = '/home/' + props.content.path.replace('cs3drive:', '');
 
-    const showedValues = (event :React.ChangeEvent<HTMLInputElement>) :void => {
-        const granteesFiltered = new Map(grantees);
-        granteesFiltered.forEach( (permission, grantee) => {
-            if (grantee.toString().search(event.target.value.toString()) == -1) {
-                granteesFiltered.delete(grantee);
+            requestAPI<any>('/api/cs3/shares/file?file_path=' + resource, {
+                method: 'GET'
+            }).then(async granteesRequest => {
+                if (!granteesRequest.shares) {
+                    return false;
+                }
+
+                const granteesSet: Array<{
+                    opaque_id: string;
+                    permission: string;
+                    idp: string;
+                }> = [];
+                granteesRequest.shares.forEach((item: any) => {
+                    granteesSet.push({
+                        opaque_id: item.grantee.opaque_id,
+                        permission: item.grantee.permissions,
+                        idp: item.grantee.idp
+                    });
+                });
+
+                if (granteesSet.length <= 0) {
+                    return false;
+                }
+
+                const granteesPromises: Array<any> = [];
+                for (const gr of granteesSet) {
+                    granteesPromises.push(await getUsernames(gr.opaque_id, gr.idp));
+                }
+
+                Promise.all([...granteesPromises]).then(responses => {
+                    const granteesArray: Array<object> = [];
+                    for (const res of responses) {
+                        for (const gr of granteesSet) {
+                            if (gr.opaque_id == res.opaque_id) {
+                                granteesArray.push({...gr, displayName: res.display_name});
+                            }
+                        }
+                    }
+
+                    setGrantees(granteesArray);
+                    setFilteredGrantees(granteesArray);
+                });
+            });
+
+            return new Promise(resolve => {
+                resolve(null);
+            });
+        };
+
+        getGrantees();
+    }, []);
+
+    const getUsernames = async (
+        opaqueId: string,
+        idp: string
+    ): Promise<UsersRequest> => {
+        return await requestAPI<any>(
+            '/api/cs3/user?opaque_id=' + opaqueId + '&idp=' + idp,
+            {
+                method: 'GET'
             }
-        });
+        );
+    };
+    const filterGrantees = (
+        event: React.ChangeEvent<HTMLInputElement> | null
+    ): void => {
+        setFilteredGrantees(
+            grantees.filter(item => {
+                if (event.target.value.toString().trim() === '') {
+                    return true;
+                }
 
-        refresh(granteesFiltered);
+                return (
+                    item.displayName
+                        .toString()
+                        .trim()
+                        .search(new RegExp(event.target.value.toString().trim(), 'i')) != -1
+                );
+            })
+        );
     };
 
     return (
-        <div className='jp-shares'>
-            <div className='jp-shares-search-container'>
-                <input type='text' className='jp-shares-search' onChange={showedValues}/>
+        <div className="jp-shares">
+            <div className="jp-shares-search-container">
+                <input
+                    type="text"
+                    className="jp-shares-search"
+                    onChange={filterGrantees}
+                />
             </div>
 
-            <div className='jp-shares-list-container'>
-                {
-                    granteesList.map((grantee) => {
-                        return grantee;
-                    })
-                }
+            <div className="jp-shares-list-container">
+                {filteredGrantees.map((granteeItem, key) => {
+                    if (!granteeItem) {
+                        return false;
+                    }
+
+                    return (
+                        <div className="jp-shares-element" key={key}>
+                            <div className="jp-shares-owner">{granteeItem.displayName}</div>
+                            <div className="jp-shares-label">
+                <span className={granteeItem.permission}>
+                  {granteeItem.permission}
+                </span>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
-}
+};
