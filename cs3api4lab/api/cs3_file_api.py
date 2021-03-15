@@ -104,7 +104,6 @@ class Cs3FileApi:
         """
         Read a directory.
         """
-        self.locks_api.check_locks()
         tstart = time.time()
         reference = file_utils.get_reference(path, endpoint)
         req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")

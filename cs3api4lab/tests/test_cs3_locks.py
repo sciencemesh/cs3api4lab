@@ -164,8 +164,6 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
             locks_ref = cs3spr.Reference(path=self.locks_file_path)
             locks_stat = self.locks_api.stat(locks_ref)
             self.assertTrue(locks_stat.status.code == cs3code.CODE_OK)
-            locks_content = self.locks_api.get_locks_file_content()
-            self.assertTrue(self.file_path_uni in locks_content)
             copy_stat = self.locks_api.stat(self.locks_api.get_unified_file_ref(self.file_copy_path, self.endpoint))
             self.assertTrue('test_file.txt' in copy_stat.info.arbitrary_metadata.metadata['original'])
             self.assertTrue(True)
@@ -211,7 +209,6 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
             self._remove_share('einstein')
             self._remove_test_file('einstein', self.file_path)
 
-
     def test_get_merger(self):
         try:
             self._create_test_file('einstein', self.file_path)
@@ -242,18 +239,12 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
         try:
             self._create_test_file('einstein', self.file_path)
             self._create_share('einstein')
-            self.locks_api.check_locks()
 
             self.locks_api.create_working_copy(cs3spr.Reference(path=self.file_path))
             copies = self.locks_api.get_copies_info(self.file_path, self.endpoint)
             self.assertTrue(len(copies) == 1)
 
-            self.locks_api.check_locks()
-            copies = self.locks_api.get_copies_info(self.file_path, self.endpoint)
-            self.assertTrue(len(copies) == 1)
-
             time.sleep(60)
-            self.locks_api.check_locks()
             copies = self.locks_api.get_copies_info(self.file_path, self.endpoint)
             self.assertTrue(len(copies) == 0)
         finally:
@@ -319,15 +310,11 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
             self.assertTrue(stat.status.code == cs3code.CODE_NOT_FOUND)
 
             self.locks_api.on_open_hook(self.file_path, self.endpoint)
-            locks_content = self.locks_api.get_locks_file_content()
-            self.assertTrue(self.file_path_uni in locks_content)
             stat = self.locks_api.stat(copy_ref)
             self.assertTrue(stat.status.code == cs3code.CODE_OK)
             merger = self.locks_api.get_merger(self.file_path, self.endpoint)
 
             self.locks_api_ext.on_open_hook(self.file_path_uni, self.endpoint)
-            locks_content_marie = self.locks_api_ext.get_locks_file_content()
-            self.assertTrue(self.file_path_uni in locks_content_marie)
             copy_ref_marie = cs3spr.Reference(path=self.locks_api_ext._get_copy_path(ref))
             stat_marie = self.locks_api_ext.stat(copy_ref_marie)
             self.assertTrue(stat_marie.status.code == cs3code.CODE_OK)

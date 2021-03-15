@@ -105,7 +105,6 @@ class LocksApi:
             "opaque_id": original_stat.info.id.opaque_id
         })})
         self.set_metadata(original_ref, self._get_lock_entry(copy_info))
-        self.add_to_locks_file(original_ref)
 
     def copy_file(self, original_ref):
         content = ''
@@ -119,22 +118,6 @@ class LocksApi:
             self.storage_api.write_file(path, content, self.config['endpoint'])
             stat = self.stat(ref=cs3spr.Reference(path=path))
         return stat
-
-    # delete invalid locks on shared files
-    def check_locks(self):
-        path = self.config['home_dir'] + self.locks_file_id
-        stat = self.stat(ref=cs3spr.Reference(path=path))
-        if stat.status.code == cs3code.CODE_OK:
-            shared_files = self.get_locks_file_content()
-            for file_path in shared_files:
-                ref = cs3spr.Reference(path=file_path)
-                stat = self.stat(ref=ref)
-                for lock in stat.info.arbitrary_metadata.metadata:
-                    if lock.startswith('copy-'):
-                        if not self._is_valid(stat.info.arbitrary_metadata.metadata, lock):
-                            if stat.info.arbitrary_metadata.metadata[lock]:
-                                self.log.info('Deleting unused lock: ' + lock + ' for file: ' + file_path)
-                                self.set_metadata(ref, {lock: ''})
 
     def add_lock(self, file_id, endpoint):
         copy_stat = self.stat(ref=cs3spr.Reference(id=cs3spr.ResourceId(storage_id=file_id,
@@ -157,17 +140,6 @@ class LocksApi:
             lock_content = json.loads(original_stat.info.arbitrary_metadata.metadata[lock_name])
             lock_content['updated'] = time.time()
             self.set_metadata(original_ref, {lock_name: json.dumps(lock_content)})
-
-    def add_to_locks_file(self, original_file_ref):
-        path = self.config['home_dir'] + self.locks_file_id
-        stat = self.stat(ref=cs3spr.Reference(path=path))
-        if stat.status.code != cs3code.CODE_OK:
-            self.storage_api.write_file(path, json.dumps([original_file_ref.path]), self.config['endpoint'])
-        else:
-            locks = self.get_locks_file_content()
-            if original_file_ref.path not in locks:
-                locks.append(original_file_ref.path)
-                self.storage_api.write_file(path, json.dumps(locks), self.config['endpoint'])
 
     def _get_original_ref(self, file_id, endpoint):
         copy_ref = self.get_unified_file_ref(file_id, endpoint)
@@ -242,16 +214,6 @@ class LocksApi:
             if share.share.resource_id.storage_id == stat.info.id.storage_id and share.share.resource_id.opaque_id == stat.info.id.opaque_id.replace('fileid-%2F', 'fileid-'):
                 return True
         return False
-
-    def _create_locks_file(self):
-        self.storage_api.write_file(self.config['home_dir'] + self.locks_file_id, '', self.config['endpoint'])
-
-    def get_locks_file_content(self):
-        path = self.config['home_dir'] + self.locks_file_id
-        content = ''
-        for chunk in self.storage_api.read_file(path, self.config['endpoint']):
-            content += chunk.decode('utf-8')
-        return json.loads(content)
 
     def _is_valid(self, metadata, lock):
         lock_content = metadata[lock]
