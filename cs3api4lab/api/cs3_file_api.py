@@ -10,7 +10,7 @@ import http
 import time
 
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
-import cs3.rpc.code_pb2 as cs3code
+import cs3.rpc.v1beta1.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 import cs3.types.v1beta1.types_pb2 as types
 import grpc

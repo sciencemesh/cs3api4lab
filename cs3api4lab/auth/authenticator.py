@@ -3,7 +3,7 @@ from datetime import datetime
 
 import jwt
 from cs3api4lab.config.config_manager import Cs3ConfigManager
-import cs3.rpc.code_pb2 as cs3code
+import cs3.rpc.v1beta1.code_pb2 as cs3code
 from tornado import web
 
 import cs3.gateway.v1beta1.gateway_api_pb2 as cs3gw
