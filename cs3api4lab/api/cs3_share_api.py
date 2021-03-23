@@ -127,8 +127,8 @@ class Cs3ShareApi:
             share_info = {
                 "opaque_id": share.id.opaque_id,
                 "grantee": {
-                    "idp": share.grantee.id.idp,
-                    "opaque_id": share.grantee.id.opaque_id,
+                    "idp": share.grantee.user_id.idp,
+                    "opaque_id": share.grantee.user_id.opaque_id,
                     "permissions": self._resolve_share_permissions(share)
                 }
             }
@@ -204,8 +204,8 @@ class Cs3ShareApi:
                 "permissions": self._resolve_share_permissions(share.share),
                 "grantee": {
                     "type": share.share.grantee.type,
-                    "opaque_id": share.share.grantee.id.opaque_id,
-                    "idp": share.share.grantee.id.idp
+                    "opaque_id": share.share.grantee.user_id.opaque_id,
+                    "idp": share.share.grantee.user_id.idp
                 },
                 "owner": {
                     "idp": share.share.owner.idp,
@@ -230,8 +230,8 @@ class Cs3ShareApi:
             "permissions": self._resolve_share_permissions(share),
             "grantee": {
                 "type": self._map_grantee(share),
-                "opaque_id": share.grantee.id.opaque_id,
-                "idp": share.grantee.id.idp
+                "opaque_id": share.grantee.user_id.opaque_id,
+                "idp": share.grantee.user_id.idp
             },
             "owner": {
                 "idp": share.owner.idp,
@@ -290,7 +290,7 @@ class Cs3ShareApi:
 
     def _get_share_grant(self, grantee_type, share_permissions, idp, grantee):
         user_id = identity_res.UserId(idp=idp, opaque_id=grantee)
-        resources_grantee = storage_resources.Grantee(id=user_id, type=grantee_type)
+        resources_grantee = storage_resources.Grantee(user_id=user_id, type=grantee_type)
         return sharing_res.ShareGrant(permissions=share_permissions, grantee=resources_grantee)
 
     def _get_grantee_type(self, grantee_type):
