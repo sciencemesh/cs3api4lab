@@ -19,6 +19,8 @@ the default managers.
 
 Note: You will need NodeJS to install the extension.
 
+**Atm install packages temporarily unavailable. Please see "Contributing" below for alternative installation.**
+
 ```bash
 pip install cs3api4lab
 jupyter serverextension enable --py cs3api4lab --sys-prefix
@@ -41,21 +43,29 @@ The `jlpm` command is JupyterLab's pinned version of
 
 ```bash
 # Clone the repo to your local environment
+git clone https://github.com/sciencemesh/cs3api4lab.git
+
 # Move to cs3api4lab directory
+cd cs3api4lab
 
 # Install the contents manager
 pip install -e .
+
 # Register server extension
 jupyter serverextension enable --py cs3api4lab --sys-prefix
 
 # Install dependencies
 jlpm
+
 # Build Typescript source
 jlpm build
+
 # Link your development version of the extension with JupyterLab
 jupyter labextension install .
+
 # Rebuild Typescript source after making changes
 jlpm build
+
 # Rebuild JupyterLab after making any changes
 jupyter lab build
 ```

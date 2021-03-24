@@ -1,4 +1,6 @@
-FROM jupyter/base-notebook:a07573d685a4
+FROM jupyter/base-notebook:lab-2.2.9
+
+#
 # Built from... https://hub.docker.com/r/jupyter/base-notebook/
 #               https://github.com/jupyter/docker-stacks/blob/master/base-notebook/Dockerfile
 
@@ -9,7 +11,6 @@ COPY jupyter-config/cs3api4lab.json /opt/cs3/jupyter-config/cs3api4lab.json
 COPY setup.py /opt/cs3/setup.py
 COPY README.md /opt/cs3/README.md
 COPY package.json /opt/cs3/package.json
-COPY package-lock.json /opt/cs3/package-lock.json
 COPY yarn.lock /opt/cs3/yarn.lock
 COPY tsconfig.json /opt/cs3/tsconfig.json
 COPY pyproject.toml /opt/cs3/pyproject.toml
@@ -45,4 +46,3 @@ EXPOSE 8888
 USER $NB_UID
 
 WORKDIR $HOME
-

@@ -181,6 +181,8 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     ): void {
         const cs3Panel = new Cs3Panel('cs3 panel', 'cs3-panel', kernelIcon);
 
+        stateDB.save('share', {share_type: 'filelist'});
+
         //
         // Header
         //
