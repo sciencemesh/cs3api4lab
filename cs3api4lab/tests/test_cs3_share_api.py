@@ -20,6 +20,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     receiver_role = 'viewer'
     receiver_grantee_type = 'user'
     file_path = '/test.txt'
+    file_name = 'test.txt'
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
 
     def setUp(self):
@@ -34,7 +35,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         share_list = self.api.list_dir_model()
 
         try:
-            if not list(filter(lambda s: s['path'] == str(self.file_path), share_list['content'])):
+            if not list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
                 raise Exception("Share not created")
         finally:
             self._clear_shares()
@@ -50,7 +51,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         self.assertEqual(len(share_list['content']), 1)
 
         try:
-            if not list(filter(lambda s: s['path'] == str(self.file_path), share_list['content'])):
+            if not list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
                 raise Exception("Share not created")
         finally:
             self._clear_shares()
@@ -73,12 +74,12 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         self.share_id = created_share['opaque_id']
         share_list = self.api.list_dir_model()
         try:
-            if not list(filter(lambda s: s['path'] == self.file_path, share_list['content'])):
+            if not list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
                 raise Exception("Share not created")
         finally:
             self.api.remove(self.share_id)
         share_list = self.api.list_dir_model()
-        if list(filter(lambda s: s['path'] == self.file_path, share_list['content'])):
+        if list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
             raise Exception("Share not removed")
 
     def test_update(self):

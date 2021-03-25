@@ -1,4 +1,4 @@
-import cs3.rpc.code_pb2 as cs3code
+import cs3.rpc.v1beta1.code_pb2 as cs3code
 import grpc
 
 

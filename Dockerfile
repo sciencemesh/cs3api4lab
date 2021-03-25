@@ -1,4 +1,6 @@
-FROM jupyter/base-notebook:a07573d685a4
+FROM jupyter/base-notebook:lab-2.2.9
+
+#
 # Built from... https://hub.docker.com/r/jupyter/base-notebook/
 #               https://github.com/jupyter/docker-stacks/blob/master/base-notebook/Dockerfile
 
@@ -45,4 +47,3 @@ EXPOSE 8888
 USER $NB_UID
 
 WORKDIR $HOME
-

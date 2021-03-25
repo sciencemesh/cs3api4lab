@@ -52,7 +52,7 @@ class Cs3OcmShareApi:
                                                value=str.encode('my_resource_name'))})
         resource_id = storage_resources.ResourceId(storage_id=endpoint, opaque_id=file_path)
         user_id = identity_res.UserId(idp=idp, opaque_id=grantee_opaque)
-        grantee_opaque = storage_resources.Grantee(type=ShareUtils.map_grantee(grantee_type), id=user_id)
+        grantee_opaque = storage_resources.Grantee(type=ShareUtils.map_grantee(grantee_type), user_id=user_id)
         perms = sharing_res.SharePermissions(permissions=ShareUtils.get_resource_permissions(role),
                                              reshare=bool(reshare))
         grant = sharing_res.ShareGrant(permissions=perms, grantee=grantee_opaque)
@@ -198,8 +198,8 @@ class Cs3OcmShareApi:
             "permissions": ShareUtils.map_permissions_to_role(share.permissions.permissions),
             "grantee": {
                 "type": ShareUtils.map_grantee_type(share),
-                "idp": share.grantee.id.idp,
-                "opaque_id": share.grantee.id.opaque_id
+                "idp": share.grantee.user_id.idp,
+                "opaque_id": share.grantee.user_id.opaque_id
             },
             "owner": {
                 "idp": share.owner.idp,
@@ -231,7 +231,7 @@ class Cs3OcmShareApi:
         return response.status.code == cs3_code.CODE_OK
 
     def _handle_error(self, response, msg=''):
-        self.log.error(msg + '\n' + response)
+        self.log.error(msg + '\n' + response.status.message)
         raise Exception("Incorrect server response: " + response.status.message)
 
     def _token(self):
