@@ -1,19 +1,35 @@
-from notebook.utils import url_path_join
+import json
+from pathlib import Path
 
+from .handlers import setup_handlers
 from ._version import __version__
-from cs3api4lab.api.cs3apismanager import CS3APIsManager
-from .handlers import handlers
+
+HERE = Path(__file__).parent.resolve()
+
+with (HERE / "labextension" / "package.json").open() as fid:
+    data = json.load(fid)
 
 
-def _jupyter_server_extension_paths():
-    return [{
-        "module": "cs3api4lab"
-    }]
+def _jupyter_labextension_paths():
+    return [{"src": "labextension", "dest": data["name"]}]
 
-def load_jupyter_server_extension(nb_server_app):
-    """ Used as a server extension in order to install the new handlers """
-    web_app = nb_server_app.web_app
-    for handler in handlers:
-        pattern = url_path_join(web_app.settings['base_url'], handler[0])
-        new_handler = tuple([pattern] + list(handler[1:]))
-        web_app.add_handlers('.*$', [new_handler])
+
+def _jupyter_server_extension_points():
+    return [{"module": "cs3api4lab"}]
+
+
+def _load_jupyter_server_extension(server_app):
+    """Registers the API handler to receive HTTP requests from the frontend extension.
+    Parameters
+    ----------
+    server_app: jupyterlab.labapp.LabApp
+        JupyterLab application instance
+    """
+    url_path = "cs3api4lab"
+    setup_handlers(server_app.web_app, url_path)
+    server_app.log.info(
+        f"Registered cs3api4lab extension at URL path /{url_path}"
+    )
+
+# For backward compatibility with the classical notebook
+load_jupyter_server_extension = _load_jupyter_server_extension

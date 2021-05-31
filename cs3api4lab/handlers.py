@@ -1,6 +1,18 @@
+import os
+import json
+
+from notebook.base.handlers import APIHandler
+from notebook.utils import url_path_join
+
+import tornado
+from tornado.web import StaticFileHandler
+
 from notebook.base.handlers import APIHandler
 from tornado import gen, web
+from tornado.web import StaticFileHandler
+from notebook.utils import url_path_join
 import json
+import os
 from grpc._channel import _InactiveRpcError
 
 from cs3api4lab.exception.exceptions import *
@@ -8,7 +20,7 @@ from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
-
+from notebook.utils import url_path_join
 
 class ShareHandler(APIHandler):
     @property
@@ -262,20 +274,27 @@ class UserQueryHandler(APIHandler):
         query = self.get_query_argument('query')
         RequestHandler.handle_request(self, self.user_api.find_users_by_query, 200, query)
 
-handlers = [
-    (r"/api/cs3/shares", ShareHandler),
-    (r"/api/cs3/shares/list", ListSharesHandler),
-    (r"/api/cs3/shares/received", ListReceivedSharesHandler),
-    (r"/api/cs3/shares/file", ListSharesForFile),
-    (r"/api/cs3/public/shares", PublicSharesHandler),
-    (r"/api/cs3/public/shares/list", ListPublicSharesHandler),
-    (r"/api/cs3/public/share", GetPublicShareByTokenHandler),
-    (r"/api/cs3/ocm", OcmSharesHandler),
-    (r"/api/cs3/ocm/received", OcmReceivedSharesHandler),
-    (r"/api/cs3/user", UserInfoHandler),
-    (r"/api/cs3/user/claim", UserInfoClaimHandler),
-    (r"/api/cs3/user/query", UserQueryHandler)
-]
+def setup_handlers(web_app, url_path):
+    handlers = [
+        (r"/api/cs3/shares", ShareHandler),
+        (r"/api/cs3/shares/list", ListSharesHandler),
+        (r"/api/cs3/shares/received", ListReceivedSharesHandler),
+        (r"/api/cs3/shares/file", ListSharesForFile),
+        (r"/api/cs3/public/shares", PublicSharesHandler),
+        (r"/api/cs3/public/shares/list", ListPublicSharesHandler),
+        (r"/api/cs3/public/share", GetPublicShareByTokenHandler),
+        (r"/api/cs3/ocm", OcmSharesHandler),
+        (r"/api/cs3/ocm/received", OcmReceivedSharesHandler),
+        (r"/api/cs3/user", UserInfoHandler),
+        (r"/api/cs3/user/claim", UserInfoClaimHandler),
+        (r"/api/cs3/user/query", UserQueryHandler)
+    ]
+
+    for handler in handlers:
+        pattern = url_path_join(web_app.settings['base_url'], handler[0])
+        new_handler = tuple([pattern] + list(handler[1:]))
+        print("ADDING HANDLER " + str(handler))
+        web_app.add_handlers('.*$', [new_handler])
 
 
 class RequestHandler(APIHandler):
@@ -320,3 +339,4 @@ class RequestHandler(APIHandler):
             return 503
         else:
             return 500
+
