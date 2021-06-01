@@ -293,7 +293,6 @@ def setup_handlers(web_app, url_path):
     for handler in handlers:
         pattern = url_path_join(web_app.settings['base_url'], handler[0])
         new_handler = tuple([pattern] + list(handler[1:]))
-        print("ADDING HANDLER " + str(handler))
         web_app.add_handlers('.*$', [new_handler])
 
 

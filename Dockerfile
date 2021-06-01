@@ -28,8 +28,7 @@ RUN cd /opt/cs3 && \
     jupyter lab --generate-config -y && \
     rm -rf "/home/${NB_USER}/.cache/yarn" && \
     rm -rf "/home/${NB_USER}/.node-gyp" && \
-    sed -i -e '$ac.NotebookApp.contents_manager_class = \x27cs3api4lab.api.cs3apismanager.CS3APIsManager\x27' /etc/jupyter/jupyter_notebook_config.py && \
-    sed -i -e '$ac.ServerApp.contents_manager_class = \x27cs3api4lab.api.cs3apismanager.CS3APIsManager\x27' /etc/jupyter/jupyter_server_config.py
+    sed -i -e '$ac.NotebookApp.contents_manager_class = \x27cs3api4lab.CS3APIsManager\x27' /etc/jupyter/jupyter_notebook_config.py
 
 ENV JUPYTER_ENABLE_LAB = 1
 
