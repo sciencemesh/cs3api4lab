@@ -13,7 +13,7 @@ the default managers.
 
 ## Requirements
 
-* JupyterLab >= 2.0
+* JupyterLab >= 3.0
 
 ## Install
 
@@ -27,10 +27,10 @@ jupyter serverextension enable --py cs3api4lab --sys-prefix
 jupyter labextension install @sciencemesh/cs3api4lab
 ```
 
-To enable the Manager, the following configuration needs to be added to `jupyter_notebook_config.py`:
+To enable the Manager, the following configuration needs to be added to `jupyter_server_config.py`:
 
 ```python
-c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
+c.ServerApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
 ```
 
 ## Contributing
@@ -51,9 +51,6 @@ cd cs3api4lab
 # Install the contents manager
 pip install -e .
 
-# Register server extension
-jupyter serverextension enable --py cs3api4lab --sys-prefix
-
 # Install dependencies
 jlpm
 
@@ -61,10 +58,7 @@ jlpm
 jlpm build
 
 # Link your development version of the extension with JupyterLab
-jupyter labextension install .
-
-# Rebuild Typescript source after making changes
-jlpm build
+jupyter labextension develop . --overwrite
 
 # Rebuild JupyterLab after making any changes
 jupyter lab build
@@ -121,20 +115,20 @@ python test_cs3apismanager.py
 
 Create config:
 ```
-jupyter notebook --generate-config
+jupyter server --generate-config
 ```
 
 Enable CS3 File Content Manager
-Replace in file HOME_FOLDER/.jupyter/jupyter_notebook_config.py line 
+Replace in file HOME_FOLDER/.jupyter/jupyter_server_config.py line 
 
 ```
-c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemanager.LargeFileManager'
+c.ServerApp.contents_manager_class = 'notebook.services.contents.largefilemanager.LargeFileManager'
 ```
 
 to
 
 ```
-c.NotebookApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
+c.ServerApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
 ```
 
 ### CS3 config file
@@ -251,7 +245,7 @@ Available environmental variables:
 ```
 Run docker image providing necessary variables:
 ```bash
-docker run -p 8888:8888 -e CS3_CLIENT_ID=einstein -e CS3_REVA_HOST=127.0.0.1:19000 cs3api4lab
+docker run -p 8888:8888 -e CS3_CLIENT_ID=einstein -e CS3_CLIENT_SECRET=relativity -e CS3_REVA_HOST=localhost:19000 cs3api4lab
 ```
 Run docker image after overwriting the config variables explicitly or in the reva_config.env:
 ```bash
@@ -261,18 +255,8 @@ docker run -p 8888:8888 --env-file reva_config.env cs3api4lab
 ### Quick build
 ```bash
 pip install -e .
-jupyter serverextension enable --py cs3api4lab --sys-prefix
 jlpm
 jlpm build
-jupyter labextension install .
-jlpm build
-jupyter lab build
 jupyter lab 
 
-```
-
-### Quick build python
-```bash
-jupyter labextension install .
-jupyter lab
 ```

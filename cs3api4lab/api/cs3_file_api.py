@@ -68,7 +68,18 @@ class Cs3FileApi:
             }
 
         self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_id, stat_info.status.message))
-        raise FileNotFoundError(stat_info.status.message + ", file " + file_id)
+        return {
+            'inode': {'storage_id': '',
+                      'opaque_id': ''},
+            'filepath': '',
+            'userid': '',
+            'size': '',
+            'mtime': '',
+            'type': '',
+            'mime_type': '',
+            'idp': '',
+            'permissions': ''
+        }
 
     def read_file(self, file_path, endpoint=None):
         """

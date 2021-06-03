@@ -8,7 +8,7 @@ export const findFileIcon = (fileInfo: Contents.IModel): LabIcon => {
     const splitName = fileInfo.name.split('.');
     const fileExtension = '.' + splitName[splitName.length - 1];
 
-    const fileType = DocumentRegistry.defaultFileTypes.filter(
+    const fileType = DocumentRegistry.getDefaultFileTypes().filter(
         (fileType: Partial<DocumentRegistry.IFileType>) => {
             return (
                 fileType.contentType == 'directory' ||

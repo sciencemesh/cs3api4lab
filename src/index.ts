@@ -1,6 +1,5 @@
 import {
     ILabShell,
-    // ILayoutRestorer,
     IRouter,
     JupyterFrontEnd,
     JupyterFrontEndPlugin,
@@ -14,7 +13,7 @@ import {IFileBrowserFactory} from '@jupyterlab/filebrowser/lib/tokens';
 import {each} from '@lumino/algorithm';
 
 import {CS3Contents, CS3ContentsShareByMe, CS3ContentsShareWithMe} from './drive';
-import {FileBrowser, FileBrowserModel} from '@jupyterlab/filebrowser';
+import {FileBrowser, FilterFileBrowserModel} from '@jupyterlab/filebrowser';
 import {ShareWidget} from './createShare';
 import {InfoboxWidget} from './infobox';
 import {Cs3BottomWidget, Cs3HeaderWidget, Cs3Panel, Cs3TabWidget} from './cs3panel';
@@ -38,6 +37,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
         provides: IFileBrowserFactory,
         requires: [IDocumentManager],
         optional: [IStateDB, IRouter, JupyterFrontEnd.ITreeResolver],
+        autoStart: true,
         activate: (
             app: JupyterFrontEnd,
             docManager: IDocumentManager,
@@ -49,7 +49,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
                 id: string,
                 options: IFileBrowserFactory.IOptions = {}
             ) => {
-                const model = new FileBrowserModel({
+                const model = new FilterFileBrowserModel({
                     auto: options.auto ?? true,
                     manager: docManager,
                     driveName: options.driveName || '',
@@ -214,7 +214,6 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         // Share split panel
         //
         const splitPanel = new SplitPanel();
-        splitPanel.id = 'split-panel-example';
         splitPanel.spacing = 5;
         splitPanel.orientation = 'vertical';
         splitPanel.title.iconClass = 'jp-example-view';
@@ -264,6 +263,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         });
 
         app.shell.add(cs3Panel, 'left', {rank: 103});
+        cs3Panel.activate();
     }
 }
 
@@ -272,9 +272,9 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
  * Export the plugins as default.
  */
 const plugins: JupyterFrontEndPlugin<any>[] = [
+    cs3browser,
     factory,
     cs3info,
-    cs3share,
-    cs3browser
+    cs3share
 ];
 export default plugins;
