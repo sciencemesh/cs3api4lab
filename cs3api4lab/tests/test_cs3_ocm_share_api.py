@@ -30,7 +30,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         created_share = self._create_share()
         self.share_id = created_share['id']
         try:
-            if self.api.get_ocm_shares(self.share_id)['id'] is None:
+            if self.api.list(self.share_id)['id'] is None:
                 raise Exception("Share not created")
         finally:
             self._clear_shares()
@@ -39,8 +39,8 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         created_share = self._create_share()
         self.share_id = created_share['id']
         try:
-            self.api.update_ocm_share(self.share_id, 'permissions', ['editor', True])
-            if self.api.get_ocm_shares(self.share_id)['permissions'] != 'editor':
+            self.api.update(self.share_id, 'permissions', ['editor', True])
+            if self.api.list(self.share_id)['permissions'] != 'editor':
                 raise Exception("Permissions not updated")
         finally:
             self._clear_shares()
@@ -49,10 +49,10 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         created_share = self._create_share()
         self.share_id = created_share['id']
         try:
-            if self.api.get_ocm_shares(self.share_id)['id'] == '':
+            if self.api.list(self.share_id)['id'] == '':
                 raise Exception("Share not created")
-            self.api.remove_ocm_share(self.share_id)
-            if self.api.get_ocm_shares(self.share_id)['id'] != '':
+            self.api.remove(self.share_id)
+            if self.api.list(self.share_id)['id'] != '':
                 raise Exception("Share not removed")
         finally:
             self._remove_test_file()
@@ -61,7 +61,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
         created_share = self._create_share()
         self.share_id = created_share['id']
         try:
-            share = self.api.get_ocm_shares(share_id=self.share_id)
+            share = self.api.list(share_id=self.share_id)
             if share['id'] != self.share_id:
                 raise Exception("Shares not listed")
         finally:
@@ -73,22 +73,22 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
     def _clear_shares(self):
         try:
-            self.api.remove_ocm_share(self.share_id)
+            self.api.remove(self.share_id)
             self._remove_test_file()
         except IOError as e:
             print("Error remove file:", e)
 
     def _create_test_share(self, receiver_id='f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c', receiver_idp='cesnet.cz'):
         file_path = self.config['home_dir'] + self.file_path
-        return self.api.create_ocm_share(receiver_id,
-                                         receiver_idp,
-                                         receiver_idp,
-                                         self.config['endpoint'],
-                                         file_path, self.receiver_grantee_type,
-                                         self.receiver_role, True)
+        return self.api.create(receiver_id,
+                               receiver_idp,
+                               receiver_idp,
+                               self.config['endpoint'],
+                               file_path, self.receiver_grantee_type,
+                               self.receiver_role, True)
 
     def _remove_test_share(self, share_id):
-        self.api.remove_ocm_share(share_id)
+        self.api.remove(share_id)
 
     def _create_test_file(self):
         self.storage.write_file(self.file_path,

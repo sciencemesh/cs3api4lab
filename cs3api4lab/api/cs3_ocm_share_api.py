@@ -26,6 +26,9 @@ import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 
 from cs3api4lab.api.share_utils import ShareUtils
 from cs3api4lab.common.strings import *
+from cs3.storage.provider.v1beta1.resources_pb2 import *
+
+from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 
 
 class Cs3OcmShareApi:
@@ -44,18 +47,18 @@ class Cs3OcmShareApi:
         self.provider_api = ocm_provider_api_grpc.ProviderAPIStub(channel)
         return
 
-    def create_ocm_share(self, grantee_opaque, idp, domain, endpoint, file_path, grantee_type, role, reshare):
+    def create(self, opaque_id, idp, domain, endpoint, file_path, grantee_type=GRANTEE_TYPE_USER, role=Role.EDITOR, reshare=True):
         opaque = cs3_types.Opaque(
             map={"permissions": cs3_types.OpaqueEntry(decoder="plain",
                                                       value=str.encode(self._map_role(role))),
                  "name": cs3_types.OpaqueEntry(decoder="plain",
                                                value=str.encode('my_resource_name'))})
         resource_id = storage_resources.ResourceId(storage_id=endpoint, opaque_id=file_path)
-        user_id = identity_res.UserId(idp=idp, opaque_id=grantee_opaque)
-        grantee_opaque = storage_resources.Grantee(type=ShareUtils.map_grantee(grantee_type), user_id=user_id)
+        user_id = identity_res.UserId(idp=idp, opaque_id=opaque_id)
+        opaque_id = storage_resources.Grantee(type=ShareUtils.map_grantee(grantee_type), user_id=user_id)
         perms = sharing_res.SharePermissions(permissions=ShareUtils.get_resource_permissions(role),
                                              reshare=bool(reshare))
-        grant = sharing_res.ShareGrant(permissions=perms, grantee=grantee_opaque)
+        grant = sharing_res.ShareGrant(permissions=perms, grantee=opaque_id)
         provider_info = self._get_provider_info(domain)
         request = ocm_api.CreateOCMShareRequest(opaque=opaque,
                                                 resource_id=resource_id,
@@ -64,24 +67,24 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.CreateOCMShare(request=request,
                                                      metadata=self._token())
         if self._is_code_ok(response):
-            self.log.info("OCM share created:\n" + response)
+            self.log.info("OCM share created:\n")
         else:
             self._handle_error(response, "Error creating OCM share")
         return self._map_share(response.share)
 
-    def remove_ocm_share(self, share_id):
+    def remove(self, share_id):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_obj)
         request = ocm_api.RemoveOCMShareRequest(ref=ref)
         response = self.ocm_share_api.RemoveOCMShare(request=request,
                                                      metadata=self._token())
         if self._is_code_ok(response):
-            self.log.info("OCM share deleted:\n" + response)
+            self.log.info("OCM share deleted: " + share_id)
             return
         else:
             self._handle_error(response, "Error removing OCM share")
 
-    def update_ocm_share(self, share_id, field, value):
+    def update(self, share_id, field, value):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_obj)
         if field == 'permissions':
@@ -107,8 +110,8 @@ class Cs3OcmShareApi:
         else:
             self._handle_error(response, "Error updating OCM share:")
 
-    def update_received_ocm_share(self, share_id, field, value):
-        share_id_obj = sharing_res.ShareId(opaque_id=share_id)
+    def update_received(self, ocm_share_id, field, value):
+        share_id_obj = sharing_res.ShareId(opaque_id=ocm_share_id)
         ref = sharing_res.ShareReference(id=share_id_obj)
         if field == 'display_name':
             request = ocm_api.UpdateReceivedOCMShareRequest(ref=ref,
@@ -128,13 +131,13 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.UpdateReceivedOCMShare(request=request,
                                                              metadata=self._token())
         if self._is_code_ok(response):
-            self.log.info("OCM received share updated:\n" + response)
+            self.log.info("OCM received share updated: " + ocm_share_id)
             return
         else:
             self._handle_error(response, "Error updating OCM received share:")
         return response
 
-    def get_ocm_shares(self, share_id):
+    def list(self, share_id=None):
         if share_id is None:
             return self._list_ocm_shares()
         else:
@@ -146,7 +149,7 @@ class Cs3OcmShareApi:
                                                     metadata=self._token())
         if not self._is_code_ok(response):
             self._handle_error(response, "Error listing OCM share:")
-        return self._map_ocm_shares(response)
+        return response
 
     def _get_ocm_share(self, share_id):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
@@ -157,17 +160,17 @@ class Cs3OcmShareApi:
 
     def get_received_ocm_shares(self, share_id):
         if share_id is None:
-            return self._list_received_shares()
+            return self.list_received()
         else:
             return self._get_received_share(share_id)
 
-    def _list_received_shares(self):
+    def list_received(self):
         request = ocm_api.ListReceivedOCMSharesRequest()
         response = self.ocm_share_api.ListReceivedOCMShares(request=request,
                                                             metadata=self._token())
         if not self._is_code_ok(response):
             self._handle_error("Error listing OCM received shares:", response)
-        return self._map_ocm_shares(response, received=True)
+        return response
 
     def _get_received_share(self, share_id):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
@@ -175,8 +178,6 @@ class Cs3OcmShareApi:
         request = ocm_api.GetReceivedOCMShareRequest(ref=ref)
         response = self.ocm_share_api.GetReceivedOCMShare(request=request,
                                                           metadata=self._token())
-        if not self._is_code_ok(response):
-            self._handle_error("Error listing OCM received share:", response)
         return self._map_share(response.share.share, response.share.state)
 
     def _map_ocm_shares(self, list_response, received=False):

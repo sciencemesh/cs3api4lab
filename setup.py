@@ -72,7 +72,8 @@ setup_args = dict(
         "grpcio-tools",
         "PyJWT==1.7.1",
         "setuptools==56.0.0",
-        "jupyter_packaging==0.9.2"
+        "jupyter_packaging==0.9.2",
+        "webdavclient3"
     ],
     zip_safe=False,
     include_package_data=True,

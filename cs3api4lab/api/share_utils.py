@@ -23,6 +23,7 @@ class ShareUtils:
     @staticmethod
     def map_state(state):
         if isinstance(state, str):
+            state = str.lower(state)
             if state == State.PENDING:
                 return sharing_res.SHARE_STATE_PENDING
             elif state == State.ACCEPTED:
@@ -33,13 +34,17 @@ class ShareUtils:
                 return sharing_res.SHARE_STATE_INVALID
         else:
             if state == sharing_res.SHARE_STATE_PENDING:
-                return State.ACCEPTED
+                return State.PENDING
             elif state == sharing_res.SHARE_STATE_ACCEPTED:
                 return State.ACCEPTED
             elif state == sharing_res.SHARE_STATE_REJECTED:
                 return State.REJECTED
             elif state == sharing_res.SHARE_STATE_INVALID:
                 return State.INVALID
+
+    @staticmethod
+    def is_accepted(state):
+        return ShareUtils.map_state(state) == State.ACCEPTED
 
     @staticmethod
     def get_resource_permissions(role):
