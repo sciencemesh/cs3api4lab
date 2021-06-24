@@ -1,5 +1,5 @@
 import {ReactWidget} from '@jupyterlab/apputils';
-import React, {useEffect, useState} from 'react';
+import React, { useState} from 'react';
 import {Contents} from '@jupyterlab/services';
 import {requestAPI} from './services';
 import {
@@ -9,7 +9,7 @@ import {
     UsersRequest,
     WidgetProps
 } from './types';
-import Select from 'react-dropdown-select';
+import Select, {SelectRenderer} from 'react-dropdown-select';
 
 /**
  * Request results panel.
@@ -29,15 +29,15 @@ const Results = (props: ResultProps): JSX.Element => {
 /**
  * Share form widget.
  *
- * @param props
+ * @param shareProps
  *
  * @constructor
  */
 const ShareForm: React.FC<ShareFormProps> = (
-    props: ShareFormProps
+    shareProps: ShareFormProps
 ): JSX.Element => {
-    const [userList, setUserList] = useState([{}]);
-    const [selectedUser, setSelectedUser] = useState([
+    const [userList, setUserList] = useState([]);
+    const [selectedUser] = useState([
         {
             idp: '',
             grantee: ''
@@ -46,19 +46,18 @@ const ShareForm: React.FC<ShareFormProps> = (
 
     const [formValues, setFormState] = useState({
         endpoint: '/',
-        file_path: '/home/' + props.fileInfo.path.replace('cs3drive:', ''),
+        file_path: '/home/' + shareProps.fileInfo.path.replace('cs3drive:', ''),
         grantee: '',
         idp: '',
         role: 'viewer',
         grantee_type: 'user'
     });
 
-    const setValues = (selectValues: Array<any>) => {
-        setSelectedUser(selectValues);
-    };
+    const getUsers = ({state}: SelectRenderer<Object>): Array<string> => {
+        if (state.search.length <= 0)
+            return [];
 
-    useEffect(() => {
-        props.getUsers('').then(users => {
+        shareProps.getUsers(state.search).then(users => {
             const parsedUsers: Array<object> = [];
 
             let i = 1;
@@ -71,9 +70,12 @@ const ShareForm: React.FC<ShareFormProps> = (
                     grantee: user.opaque_id
                 });
             }
+
             setUserList(parsedUsers);
         });
-    }, []);
+
+        return [];
+    }
 
     const setFormStateFromValues = (
         param:
@@ -92,7 +94,7 @@ const ShareForm: React.FC<ShareFormProps> = (
         _formValues.idp = user.idp;
         _formValues.grantee = user.grantee;
 
-        props.makeRequest(_formValues);
+        shareProps.makeRequest(_formValues);
     };
 
     return (
@@ -104,9 +106,11 @@ const ShareForm: React.FC<ShareFormProps> = (
                         searchable={true}
                         options={userList}
                         values={[]}
+                        create={false}
                         valueField="name"
                         labelField="displayName"
-                        onChange={setValues}
+                        onChange={() => {}}
+                        handleKeyDownFn={getUsers}
                     />
                 </div>
             </div>
@@ -119,16 +123,6 @@ const ShareForm: React.FC<ShareFormProps> = (
                     </select>
                 </div>
             </div>
-
-            {/*<div>*/}
-            {/*    <div>Grantee Type</div>*/}
-            {/*    <div>*/}
-            {/*        <select name='grantee_type' id='grantee_type' onChange={setFormStateFromValues}>*/}
-            {/*            <option value='user'>User</option>*/}
-            {/*            <option value="group">Group</option>*/}
-            {/*        </select>*/}
-            {/*    </div>*/}
-            {/*</div>*/}
 
             <button onClick={localMakeRequest}>Make request</button>
         </div>
