@@ -102,6 +102,7 @@ class Cs3FileApi:
         file_get = None
         try:
             protocol = [p for p in init_file_download.protocols if p.protocol == "simple"][0]
+            # if file is shared via OCM the request needs to go through webdav
             if protocol.opaque and init_file_download.protocols[0].opaque.map['webdav-file-path'].value:
                 download_url = protocol.download_endpoint + str(protocol.opaque.map['webdav-file-path'].value, 'utf-8')[1:]
                 file_get = webdav.Client({}).session.request(

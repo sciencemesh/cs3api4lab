@@ -16,6 +16,7 @@ from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 import urllib.parse
 from cs3api4lab.api.share_utils import ShareUtils
 
+
 class ShareAPIFacade:
     date_fmt = '%Y-%m-%dT%H:%M:%SZ'
     TYPE_FILE = 1
@@ -36,55 +37,86 @@ class ShareAPIFacade:
         return
 
     def create(self, endpoint, file_path, opaque_id, idp, role=Role.EDITOR, grantee_type=Grantee.USER, reshare=True):
+        """Creates a share or creates an OCM share if the user is not found in local domain"""
         if self._is_ocm_user(opaque_id, idp):
             return self.ocm_share_api.create(opaque_id, idp, idp, endpoint, file_path, grantee_type, role, reshare)
         else:
             return self.share_api.create(endpoint, file_path, opaque_id, idp, role, grantee_type)
 
     def update_share(self, **kwargs):
+        """Updates a field of a share
+        Paramterers:
+            :param share_id
+            :param role: EDITOR/VIEWER
+        Parameters for OCM:
+            :param share_id
+            :param permissions: EDITOR/VIEWER or
+            :param display_name
+        """
         if 'role' in kwargs:
             self.share_api.update(kwargs['share_id'], kwargs['role'])
         else:
             self.ocm_share_api.update(kwargs['share_id'], kwargs['field'], kwargs['value'])
 
     def update_received(self, share_id, state):
+        """Updates share's state
+        :param share_id
+        :param state: accepted/rejected/pending/invalid
+        """
         if self.is_ocm_received_share(share_id):
             self.ocm_share_api.update_received(share_id, 'state', state)
         else:
-            self.share_api.update_received(share_id, State.ACCEPTED)
+            self.share_api.update_received(share_id, state)
 
     def remove(self, share_id):
+        """Removes a share with given id """
         if self.is_ocm_share(share_id):
             return self.ocm_share_api.remove(share_id)
         else:
             return self.share_api.remove(share_id)
 
     def list_shares(self):
+        """
+        :return: created shares and OCM shares combined and mapped to Jupyter model
+        :rtype: dict
+        """
         share_list = self.share_api.list()
         ocm_share_list = self.ocm_share_api.list()
         return self.map_shares(share_list, ocm_share_list)
 
     def list_received(self):
+        """
+        :return: received shares and OCM received shares combined and mapped to Jupyter model
+        :rtype: dict
+        """
         share_list = self.share_api.list_received()
         ocm_share_list = self.ocm_share_api.list_received()
         return self.map_shares(share_list, ocm_share_list, True)
 
     def list_grantees_for_file(self, file_path):
+        """
+        :param file_path: path to the file
+        :return: list of users
+        """
         return self.share_api.list_grantees_for_file(file_path)
 
     def _token(self):
         return [('x-access-token', self.auth.authenticate())]
 
     def _is_ocm_user(self, opaque_id, idp):
+        """Checks if user is present in local provider"""
         return not bool(self.user_api.get_user_info(idp, opaque_id))
 
     def is_ocm_share(self, share_id):
+        """Checks if share is present on OCM shares list"""
         return self.ocm_share_api.list(share_id)['id'] != ''
 
     def is_ocm_received_share(self, share_id):
+        """Checks if share is present on OCM received shares list"""
         return self.ocm_share_api.get_received_ocm_shares(share_id)['id'] != ''
 
     def map_shares(self, share_list, ocm_share_list, received=False):
+        """Converts both types of shares into Jupyter model"""
         share_list_mapped = self.map_shares_to_model(share_list, received)
         ocm_share_list_mapped = self.map_shares_to_model(ocm_share_list, received)
         for share in ocm_share_list_mapped['content']:

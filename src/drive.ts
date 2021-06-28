@@ -40,7 +40,6 @@ export class CS3Contents implements Contents.IDrive {
         };
 
         this._state = stateDB;
-
         console.log(
             'CS3Contents: ',
             this._docRegistry,
