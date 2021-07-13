@@ -5,9 +5,6 @@ CS3 Share API for the JupyterLab Extension
 
 Authors:
 """
-import mimetypes
-from datetime import datetime
-
 import urllib.parse
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
 import cs3.sharing.collaboration.v1beta1.resources_pb2 as sharing_res
@@ -16,8 +13,6 @@ import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
 import grpc
-
-from IPython.utils import tz
 
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
@@ -28,6 +23,7 @@ from cs3api4lab.config.config_manager import Cs3ConfigManager
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.exception.exceptions import *
+from cs3api4lab.api.share_utils import ShareUtils
 
 
 class Cs3ShareApi:
@@ -36,10 +32,6 @@ class Cs3ShareApi:
     auth = None
     config = {}
     file_api = None
-    date_fmt = '%Y-%m-%dT%H:%M:%SZ'
-
-    TYPE_FILE = 1
-    TYPE_DIRECTORY = 2
 
     def __init__(self, log):
         self.log = log
@@ -54,7 +46,7 @@ class Cs3ShareApi:
         self.cs3_api = grpc_gateway.GatewayAPIStub(intercept_channel)
         return
 
-    def create(self, endpoint, file_path, grantee, idp, role=Role.VIEWER, grantee_type=Grantee.USER):
+    def create(self, endpoint, file_path, grantee, idp, role, grantee_type):
         share_permissions = self._get_share_permissions(role)
         grantee_type_enum = self._get_grantee_type(grantee_type)
         share_grant = self._get_share_grant(grantee_type_enum, share_permissions, idp, grantee)
@@ -72,9 +64,9 @@ class Cs3ShareApi:
                                           + endpoint + file_path
                                           + " for " + idp + ":" + grantee)
 
-    def list_dir_model(self):
+    def list(self):
         list_response = self._list()
-        return self._map_shares_to_model(list_response)
+        return list_response
 
     def _list(self):
         list_request = sharing.ListSharesRequest()
@@ -187,10 +179,10 @@ class Cs3ShareApi:
         if self._is_code_ok(list_response):
             self.log.info("Retrieved received shares for user: " + self.config['client_id'])
             self.log.info(list_response)
+            return list_response
         else:
             self.log.error("Error retrieving received shares for user: " + self.config['client_id'])
             self._handle_error(list_response)
-        return self._map_shares_to_model(list_response, received=True)
 
     def _map_received_shares(self, list_res):
         shares = []
@@ -215,7 +207,7 @@ class Cs3ShareApi:
                     "idp": share.share.creator.idp,
                     "opaque_id": share.share.creator.opaque_id
                 },
-                "state": self._map_share_state(share.state)
+                "state": ShareUtils.map_state(share.state)
             })
 
         return shares
@@ -256,10 +248,10 @@ class Cs3ShareApi:
         if share.grantee.type == storage_resources.GranteeType.GRANTEE_TYPE_GROUP:
             return Grantee.GROUP
 
-    def update_received(self, share_id, state=State.PENDING):
+    def update_received(self, share_id, state=State.ACCEPTED):
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_object)
-        share_state = self._map_share_state(state)
+        share_state = ShareUtils.map_state(state)
         update_request = sharing.UpdateReceivedShareRequest(ref=ref,
                                                             field=sharing.UpdateReceivedShareRequest.UpdateField(
                                                                 state=share_state))
@@ -323,28 +315,6 @@ class Cs3ShareApi:
         else:
             raise InvalidTypeError("Invalid role")
 
-    def _map_share_state(self, state):
-        if isinstance(state, str):
-            if state == State.PENDING:
-                return sharing_res.SHARE_STATE_PENDING
-            elif state == State.ACCEPTED:
-                return sharing_res.SHARE_STATE_ACCEPTED
-            elif state == State.REJECTED:
-                return sharing_res.SHARE_STATE_REJECTED
-            elif state == State.INVALID:
-                return sharing_res.SHARE_STATE_INVALID
-        else:
-            if state == sharing_res.SHARE_STATE_PENDING:
-                return State.ACCEPTED
-            elif state == sharing_res.SHARE_STATE_ACCEPTED:
-                return State.ACCEPTED
-            elif state == sharing_res.SHARE_STATE_REJECTED:
-                return State.REJECTED
-            elif state == sharing_res.SHARE_STATE_INVALID:
-                return State.INVALID
-
-        raise InvalidTypeError("Invalid share state")
-
     def _is_code_ok(self, response):
         return response.status.code == cs3_code.CODE_OK
 
@@ -354,81 +324,3 @@ class Cs3ShareApi:
 
     def get_token(self):
         return self.auth.authenticate()
-
-    def _map_shares_to_model(self, list_response, received=False):
-
-        respond_model = self._create_respond_model()
-        path_list = []
-        for share in list_response.shares:
-            if received:
-                share = share.share
-
-            stat = self.file_api.stat(share.resource_id.opaque_id, share.resource_id.storage_id)
-
-            if stat['type'] == self.TYPE_FILE:
-                if hasattr(share.permissions.permissions, 'initiate_file_download') and share.permissions.permissions.initiate_file_download is False:
-                    continue
-                model = self._map_share_to_file_model(share, stat)
-            else:
-                if hasattr(share.permissions.permissions, 'list_container') and share.permissions.permissions.list_container is False:
-                    continue
-                model = self._map_share_to_dir_model(share, stat)
-
-            if model['path'] not in path_list:
-                respond_model['content'].append(model)
-                path_list.append(model['path'])
-
-        return respond_model
-
-    def _create_respond_model(self):
-
-        model = {}
-        model['name'] = "/"
-        model['path'] = "/"
-        model['last_modified'] = datetime.now(tz=tz.UTC).strftime(self.date_fmt)
-        model['created'] = datetime.now(tz=tz.UTC).strftime(self.date_fmt)
-        model['mimetype'] = None
-        model['writable'] = False
-        model['type'] = None
-        model['size'] = None
-        model['type'] = 'directory'
-        model['content'] = []
-        model['format'] = 'json'
-
-        return model
-
-    def _map_share_to_base_model(self, share, stat):
-
-        created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime(self.date_fmt)
-        last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime(self.date_fmt)
-
-        writable = False
-        if hasattr(share.permissions.permissions, 'initiate_file_upload') and share.permissions.permissions.initiate_file_upload is True:
-            writable = True
-
-        model = {}
-        model['name'] = stat['filepath'].rsplit('/', 1)[-1]
-        model['path'] = stat['filepath']
-        model['last_modified'] = last_modified
-        model['created'] = created
-        model['content'] = None
-        model['format'] = None
-        model['writable'] = writable
-        return model
-
-    def _map_share_to_file_model(self, share, stat):
-
-        model = self._map_share_to_base_model(share, stat)
-        model['size'] = stat['size']
-        model['type'] = 'file'
-        model['mimetype'] = mimetypes.guess_type(stat['filepath'])[0]
-
-        return model
-
-    def _map_share_to_dir_model(self, share, stat):
-
-        model = self._map_share_to_base_model(share, stat)
-        model['size'] = None
-        model['type'] = 'directory'
-        model['mimetype'] = None
-        return model

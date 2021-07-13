@@ -1,22 +1,11 @@
-import os
-import json
-
-from notebook.base.handlers import APIHandler
-from notebook.utils import url_path_join
-
-import tornado
-from tornado.web import StaticFileHandler
-
 from notebook.base.handlers import APIHandler
 from tornado import gen, web
-from tornado.web import StaticFileHandler
-from notebook.utils import url_path_join
 import json
 import os
 from grpc._channel import _InactiveRpcError
 
 from cs3api4lab.exception.exceptions import *
-from cs3api4lab.api.cs3_share_api import Cs3ShareApi
+from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
@@ -25,7 +14,7 @@ from notebook.utils import url_path_join
 class ShareHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(self.log)
+        return ShareAPIFacade(self.log)
 
     @web.authenticated
     @gen.coroutine
@@ -54,7 +43,7 @@ class ShareHandler(APIHandler):
         request = self.get_json_body()
         try:
             RequestHandler.handle_request(self,
-                                          self.share_api.update,
+                                          self.share_api.update_share,
                                           204,
                                           request['share_id'],
                                           request['role'])
@@ -65,18 +54,18 @@ class ShareHandler(APIHandler):
 class ListSharesHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(self.log)
+        return ShareAPIFacade(self.log)
 
     @web.authenticated
     @gen.coroutine
     def get(self):
-        RequestHandler.handle_request(self, self.share_api.list_dir_model, 200)
+        RequestHandler.handle_request(self, self.share_api.list_shares, 200)
 
 
 class ListReceivedSharesHandler(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(self.log)
+        return ShareAPIFacade(self.log)
 
     @web.authenticated
     @gen.coroutine
@@ -94,7 +83,7 @@ class ListReceivedSharesHandler(APIHandler):
 class ListSharesForFile(APIHandler):
     @property
     def share_api(self):
-        return Cs3ShareApi(self.log)
+        return ShareAPIFacade(self.log)
 
     @web.authenticated
     @gen.coroutine

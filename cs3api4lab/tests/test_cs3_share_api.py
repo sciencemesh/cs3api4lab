@@ -32,7 +32,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
         created_share = self._create_share()
         self.share_id = created_share['opaque_id']
-        share_list = self.api.list_dir_model()
+        share_list = self.api.list()
 
         try:
             if not list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
@@ -47,7 +47,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
 
         self._create_test_share(self.receiver2_id, self.receiver2_idp)
 
-        share_list = self.api.list_dir_model()
+        share_list = self.api.list()
         self.assertEqual(len(share_list['content']), 1)
 
         try:
@@ -72,13 +72,13 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     def test_remove(self):
         created_share = self._create_share()
         self.share_id = created_share['opaque_id']
-        share_list = self.api.list_dir_model()
+        share_list = self.api.list()
         try:
             if not list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
                 raise Exception("Share not created")
         finally:
             self.api.remove(self.share_id)
-        share_list = self.api.list_dir_model()
+        share_list = self.api.list()
         if list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
             raise Exception("Share not removed")
 

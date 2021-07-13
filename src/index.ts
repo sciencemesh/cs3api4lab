@@ -214,6 +214,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         // Share split panel
         //
         const splitPanel = new SplitPanel();
+        splitPanel.id = 'split-panel-example';
         splitPanel.spacing = 5;
         splitPanel.orientation = 'vertical';
         splitPanel.title.iconClass = 'jp-example-view';

@@ -67,12 +67,13 @@ setup_args = dict(
     packages=setuptools.find_packages(),
     install_requires=[
         "jupyterlab~=3.0",
-        "cs3apis",
+        "cs3apis==0.1.dev64",
         "grpcio",
         "grpcio-tools",
         "PyJWT==1.7.1",
         "setuptools==56.0.0",
-        "jupyter_packaging==0.9.2"
+        "jupyter_packaging==0.9.2",
+        "webdavclient3"
     ],
     zip_safe=False,
     include_package_data=True,

@@ -18,8 +18,8 @@ class Authenticator:
     def __init__(self, config=None, log=None):
         self.config = config
         self.log = log
-        channel = ChannelConnector().get_channel()
-        self.cs3_stub = cs3gw_grpc.GatewayAPIStub(channel)
+        self.channel = ChannelConnector().get_channel()
+        self.cs3_stub = cs3gw_grpc.GatewayAPIStub(self.channel)
 
     """
     Parent class for different authentication types. Authentication class must implement the authenticate method.
