@@ -394,29 +394,33 @@ class CS3APIsManager(ContentsManager):
             model['format'] = 'json'
 
             for cs3_model in cs3_container:
-                # ToDo: get data from cs3_model
-                if cs3_model.type == self.TYPE_DIRECTORY:
-                    sub_model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
-                    sub_model['size'] = None
-                    sub_model['type'] = 'directory'
-                    contents.append(sub_model)
+                if not self.is_hidden_file(cs3_model):
+                    # ToDo: get data from cs3_model
+                    if cs3_model.type == self.TYPE_DIRECTORY:
+                        sub_model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
+                        sub_model['size'] = None
+                        sub_model['type'] = 'directory'
+                        contents.append(sub_model)
 
-                elif cs3_model.type == self.TYPE_FILE:
+                    elif cs3_model.type == self.TYPE_FILE:
 
-                    if type == 'notebook' or (type is None and path.endswith('.ipynb')):
-                        contents.append(
-                            self._convert_container_to_notebook_model(cs3_model, cs3_container)
-                        )
+                        if type == 'notebook' or (type is None and path.endswith('.ipynb')):
+                            contents.append(
+                                self._convert_container_to_notebook_model(cs3_model, cs3_container)
+                            )
+                        else:
+                            contents.append(
+                                self._convert_container_to_file_model(cs3_model, cs3_container)
+                            )
                     else:
-                        contents.append(
-                            self._convert_container_to_file_model(cs3_model, cs3_container)
-                        )
-                else:
 
-                    self.log.error(u'Unexpected type: %s %s', cs3_model.path, cs3_model.type)
-                    raise web.HTTPError(500, u'Unexpected type: %s %s' % (cs3_model.path, cs3_model.type))
+                        self.log.error(u'Unexpected type: %s %s', cs3_model.path, cs3_model.type)
+                        raise web.HTTPError(500, u'Unexpected type: %s %s' % (cs3_model.path, cs3_model.type))
 
         return model
+
+    def is_hidden_file(self, cs3_model):
+        return cs3_model.id.opaque_id.split('%2F')[-1].startswith('.')
 
     def _convert_container_to_file_model(self, cs3_model, cs3_container):
 

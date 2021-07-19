@@ -39,6 +39,21 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
 
         self.storage.remove(file_id, self.endpoint)
 
+    def test_get_hidden_file(self):
+        file_id = "/test_get_text_file.txt"
+        hidden_file_id = "/.test_get_text_file.txt"
+        message = "Lorem ipsum dolor sit amet..."
+        self.storage.write_file(file_id, message, self.endpoint)
+        self.storage.write_file(hidden_file_id, message, self.endpoint)
+
+        model = self.contents_manager.get(file_id, True, None)
+        self.assertEqual(model["name"], "test_get_text_file.txt")
+        self.assertEqual(model["path"], file_id)
+        self.assertTrue(self.contents_manager.file_exists(hidden_file_id))
+
+        self.storage.remove(file_id, self.endpoint)
+        self.storage.remove(hidden_file_id, self.endpoint)
+
     def test_get_text_file_with_share_path(self):
         file_id = "/test_get_text_file.txt"
         share_file_id = "/reva/einstein/test_get_text_file.txt"
