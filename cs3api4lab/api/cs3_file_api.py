@@ -145,13 +145,11 @@ class Cs3FileApi:
         time_start = time.time()
         reference = file_utils.get_reference(file_path, endpoint)
 
-        if isinstance(content, str):
-            content_size = str(len(content))
-        else:
-            content_size = str(len(content.decode('utf-8')))
+        content_len = len(content.decode('utf-8'))
+        # providing '0' as size leads to unexpected additional file creation
+        content_size = str(content_len) if content_len > 0 else str(1)
 
-        meta_data = types.Opaque(
-            map={"Upload-Length": types.OpaqueEntry(decoder="plain", value=str.encode(content_size))})
+        meta_data = types.Opaque(map={"Upload-Length": types.OpaqueEntry(decoder="plain", value=str.encode(content_size))})
         req = cs3sp.InitiateFileUploadRequest(ref=reference, opaque=meta_data)
         init_file_upload_res = self.cs3_api.InitiateFileUpload(request=req, metadata=[
             ('x-access-token', self.auth.authenticate())])
