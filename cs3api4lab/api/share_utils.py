@@ -74,7 +74,6 @@ class ShareUtils:
             return None
         if permissions.get_path is True and \
                 permissions.initiate_file_download is True and \
-                permissions.list_grants is True and \
                 permissions.list_container is True and \
                 permissions.stat is True and \
                 permissions.create_container is True and \

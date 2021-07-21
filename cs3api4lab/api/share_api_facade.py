@@ -143,12 +143,14 @@ class ShareAPIFacade:
                                'list_container') and share.permissions.permissions.list_container is False:
                         continue
                     model = self._map_share_to_dir_model(share, stat)
+                model['writable'] = True if ShareUtils.map_permissions_to_role(share.permissions.permissions) == 'editor' else False
             except:
                 model = {'name': share.resource_id.opaque_id.rsplit('/', 1)[-1],
                          'path': share.resource_id.opaque_id,
                          'last_modified': '',
                          'created': '',
-                         'content': None, 'format': None,
+                         'content': None,
+                         'format': None,
                          'writable': False,
                          'size': 13,
                          'type':

@@ -8,6 +8,8 @@ from tornado import web
 from notebook import _tz as tz
 from nbformat.v4 import new_notebook
 from cs3api4lab.config.config_manager import Cs3ConfigManager
+from cs3api4lab.api.share_utils import ShareUtils
+from cs3api4lab.api.share_api_facade import ShareAPIFacade
 
 
 class CS3APIsManager(ContentsManager):
@@ -24,6 +26,7 @@ class CS3APIsManager(ContentsManager):
         self.cs3_config = Cs3ConfigManager.get_config()
         self.log = log
         self.file_api = Cs3FileApi(self.log)
+        self.share_api = ShareAPIFacade(log)
 
     def dir_exists(self, path):
         """Does a directory exist at the given path?
@@ -360,7 +363,7 @@ class CS3APIsManager(ContentsManager):
                 created = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
                 last_modified = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
 
-                if str(cs3_model.permission_set.create_container).lower() == "true":
+                if ShareUtils.map_permissions_to_role(cs3_model.permission_set) == "editor":
                     writable = True
 
         #
@@ -476,10 +479,12 @@ class CS3APIsManager(ContentsManager):
 
         parent = self._get_parent_path(path)
         stat = self.file_api.stat(parent)
-
-        if hasattr(stat['permissions'], 'initiate_file_upload') and stat['permissions'].initiate_file_upload is False \
-                and hasattr(stat['permissions'], 'create_container') and stat['permissions'].create_container is False:
-            raise web.HTTPError(400, u'The path %s is not writable' % parent)
+        if not ShareUtils.map_permissions_to_role(stat['permissions']) == 'editor':
+            raise web.HTTPError(403, u'The path %s is not writable' % parent)
+        # check if the path is a received share with editor permissions
+        for share in self.share_api.list_received()['content']:
+            if share['path'] == path and share['writable'] == False:
+                raise web.HTTPError(403, u'The share %s is not writable' % path)
 
     #
     # Notebook hack - disable checkpoint
