@@ -1,4 +1,3 @@
-import cs3.ocm.provider.v1beta1.provider_api_pb2_grpc as ocm_provider_api_grpc
 import mimetypes
 
 from datetime import datetime
@@ -7,14 +6,13 @@ from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.common.strings import *
 from cs3api4lab.config.config_manager import Cs3ConfigManager
-from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 
 from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
+from cs3api4lab.api.share_utils import ShareUtils
 
 import urllib.parse
-from cs3api4lab.api.share_utils import ShareUtils
 
 
 class ShareAPIFacade:
@@ -27,11 +25,7 @@ class ShareAPIFacade:
         self.config = Cs3ConfigManager().get_config()
         self.auth = Auth.get_authenticator(config=self.config, log=self.log)
         self.file_api = Cs3FileApi(log)
-
-        channel = ChannelConnector().get_channel()
-        self.provider_api = ocm_provider_api_grpc.ProviderAPIStub(channel)
         self.user_api = Cs3UserApi(log)
-
         self.share_api = Cs3ShareApi(log)
         self.ocm_share_api = Cs3OcmShareApi(log)
         return
@@ -96,9 +90,29 @@ class ShareAPIFacade:
     def list_grantees_for_file(self, file_path):
         """
         :param file_path: path to the file
-        :return: list of users
+        :return: list of grantees
         """
-        return self.share_api.list_grantees_for_file(file_path)
+        share_list = self.share_api.list()
+        ocm_share_list = self.ocm_share_api.list()
+        file_path = ShareUtils.purify_file_path(file_path, self.config['client_id'])
+        shares = []
+        for share in [*share_list.shares, *ocm_share_list.shares]:
+            path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id'])
+            if file_path == path:
+                shares.append(self._get_share_info(share))
+
+        response = {"file_path": file_path, "shares": shares}
+        return response
+
+    def _get_share_info(self, share):
+        return {
+            "opaque_id": share.id.opaque_id,
+            "grantee": {
+                "idp": share.grantee.user_id.idp,
+                "opaque_id": share.grantee.user_id.opaque_id,
+                "permissions": ShareUtils.map_permissions_to_role(share.permissions.permissions)
+            }
+        }
 
     def _token(self):
         return [('x-access-token', self.auth.authenticate())]
@@ -153,10 +167,8 @@ class ShareAPIFacade:
                          'format': None,
                          'writable': False,
                          'size': 13,
-                         'type':
-                         'file',
-                         'mimetype':
-                         'text/plain'}
+                         'type': 'file',
+                         'mimetype': 'text/plain'}
             if received:
                 model['accepted'] = ShareUtils.is_accepted(list_response.shares[share_no].state)
             if model['path'] not in path_list:

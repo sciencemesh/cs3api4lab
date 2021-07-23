@@ -204,7 +204,7 @@ const Shares = (props: SharesProps): JSX.Element => {
 
     useEffect(() => {
         const getGrantees = async (): Promise<any> => {
-            const resource = '/home/' + props.content.path.replace('cs3drive:', '');
+            const resource = '/' + props.content.path.replace('cs3driveShareByMe:', '');
 
             requestAPI<any>('/api/cs3/shares/file?file_path=' + resource, {
                 method: 'GET'

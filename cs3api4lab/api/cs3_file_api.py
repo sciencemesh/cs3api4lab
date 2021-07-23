@@ -145,7 +145,10 @@ class Cs3FileApi:
         time_start = time.time()
         reference = file_utils.get_reference(file_path, endpoint)
 
-        content_len = len(content.decode('utf-8'))
+        if isinstance(content, str):
+            content_len = len(content)
+        else:
+            content_len = len(content.decode('utf-8'))
         # providing '0' as size leads to unexpected additional file creation
         content_size = str(content_len) if content_len > 0 else str(1)
 

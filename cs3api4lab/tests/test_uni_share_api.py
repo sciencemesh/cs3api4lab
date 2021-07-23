@@ -309,6 +309,33 @@ class TestCs3UniShareApi(TestCase, LoggingConfigurable):
             if self.file_name:
                 self.remove_test_file('einstein', self.file_name)
 
+    def test_get_grantees_for_file(self):
+        try:
+            self.file_name = self.file_path + self._get_file_suffix()
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.ocm_file_name = self.file_path + self._get_file_suffix()
+            created_ocm_share = self.create_ocm_share('einstein', self.marie_id, self.marie_idp, self.ocm_file_name)
+            self.share_id = created_share['opaque_id']
+            self.ocm_share_id = created_ocm_share['id']
+
+            grantees = self.uni_api.list_grantees_for_file(self.file_name)
+            if not grantees['shares']:
+                raise Exception("Grantees not found")
+
+            grantees = self.uni_api.list_grantees_for_file(self.ocm_file_name)
+            if not grantees['shares']:
+                raise Exception("Grantees not found")
+
+        finally:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            if self.ocm_share_id:
+                self.remove_test_ocm_share('einstein', self.ocm_share_id)
+            if self.ocm_file_name:
+                self.remove_test_file('einstein', self.ocm_file_name)
+            if self.file_name:
+                self.remove_test_file('einstein', self.file_name)
+
     def create_ocm_share(self, user, ocm_receiver_id, ocm_receiver_idp, file_path):
         self.create_test_file(user, file_path)
         if user == 'einstein':
