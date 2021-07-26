@@ -5,7 +5,6 @@ CS3 Share API for the JupyterLab Extension
 
 Authors:
 """
-import urllib.parse
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
 import cs3.sharing.collaboration.v1beta1.resources_pb2 as sharing_res
 import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
@@ -79,67 +78,6 @@ class Cs3ShareApi:
             self.log.error("Error listing shares response for user: " + self.config['client_id'])
             self._handle_error(list_response)
         return list_response
-
-    def list_grantees_for_file(self, file_path):
-        # fixme
-        stat = self.file_api.stat(file_path, self.config['client_id'])
-        resource_id = storage_resources.ResourceId(storage_id=stat['inode']['storage_id'],
-                                                   opaque_id=stat['inode']['opaque_id'])
-        resource_filter = sharing.ListSharesRequest.Filter(
-            resource_id=resource_id,
-            type=sharing.ListSharesRequest.Filter.Type.TYPE_RESOURCE_ID)
-        list_request = sharing.ListSharesRequest(filters=[resource_filter])
-        shares_response = self.cs3_api.ListShares(request=list_request,
-                                                  metadata=[('x-access-token', self.get_token())])
-        if self._is_code_ok(shares_response):
-            self.log.info("Successfully retrieved grantees for file: " + file_path)
-            self.log.info(shares_response)
-        else:
-            self.log.error("Error retrieving grantees for file: " + file_path)
-            self._handle_error(shares_response)
-        if not shares_response.shares:
-            return []
-        share = shares_response.shares[0]
-        file_info = {
-            "resource_id": {
-                "storage_id": share.resource_id.storage_id,
-                "opaque_id": self._purify_file_path(share.resource_id.opaque_id)
-            },
-            "owner": {
-                "idp": share.owner.idp,
-                "opaque_id": share.owner.opaque_id
-            },
-            "creator": {
-                "idp": share.creator.idp,
-                "opaque_id": share.creator.opaque_id
-            }
-        }
-        shares = []
-        for share in shares_response.shares:
-            share_info = {
-                "opaque_id": share.id.opaque_id,
-                "grantee": {
-                    "idp": share.grantee.user_id.idp,
-                    "opaque_id": share.grantee.user_id.opaque_id,
-                    "permissions": self._resolve_share_permissions(share)
-                }
-            }
-            shares.append(share_info)
-
-        response = {"file_info": file_info, "shares": shares}
-        return response
-
-    def _decode_file_path(self, file_path):
-        """
-        Decodes file path, as the CS3 API contains URL encoded paths
-        """
-        return urllib.parse.unquote(file_path)
-
-    def _purify_file_path(self, file_path):
-        """
-        Removes 'fileid-' prefix included in file path from CS3 API response
-        """
-        return self._decode_file_path(file_path.replace('fileid-' + self.config['client_id'], ''))
 
     def remove(self, share_id):
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
@@ -217,7 +155,7 @@ class Cs3ShareApi:
             "opaque_id": share.id.opaque_id,
             "id": {
                 "storage_id": share.resource_id.storage_id,
-                "opaque_id": self._purify_file_path(share.resource_id.opaque_id),
+                "opaque_id": ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id']),
             },
             "permissions": self._resolve_share_permissions(share),
             "grantee": {

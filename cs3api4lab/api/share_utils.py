@@ -3,6 +3,8 @@ import cs3.storage.provider.v1beta1.resources_pb2 as storage_resources
 from cs3api4lab.common.strings import *
 from cs3api4lab.exception.exceptions import *
 
+import urllib.parse
+
 
 class ShareUtils:
 
@@ -84,3 +86,19 @@ class ShareUtils:
             return Role.EDITOR
         else:
             return Role.VIEWER
+
+    @staticmethod
+    def decode_file_path(file_path):
+        """
+        Decodes file path, as the CS3 API contains URL encoded paths
+        """
+        return urllib.parse.unquote(file_path)
+
+    @staticmethod
+    def purify_file_path(file_path, user):
+        """
+        Transforms 'fileid-user%2F' or '/home/' into '/reva/user'
+        """
+        if file_path.startswith('/home'):
+            return ShareUtils.decode_file_path(file_path.replace('/home', '/reva/' + user))
+        return ShareUtils.decode_file_path(file_path.replace('fileid-' + user, '/reva/' + user))
