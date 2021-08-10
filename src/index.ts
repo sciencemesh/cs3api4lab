@@ -57,6 +57,11 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
                     state:
                         options.state === null ? undefined : options.state || state || undefined
                 });
+                // Get the file path changed signal.
+                model.fileChanged.connect(() => {
+                    model.refresh()
+                })
+                model.uploadChanged
 
                 const restore = options.restore;
                 const widget = new FileBrowser({id, model, restore});
@@ -182,6 +187,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         const cs3Panel = new Cs3Panel('cs3 panel', 'cs3-panel', kernelIcon);
 
         stateDB.save('share', {share_type: 'filelist'});
+        stateDB.save('showHidden', false);
 
         //
         // Header
@@ -190,23 +196,22 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         cs3Panel.addHeader(cs3HeaderWidget);
 
         //
-        // Bottom
-        //
-        const cs3BottomWidget = new Cs3BottomWidget('cs3Api Bottom', 'cs3-bottom-widget');
-        cs3Panel.addBottom(cs3BottomWidget);
-
-        //
         // CS3 File browser
         //
         const drive = new CS3Contents(app.docRegistry, stateDB, docManager);
         const fileBrowser = factory.createFileBrowser('test_v2', {
             driveName: drive.name
         });
-
         fileBrowser.title.label = 'My Files';
         fileBrowser.title.caption = 'My Files';
         fileBrowser.title.icon = caseSensitiveIcon;
         docManager.services.contents.addDrive(drive);
+
+        //
+        // Bottom
+        //
+        const cs3BottomWidget = new Cs3BottomWidget('cs3Api Bottom', 'cs3-bottom-widget', {}, stateDB, fileBrowser, drive);
+        cs3Panel.addBottom(cs3BottomWidget);
 
         addLaunchersButton(app, fileBrowser, labShell);
 

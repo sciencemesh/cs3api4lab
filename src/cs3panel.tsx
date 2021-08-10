@@ -1,10 +1,14 @@
-import {Widget} from '@lumino/widgets';
-import {DockPanel} from '@lumino/widgets';
-import {BoxLayout} from '@lumino/widgets';
-import {BoxPanel} from '@lumino/widgets';
+import {BoxLayout, BoxPanel, DockPanel, Widget} from '@lumino/widgets';
 import {ReactWidget} from '@jupyterlab/apputils';
 import * as React from 'react';
 import {LabIcon} from '@jupyterlab/ui-components';
+import {IStateDB} from "@jupyterlab/statedb";
+import {BottomProps} from "./types";
+import {useState} from "react";
+import {FileBrowser} from "@jupyterlab/filebrowser";
+import {CS3Contents} from "./drive";
+import {Contents} from "@jupyterlab/services";
+import {requestAPI} from "./services";
 
 export class Cs3Panel extends Widget {
     protected header: BoxPanel;
@@ -89,18 +93,67 @@ export class Cs3HeaderWidget extends ReactWidget {
     }
 }
 
+export const Bottom = (props: BottomProps): JSX.Element => {
+
+    const [text, setText] = useState(props.message);
+
+    const onPathOrFileChanged = async (path: string) => {
+        const showHidden: boolean = await props.db.fetch('showHidden') as boolean;
+        if (showHidden == undefined || !showHidden) {
+            const result: Contents.IModel = await requestAPI('/api/contents/' + path, {method: 'get'});
+            const hiddenFilesNo = result.content.filter((file: { name: string; }) => file.name.startsWith('.')).length
+            setText('Hidden files ' + hiddenFilesNo + ' (show)')
+        } else {
+            setText('Cover hidden files')
+        }
+    }
+
+    props.browser.model.pathChanged.connect(async (browser, args) => {
+        onPathOrFileChanged(args.newValue.replace('cs3drive:', ''))
+    })
+
+    props.browser.model.refreshed.connect((browser) => {
+        onPathOrFileChanged(browser.path.replace('cs3drive:', ''))
+    })
+
+    return (
+        <div className={'jp-bottom-div'} onClick={async () => {
+            if (text.startsWith('Hidden files') || text.startsWith('Show hidden')) {
+                setText('Cover hidden files')
+            } else {
+                const hiddenFilesNo = await props.db.fetch('hiddenFilesNo')
+                setText('Hidden files ' + hiddenFilesNo + ' (show)')
+            }
+        }}>
+            {text}
+        </div>
+    )
+}
+
 export class Cs3BottomWidget extends ReactWidget {
-    constructor(title: string, id: string, options: Widget.IOptions = {}) {
+    private bottomProps: { message: string; db: IStateDB; drive: CS3Contents, browser: FileBrowser };
+
+    constructor(title: string, id: string, options: Widget.IOptions = {},
+                stateDB: IStateDB,
+                browser: FileBrowser,
+                drive: CS3Contents) {
         super(options);
         this.addClass('c3-bottom-widget');
         this.id = id;
-        this.title.label = title;
-        this.title.caption = title;
         this.title.closable = false;
+        this.bottomProps = {message: 'Show hidden files', db: stateDB, drive: drive, browser: browser}
+        this.node.onclick = async () => {
+            const showHidden = await stateDB.fetch('showHidden')
+            await stateDB.save('showHidden', !showHidden);
+            await browser.model.refresh()
+        };
     }
 
-    protected render(): React.ReactElement<any> {
-        return <div>{this.title.caption}</div>;
+    protected render(): JSX.Element {
+        return <Bottom message={this.bottomProps.message}
+                       db={this.bottomProps.db}
+                       drive={this.bottomProps.drive}
+                       browser={this.bottomProps.browser}/>;
     }
 }
 

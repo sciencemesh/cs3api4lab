@@ -1,4 +1,7 @@
 import {Contents} from '@jupyterlab/services';
+import {IStateDB} from "@jupyterlab/statedb";
+import {CS3Contents} from "./drive";
+import {FileBrowser} from "@jupyterlab/filebrowser";
 
 export type ResultProps = {
     message: string;
@@ -39,6 +42,13 @@ export type SharesProps = {
     // grantees: Map<string, string>,
     content: Contents.IModel;
 };
+
+export type BottomProps = {
+    message: string;
+    db: IStateDB;
+    drive: CS3Contents;
+    browser: FileBrowser
+}
 
 export type UsersRequest = {
     display_name: string;
