@@ -18,7 +18,7 @@ import {ShareWidget} from './createShare';
 import {InfoboxWidget} from './infobox';
 import {Cs3BottomWidget, Cs3HeaderWidget, Cs3Panel, Cs3TabWidget} from './cs3panel';
 import {addLaunchersButton, createShareBox} from './utils';
-import {SplitPanel} from '@lumino/widgets';
+import {DockPanel, SplitPanel, Widget} from '@lumino/widgets';
 import {kernelIcon, caseSensitiveIcon, inspectorIcon, newFolderIcon} from '@jupyterlab/ui-components';
 
 /**
@@ -263,6 +263,30 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         cs3Panel.addTab(fileBrowser);
         cs3Panel.addTab(cs3TabWidget3);
         cs3Panel.addTab(splitPanel);
+
+        cs3Panel.node.onclick = (e) => {
+            // Hiding bottom widget when file browser is not active
+            const cs3PanelIterator = cs3Panel.layout.iter();
+            let widget: Widget;
+            do {
+                widget = cs3PanelIterator.next();
+                if (widget instanceof DockPanel) {
+                    const dockPanelIterator = widget.layout.iter();
+                    let tab: Widget
+                    do {
+                        tab = dockPanelIterator.next()
+                        if(tab instanceof FileBrowser){
+                            if(tab.isHidden && !tab.isVisible){
+                                cs3BottomWidget.hide()
+                            }
+                            else if(cs3BottomWidget.isHidden){
+                                cs3BottomWidget.show()
+                            }
+                        }
+                    } while (tab)
+                }
+            } while (widget);
+        }
 
         window.addEventListener('resize', () => {
             cs3Panel.fit();
