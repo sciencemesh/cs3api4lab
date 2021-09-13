@@ -7,8 +7,6 @@ import {BottomProps} from "./types";
 import {useState} from "react";
 import {FileBrowser} from "@jupyterlab/filebrowser";
 import {CS3Contents} from "./drive";
-import {Contents} from "@jupyterlab/services";
-import {requestAPI} from "./services";
 
 export class Cs3Panel extends Widget {
     protected header: BoxPanel;
@@ -97,33 +95,27 @@ export const Bottom = (props: BottomProps): JSX.Element => {
 
     const [text, setText] = useState(props.message);
 
-    const onPathOrFileChanged = async (path: string) => {
+    const setLabel = async () => {
         const showHidden: boolean = await props.db.fetch('showHidden') as boolean;
         if (showHidden == undefined || !showHidden) {
-            const result: Contents.IModel = await requestAPI('/api/contents/' + path, {method: 'get'});
-            const hiddenFilesNo = result.content.filter((file: { name: string; }) => file.name.startsWith('.')).length
+            const hiddenFilesNo: number = await props.db.fetch('hiddenFilesNo') as number;
             setText('Hidden files ' + hiddenFilesNo + ' (show)')
         } else {
             setText('Cover hidden files')
         }
     }
 
-    props.browser.model.pathChanged.connect(async (browser, args) => {
-        onPathOrFileChanged(args.newValue.replace('cs3drive:', ''))
+    props.browser.model.pathChanged.connect( async (browser, args) => {
+        await setLabel()
     })
 
-    props.browser.model.refreshed.connect((browser) => {
-        onPathOrFileChanged(browser.path.replace('cs3drive:', ''))
+    props.browser.model.refreshed.connect(async (browser) => {
+        await setLabel()
     })
 
     return (
         <div className={'jp-bottom-div'} onClick={async () => {
-            if (text.startsWith('Hidden files') || text.startsWith('Show hidden')) {
-                setText('Cover hidden files')
-            } else {
-                const hiddenFilesNo = await props.db.fetch('hiddenFilesNo')
-                setText('Hidden files ' + hiddenFilesNo + ' (show)')
-            }
+            await setLabel()
         }}>
             {text}
         </div>
