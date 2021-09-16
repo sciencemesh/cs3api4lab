@@ -79,7 +79,7 @@ class TestAuthenticator(TestCase, LoggingConfigurable):
             token_authenticator.authenticate()
 
     def test_authenticate_expire_eos_file(self):
-        path = Path(os.getcwd() + "/jupyter-config/eos_token.txt")
+        path = Path(os.getcwd() + "/cs3api4lab/tests/jupyter-config/eos_token.txt")
         token_config = {
             'authenticator_class': 'cs3api4lab.auth.Eos',
             'client_id': 'einstein',

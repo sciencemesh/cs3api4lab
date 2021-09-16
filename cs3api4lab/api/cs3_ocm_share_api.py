@@ -24,7 +24,7 @@ import cs3.types.v1beta1.types_pb2 as cs3_types
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 
-from cs3api4lab.api.share_utils import ShareUtils
+from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.common.strings import *
 from cs3.storage.provider.v1beta1.resources_pb2 import *
 
@@ -105,7 +105,7 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.UpdateOCMShare(request=request,
                                                      metadata=self._token())
         if self._is_code_ok(response):
-            self.log.info("OCM share updated:\n" + response)
+            self.log.info("OCM share updated:\n" + share_id)
             return
         else:
             self._handle_error(response, "Error updating OCM share:")
@@ -172,14 +172,12 @@ class Cs3OcmShareApi:
             self._handle_error(response, "Error listing OCM received shares: ")
         return response
 
-    def _get_received_share(self, share_id):
+    def get_received_share(self, share_id):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_obj)
         request = ocm_api.GetReceivedOCMShareRequest(ref=ref)
         response = self.ocm_share_api.GetReceivedOCMShare(request=request,
                                                           metadata=self._token())
-        if not self._is_code_ok(response):
-            self._handle_error(response, "Error getting OCM received share: ")
         return self._map_share(response.share.share, response.share.state)
 
     def _map_ocm_shares(self, list_response, received=False):

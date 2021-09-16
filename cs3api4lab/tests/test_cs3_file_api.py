@@ -37,70 +37,70 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
 
         content_to_write = b'bla\n'
         content_check = 'bla\n'
-        file_patch = "/test_read.txt"
+        file_path = "/test_read.txt"
 
-        self.storage.write_file(file_patch, content_to_write, self.endpoint)
+        self.storage.write_file(file_path, content_to_write, self.endpoint)
         content = ''
 
-        for chunk in self.storage.read_file(file_patch, self.endpoint):
+        for chunk in self.storage.read_file(file_path, self.endpoint):
             self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
             content += chunk.decode('utf-8')
 
-        self.assertEqual(content, content_check, 'File ' + file_patch + ' should contain the string: ' + content_check)
+        self.assertEqual(content, content_check, 'File ' + file_path + ' should contain the string: ' + content_check)
 
-        self.storage.remove(file_patch, self.endpoint)
+        self.storage.remove(file_path, self.endpoint)
 
 
     def test_read_file_by_id(self):
 
         content_to_write = b'bla_by_id\n'
         content_to_check = 'bla_by_id\n'
-        file_patch = "/test_read_by_id.txt"
+        file_path = "/test_read_by_id.txt"
 
-        self.storage.write_file(file_patch, content_to_write, self.endpoint)
-        stat = self.storage.stat(file_patch)
+        self.storage.write_file(file_path, content_to_write, self.endpoint)
+        stat = self.storage.stat(file_path)
 
         content = ''
-        for chunk in self.storage.read_file(stat['inode']['opaque_id'], stat['inode']['storage_id']):
+        for chunk in self.storage.read_file(file_path, self.endpoint):
             self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
             content += chunk.decode('utf-8')
 
-        self.storage.remove(file_patch, self.endpoint)
+        self.storage.remove(file_path, self.endpoint)
 
         self.assertEqual(stat['inode']['opaque_id'], 'fileid-einstein%2Ftest_read_by_id.txt')
         self.assertEqual(stat['inode']['storage_id'], '123e4567-e89b-12d3-a456-426655440000')
 
-        self.assertEqual(content, content_to_check, 'File ' + file_patch + ' should contain the string: ' + content_to_check)
+        self.assertEqual(content, content_to_check, 'File ' + file_path + ' should contain the string: ' + content_to_check)
 
     def test_read_file_by_share_path(self):
 
         content_to_write = b'bla_by_share\n'
         content_to_check = 'bla_by_share\n'
-        file_patch = "/test_read_by_share_path.txt"
+        file_path = "/test_read_by_share_path.txt"
 
-        self.storage.write_file(file_patch, content_to_write, self.endpoint)
+        self.storage.write_file(file_path, content_to_write, self.endpoint)
 
-        stat = self.storage.stat(file_patch)
+        stat = self.storage.stat(file_path)
         stat_by_id = self.storage.stat(stat['inode']['opaque_id'], stat['inode']['storage_id'])
 
         content = ''
-        for chunk in self.storage.read_file(file_patch, self.endpoint):
+        for chunk in self.storage.read_file(file_path, self.endpoint):
             self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
             content += chunk.decode('utf-8')
 
-        self.storage.remove(file_patch, self.endpoint)
+        self.storage.remove(file_path, self.endpoint)
 
         self.assertEqual(stat_by_id['filepath'], '/reva/einstein/test_read_by_share_path.txt')
-        self.assertEqual(content, content_to_check, 'File ' + file_patch + ' should contain the string: ' + content_to_check)
+        self.assertEqual(content, content_to_check, 'File ' + file_path + ' should contain the string: ' + content_to_check)
 
 
     def test_read_file_no_file(self):
 
-        file_patch = "/test_read_no_existing_file.txt"
+        file_path = "/test_read_no_existing_file.txt"
         content = ''
 
         with self.assertRaises(IOError, msg='No such file or directory'):
-            for chunk in self.storage.read_file(file_patch, self.endpoint):
+            for chunk in self.storage.read_file(file_path, self.endpoint):
                 content += chunk.decode('utf-8')
 
     def test_write_file(self):

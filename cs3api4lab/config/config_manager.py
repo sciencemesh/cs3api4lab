@@ -19,7 +19,8 @@ class Config(LoggingConfigurable):
         "client_key": "",
         "ca_cert": "",
         "login_type": "basic",
-        "authenticator_class": "cs3api4lab.auth.RevaPassword"
+        "authenticator_class": "cs3api4lab.auth.RevaPassword",
+        "locks_expiration_time": 150
     }
     __config_dir = "\\jupyter-config"
     __config_file_name = 'jupyter_cs3_config'
