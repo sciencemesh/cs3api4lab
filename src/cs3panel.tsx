@@ -93,16 +93,13 @@ export class Cs3HeaderWidget extends ReactWidget {
 
 export const Bottom = (props: BottomProps): JSX.Element => {
 
-    const [text, setText] = useState(props.message);
+    const [text, setText] = useState('Show hidden files');
 
     const setLabel = async () => {
         const showHidden: boolean = await props.db.fetch('showHidden') as boolean;
-        if (showHidden == undefined || !showHidden) {
-            const hiddenFilesNo: number = await props.db.fetch('hiddenFilesNo') as number;
-            setText('Hidden files ' + hiddenFilesNo + ' (show)')
-        } else {
-            setText('Cover hidden files')
-        }
+        const hiddenFilesNo: number = await props.db.fetch('hiddenFilesNo') as number;
+        const action = (showHidden == undefined || !showHidden) ? 'show' : 'hide'
+        setText(`${hiddenFilesNo} hidden files (${action})`)
     }
 
     props.browser.model.pathChanged.connect( async (browser, args) => {
@@ -123,7 +120,7 @@ export const Bottom = (props: BottomProps): JSX.Element => {
 }
 
 export class Cs3BottomWidget extends ReactWidget {
-    private bottomProps: { message: string; db: IStateDB; drive: CS3Contents, browser: FileBrowser };
+    private bottomProps: { db: IStateDB; drive: CS3Contents, browser: FileBrowser };
 
     constructor(title: string, id: string, options: Widget.IOptions = {},
                 stateDB: IStateDB,
@@ -133,7 +130,7 @@ export class Cs3BottomWidget extends ReactWidget {
         this.addClass('c3-bottom-widget');
         this.id = id;
         this.title.closable = false;
-        this.bottomProps = {message: 'Show hidden files', db: stateDB, drive: drive, browser: browser}
+        this.bottomProps = {db: stateDB, drive: drive, browser: browser}
         this.node.onclick = async () => {
             const showHidden = await stateDB.fetch('showHidden')
             await stateDB.save('showHidden', !showHidden);
@@ -142,9 +139,8 @@ export class Cs3BottomWidget extends ReactWidget {
     }
 
     protected render(): JSX.Element {
-        return <Bottom message={this.bottomProps.message}
+        return <Bottom
                        db={this.bottomProps.db}
-                       drive={this.bottomProps.drive}
                        browser={this.bottomProps.browser}/>;
     }
 }
