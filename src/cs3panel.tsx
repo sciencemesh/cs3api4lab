@@ -93,7 +93,7 @@ export class Cs3HeaderWidget extends ReactWidget {
 
 export const Bottom = (props: BottomProps): JSX.Element => {
 
-    const [text, setText] = useState('Show hidden files');
+    const [text, setText] = useState('');
 
     const setLabel = async () => {
         const showHidden: boolean = await props.db.fetch('showHidden') as boolean;
