@@ -1,4 +1,6 @@
 import {Contents} from '@jupyterlab/services';
+import {IStateDB} from "@jupyterlab/statedb";
+import {FileBrowser} from "@jupyterlab/filebrowser";
 
 export type ResultProps = {
     message: string;
@@ -39,6 +41,11 @@ export type SharesProps = {
     // grantees: Map<string, string>,
     content: Contents.IModel;
 };
+
+export type BottomProps = {
+    db: IStateDB;
+    browser: FileBrowser
+}
 
 export type UsersRequest = {
     display_name: string;

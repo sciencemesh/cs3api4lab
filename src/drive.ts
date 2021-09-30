@@ -2,7 +2,7 @@ import {requestAPI} from './services';
 import {ReadonlyJSONObject} from '@lumino/coreutils';
 import {Contents, ServerConnection} from '@jupyterlab/services';
 import {DocumentRegistry} from '@jupyterlab/docregistry';
-import {Signal, ISignal} from '@lumino/signaling';
+import {ISignal, Signal} from '@lumino/signaling';
 import {IStateDB} from '@jupyterlab/statedb';
 import {IDocumentManager} from '@jupyterlab/docmanager';
 
@@ -40,12 +40,6 @@ export class CS3Contents implements Contents.IDrive {
         };
 
         this._state = stateDB;
-        console.log(
-            'CS3Contents: ',
-            this._docRegistry,
-            this._fileTypeForPath,
-            this._fileTypeForContentsModel
-        );
     }
 
     refresh() {
@@ -191,7 +185,7 @@ export async function CS3ContainerFiles(
     options: Contents.IFetchOptions = null
 ): Promise<any> {
     const share = await stateDB.fetch('share');
-
+    const showHidden: boolean = await stateDB.fetch('showHidden') as boolean;
     let shareType;
     if (readType != 'filelist') {
         shareType = readType;
@@ -200,10 +194,9 @@ export async function CS3ContainerFiles(
     }
 
     if (path != '') {
-        return await getFileList(path, options);
+        return await getFileList(path, options, showHidden, stateDB);
     }
 
-    // switch (shareType) {
     switch (shareType) {
         case 'by_me':
             return await getSharedByMe();
@@ -211,13 +204,15 @@ export async function CS3ContainerFiles(
             return await getSharedWithMe();
         case 'filelist':
         default:
-            return await getFileList(path, options);
+            return await getFileList(path, options, showHidden, stateDB);
     }
 }
 
 async function getFileList(
     path: string,
-    options: Contents.IFetchOptions
+    options: Contents.IFetchOptions,
+    showHidden: boolean,
+    stateDB: IStateDB
 ): Promise<any> {
     const {type, format, content} = options;
 
@@ -230,9 +225,17 @@ async function getFileList(
         url += '&format=' + format;
     }
 
-    return await requestAPI('/api/contents/' + path + '' + url, {
-        method: 'get'
-    });
+    const result: Contents.IModel  = await requestAPI('/api/contents/' + path + '' + url, {method: 'get'});
+
+    const hiddenFilesNo: number = result.content.filter((file: { name: string; }) => file.name.startsWith('.')).length
+    await stateDB.save('hiddenFilesNo', hiddenFilesNo)
+
+    if (!showHidden && Array.isArray(result.content)) {
+        const filteredResult = JSON.parse(JSON.stringify(result))
+        filteredResult.content = (result.content as Array<any>).filter((file: { name: string; }) => !file.name.startsWith('.'))
+        return filteredResult
+    }
+    return result;
 }
 
 async function getSharedByMe(): Promise<any> {

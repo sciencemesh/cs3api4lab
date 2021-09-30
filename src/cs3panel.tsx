@@ -1,10 +1,12 @@
-import {Widget} from '@lumino/widgets';
-import {DockPanel} from '@lumino/widgets';
-import {BoxLayout} from '@lumino/widgets';
-import {BoxPanel} from '@lumino/widgets';
+import {BoxLayout, BoxPanel, DockPanel, Widget} from '@lumino/widgets';
 import {ReactWidget} from '@jupyterlab/apputils';
 import * as React from 'react';
 import {LabIcon} from '@jupyterlab/ui-components';
+import {IStateDB} from "@jupyterlab/statedb";
+import {BottomProps} from "./types";
+import {useState} from "react";
+import {FileBrowser} from "@jupyterlab/filebrowser";
+import {CS3Contents} from "./drive";
 
 export class Cs3Panel extends Widget {
     protected header: BoxPanel;
@@ -89,18 +91,53 @@ export class Cs3HeaderWidget extends ReactWidget {
     }
 }
 
+export const Bottom = (props: BottomProps): JSX.Element => {
+
+    const [text, setText] = useState('');
+
+    const setLabel = async () => {
+        const showHidden: boolean = await props.db.fetch('showHidden') as boolean;
+        const hiddenFilesNo: number = await props.db.fetch('hiddenFilesNo') as number;
+        const action = (showHidden == undefined || !showHidden) ? 'show' : 'hide'
+        setText(`${hiddenFilesNo} hidden files (${action})`)
+    }
+
+    props.browser.model.pathChanged.connect( async (browser, args) => {
+        await setLabel()
+    })
+
+    props.browser.model.refreshed.connect(async (browser) => {
+        await setLabel()
+    })
+
+    return (
+        <div className={'jp-bottom-div'}>{text}</div>
+    )
+}
+
 export class Cs3BottomWidget extends ReactWidget {
-    constructor(title: string, id: string, options: Widget.IOptions = {}) {
+    private bottomProps: { db: IStateDB; drive: CS3Contents, browser: FileBrowser };
+
+    constructor(title: string, id: string, options: Widget.IOptions = {},
+                stateDB: IStateDB,
+                browser: FileBrowser,
+                drive: CS3Contents) {
         super(options);
         this.addClass('c3-bottom-widget');
         this.id = id;
-        this.title.label = title;
-        this.title.caption = title;
         this.title.closable = false;
+        this.bottomProps = {db: stateDB, drive: drive, browser: browser}
+        this.node.onclick = async () => {
+            const showHidden = await stateDB.fetch('showHidden')
+            await stateDB.save('showHidden', !showHidden);
+            await browser.model.refresh()
+        };
     }
 
-    protected render(): React.ReactElement<any> {
-        return <div>{this.title.caption}</div>;
+    protected render(): JSX.Element {
+        return <Bottom
+                       db={this.bottomProps.db}
+                       browser={this.bottomProps.browser}/>;
     }
 }
 

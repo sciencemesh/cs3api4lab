@@ -3,6 +3,12 @@
     display: flex;
 }
 
+.jp-bottom-div
+{
+    text-align: right;
+    margin-bottom: 5px;
+}
+
 .jp-file-info
 {
     flex-direction: column;

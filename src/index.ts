@@ -18,7 +18,7 @@ import {ShareWidget} from './createShare';
 import {InfoboxWidget} from './infobox';
 import {Cs3BottomWidget, Cs3HeaderWidget, Cs3Panel, Cs3TabWidget} from './cs3panel';
 import {addLaunchersButton, createShareBox} from './utils';
-import {SplitPanel} from '@lumino/widgets';
+import {DockPanel, SplitPanel, Widget} from '@lumino/widgets';
 import {kernelIcon, caseSensitiveIcon, inspectorIcon, newFolderIcon} from '@jupyterlab/ui-components';
 
 /**
@@ -57,6 +57,11 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
                     state:
                         options.state === null ? undefined : options.state || state || undefined
                 });
+                // Get the file path changed signal.
+                model.fileChanged.connect(() => {
+                    model.refresh()
+                })
+                model.uploadChanged
 
                 const restore = options.restore;
                 const widget = new FileBrowser({id, model, restore});
@@ -182,6 +187,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         const cs3Panel = new Cs3Panel('cs3 panel', 'cs3-panel', kernelIcon);
 
         stateDB.save('share', {share_type: 'filelist'});
+        stateDB.save('showHidden', false);
 
         //
         // Header
@@ -190,23 +196,22 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         cs3Panel.addHeader(cs3HeaderWidget);
 
         //
-        // Bottom
-        //
-        const cs3BottomWidget = new Cs3BottomWidget('cs3Api Bottom', 'cs3-bottom-widget');
-        cs3Panel.addBottom(cs3BottomWidget);
-
-        //
         // CS3 File browser
         //
         const drive = new CS3Contents(app.docRegistry, stateDB, docManager);
         const fileBrowser = factory.createFileBrowser('test_v2', {
             driveName: drive.name
         });
-
         fileBrowser.title.label = 'My Files';
         fileBrowser.title.caption = 'My Files';
         fileBrowser.title.icon = caseSensitiveIcon;
         docManager.services.contents.addDrive(drive);
+
+        //
+        // Bottom
+        //
+        const cs3BottomWidget = new Cs3BottomWidget('cs3Api Bottom', 'cs3-bottom-widget', {}, stateDB, fileBrowser, drive);
+        cs3Panel.addBottom(cs3BottomWidget);
 
         addLaunchersButton(app, fileBrowser, labShell);
 
@@ -258,6 +263,30 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         cs3Panel.addTab(fileBrowser);
         cs3Panel.addTab(cs3TabWidget3);
         cs3Panel.addTab(splitPanel);
+
+        cs3Panel.node.onclick = (e) => {
+            // Hiding bottom widget when file browser is not active
+            const cs3PanelIterator = cs3Panel.layout.iter();
+            let widget: Widget;
+            do {
+                widget = cs3PanelIterator.next();
+                if (widget instanceof DockPanel) {
+                    const dockPanelIterator = widget.layout.iter();
+                    let tab: Widget
+                    do {
+                        tab = dockPanelIterator.next()
+                        if(tab instanceof FileBrowser){
+                            if(tab.isHidden && !tab.isVisible){
+                                cs3BottomWidget.hide()
+                            }
+                            else if(cs3BottomWidget.isHidden){
+                                cs3BottomWidget.show()
+                            }
+                        }
+                    } while (tab)
+                }
+            } while (widget);
+        }
 
         window.addEventListener('resize', () => {
             cs3Panel.fit();
