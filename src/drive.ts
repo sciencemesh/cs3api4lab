@@ -226,9 +226,11 @@ async function getFileList(
     }
 
     const result: Contents.IModel  = await requestAPI('/api/contents/' + path + '' + url, {method: 'get'});
+
+    const hiddenFilesNo: number = result.content.filter((file: { name: string; }) => file.name.startsWith('.')).length
+    await stateDB.save('hiddenFilesNo', hiddenFilesNo)
+
     if (!showHidden && Array.isArray(result.content)) {
-        const hiddenFilesNo: number = result.content.filter((file: { name: string; }) => file.name.startsWith('.')).length
-        await stateDB.save('hiddenFilesNo', hiddenFilesNo)
         const filteredResult = JSON.parse(JSON.stringify(result))
         filteredResult.content = (result.content as Array<any>).filter((file: { name: string; }) => !file.name.startsWith('.'))
         return filteredResult

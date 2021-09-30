@@ -111,11 +111,7 @@ export const Bottom = (props: BottomProps): JSX.Element => {
     })
 
     return (
-        <div className={'jp-bottom-div'} onClick={async () => {
-            await setLabel()
-        }}>
-            {text}
-        </div>
+        <div className={'jp-bottom-div'}>{text}</div>
     )
 }
 
