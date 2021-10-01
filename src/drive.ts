@@ -189,7 +189,7 @@ export async function CS3ContainerFiles(
     let shareType;
     if (readType != 'filelist') {
         shareType = readType;
-    } else {
+    } else if(share != undefined){
         shareType = (share as ReadonlyJSONObject)['share_type'];
     }
 
