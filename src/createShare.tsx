@@ -37,7 +37,7 @@ const ShareForm: React.FC<ShareFormProps> = (
     shareProps: ShareFormProps
 ): JSX.Element => {
     const [userList, setUserList] = useState([]);
-    const [selectedUser] = useState([
+    const [selectedUser, setSelectedUser] = useState([
         {
             idp: '',
             grantee: ''
@@ -70,7 +70,6 @@ const ShareForm: React.FC<ShareFormProps> = (
                     grantee: user.opaque_id
                 });
             }
-
             setUserList(parsedUsers);
         });
 
@@ -109,7 +108,12 @@ const ShareForm: React.FC<ShareFormProps> = (
                         create={false}
                         valueField="name"
                         labelField="displayName"
-                        onChange={() => {}}
+                        onChange={(userValue) => {
+                            const user = userValue[0] as {[key:string]: string}
+                            setSelectedUser([{
+                                idp: user['idp'],
+                                grantee: user['grantee']
+                            }])}}
                         handleKeyDownFn={getUsers}
                     />
                 </div>
