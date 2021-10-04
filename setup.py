@@ -67,7 +67,7 @@ setup_args = dict(
     packages=setuptools.find_packages(),
     install_requires=[
         "jupyterlab~=3.0",
-        "cs3apis==0.1.dev64",
+        "cs3apis==0.1.dev71",
         "grpcio",
         "grpcio-tools",
         "PyJWT==1.7.1",
