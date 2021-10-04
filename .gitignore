@@ -108,6 +108,7 @@ dmypy.json
 
 *.iml
 .idea/
+<<<<<<< HEAD
 .vscode/
 cs3api4lab/.vscode/
 
@@ -115,3 +116,9 @@ cs3api4lab/.vscode/
 
 # OSX files
 .DS_Store
+=======
+/cs3api4lab/labextension/
+.vscode/launch.json
+.vscode/settings.json
+cs3api4lab/.vscode/settings.json
+>>>>>>> 8e0a78a (correct method names in model_utils)

@@ -17,6 +17,9 @@ from cs3api4lab.logic.storage_logic import StorageLogic
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8e0a78a (correct method names in model_utils)
 from cs3api4lab.exception.exceptions import LockNotFoundError
 
 class LockManager:
@@ -155,7 +158,17 @@ class LockManager:
             if self.is_lock_expired(file_path, endpoint):
                 self.lock_file(file_path, endpoint)
         return
-            
+
+    def get_lock(self, file_path):
+        lock = self._get_lock(file_path, None) #todo: test endpoint
+        if not lock:
+            raise LockNotFoundError("Lock not found for file: " + file_path)
+        if self.is_lock_mine(file_path, None):
+            raise LockNotFoundError("Lock belongs to the user")
+        if self.is_lock_expired(file_path, None):
+            raise LockNotFoundError("Lock is expired")
+        return lock
+
     def _get_current_user(self):
         user = self.cs3_api.WhoAmI(request=cs3gw.WhoAmIRequest(token=self.auth.authenticate()),
                                    metadata=self._get_token())

@@ -9,10 +9,14 @@ class ModelUtils:
 
     @staticmethod
 <<<<<<< HEAD
+<<<<<<< HEAD
     def create_respond_model():
 =======
     def _create_respond_model():
 >>>>>>> c3f5ea6 (Locking for shares part 1 #11)
+=======
+    def create_respond_model():
+>>>>>>> 8e0a78a (correct method names in model_utils)
 
         model = {}
         model['name'] = "/"
@@ -31,6 +35,9 @@ class ModelUtils:
 
     @staticmethod
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8e0a78a (correct method names in model_utils)
     def map_share_to_file_model(share, stat):
 
         model = ModelUtils._map_share_to_base_model(share, stat)
@@ -50,8 +57,11 @@ class ModelUtils:
         return model
 
     @staticmethod
+<<<<<<< HEAD
 =======
 >>>>>>> c3f5ea6 (Locking for shares part 1 #11)
+=======
+>>>>>>> 8e0a78a (correct method names in model_utils)
     def _map_share_to_base_model(share, stat):
 
         created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime(ModelUtils.date_fmt)
@@ -70,6 +80,7 @@ class ModelUtils:
         model['content'] = None
         model['format'] = None
         model['writable'] = writable
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
         return model
@@ -92,4 +103,6 @@ class ModelUtils:
         model['type'] = 'directory'
         model['mimetype'] = None
 >>>>>>> c3f5ea6 (Locking for shares part 1 #11)
+=======
+>>>>>>> 8e0a78a (correct method names in model_utils)
         return model
