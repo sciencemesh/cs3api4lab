@@ -1,3 +1,4 @@
+from cs3api4lab.api.lock_manager import LockManager
 from notebook.base.handlers import APIHandler
 from tornado import gen, web
 import json
@@ -330,7 +331,7 @@ class RequestHandler(APIHandler):
     def get_response_code(err):
         if isinstance(err, ShareAlreadyExistsError):
             return 409
-        if isinstance(err, ShareNotExistsError):
+        if isinstance(err, ShareNotFoundError, LockNotFoundError):
             return 404
         if isinstance(err, (InvalidTypeError, KeyError, FileNotFoundError, ParamError)):
             return 400

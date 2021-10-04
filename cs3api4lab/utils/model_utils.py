@@ -8,7 +8,7 @@ class ModelUtils:
     date_fmt = '%Y-%m-%dT%H:%M:%SZ'
 
     @staticmethod
-    def _create_respond_model():
+    def create_respond_model():
 
         model = {}
         model['name'] = "/"
@@ -23,6 +23,25 @@ class ModelUtils:
         model['content'] = []
         model['format'] = 'json'
 
+        return model
+
+    @staticmethod
+    def map_share_to_file_model(share, stat):
+
+        model = ModelUtils._map_share_to_base_model(share, stat)
+        model['size'] = stat['size']
+        model['type'] = 'file'
+        model['mimetype'] = mimetypes.guess_type(stat['filepath'])[0]
+
+        return model
+
+    @staticmethod
+    def map_share_to_dir_model(share, stat):
+
+        model = ModelUtils._map_share_to_base_model(share, stat)
+        model['size'] = None
+        model['type'] = 'directory'
+        model['mimetype'] = None
         return model
 
     @staticmethod
@@ -44,23 +63,4 @@ class ModelUtils:
         model['content'] = None
         model['format'] = None
         model['writable'] = writable
-        return model
-
-    @staticmethod
-    def _map_share_to_file_model(share, stat):
-
-        model = ModelUtils._map_share_to_base_model(share, stat)
-        model['size'] = stat['size']
-        model['type'] = 'file'
-        model['mimetype'] = mimetypes.guess_type(stat['filepath'])[0]
-
-        return model
-
-    @staticmethod
-    def _map_share_to_dir_model(share, stat):
-
-        model = ModelUtils._map_share_to_base_model(share, stat)
-        model['size'] = None
-        model['type'] = 'directory'
-        model['mimetype'] = None
         return model

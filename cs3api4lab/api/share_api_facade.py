@@ -163,12 +163,12 @@ class ShareAPIFacade:
                     if hasattr(share.permissions.permissions,
                                'initiate_file_download') and share.permissions.permissions.initiate_file_download is False:
                         continue
-                    model = ModelUtils._map_share_to_file_model(share, stat)
+                    model = ModelUtils.map_share_to_file_model(share, stat)
                 else:
                     if hasattr(share.permissions.permissions,
                                'list_container') and share.permissions.permissions.list_container is False:
                         continue
-                    model = self._map_share_to_dir_model(share, stat)
+                    model = ModelUtils.map_share_to_dir_model(share, stat)
                 model['writable'] = True if ShareUtils.map_permissions_to_role(share.permissions.permissions) == 'editor' else False
             except Exception as e:
                 self.log.error("Unable to map share " + share.resource_id.opaque_id + ", " + e.__str__())

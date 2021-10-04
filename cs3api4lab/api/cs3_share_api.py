@@ -90,7 +90,7 @@ class Cs3ShareApi:
             self.log.info(remove_response)
             return
         else:
-            raise ShareNotExistsError("Error removing share with ID: " + share_id)
+            raise ShareNotFoundError("Error removing share with ID: " + share_id)
 
     def update(self, share_id, role):
         share_permissions = self._get_share_permissions(role)
@@ -106,7 +106,7 @@ class Cs3ShareApi:
             self.log.info(update_response)
             return
         if update_response.status.code == cs3_code.CODE_INTERNAL:
-            raise ShareNotExistsError("Error updating share: " + share_id)
+            raise ShareNotFoundError("Error updating share: " + share_id)
             # self._handle_error(update_response)
 
     def list_received(self):
