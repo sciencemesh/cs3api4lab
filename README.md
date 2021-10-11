@@ -1,10 +1,12 @@
 # cs3api4lab
 
-![Github Actions Status](https://github.com/sciencemesh/cs3api4lab/workflows/Build/badge.svg)
+[![Github Actions Status](https://github.com/sciencemesh/cs3api4lab.git/workflows/Build/badge.svg)](https://github.com/sciencemesh/cs3api4lab.git/actions/workflows/build.yml)
 
 This is an Extension for Jupyterlab that allow the retrieval of files and and added functionality (i.e sharing) provided by the CS3APIs.
 
-This extension is composed of a Python package named `cs3api4lab` and a NPM package named `cs3api4lab`
+
+This extension is composed of a Python package named `cs3api4lab`
+for the server extension and a NPM package named `cs3api4lab`
 for the frontend extension.
 
 The Python package implements the Jupyter `ContentsManager` and `Checkpoints` interfaces, and can be used to replace 
@@ -17,25 +19,43 @@ the default managers.
 
 ## Install
 
-Note: You will need NodeJS to install the extension.
-
-**Atm install packages temporarily unavailable. Please see "Contributing" below for alternative installation.**
+To install the extension, execute:
 
 ```bash
 pip install cs3api4lab
-jupyter serverextension enable --py cs3api4lab --sys-prefix
-jupyter labextension install @sciencemesh/cs3api4lab
 ```
 
-To enable the Manager, the following configuration needs to be added to `jupyter_server_config.py`:
+## Uninstall
 
-```python
-c.ServerApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
+To remove the extension, execute:
+
+```bash
+pip uninstall cs3api4lab
 ```
+
+
+## Troubleshoot
+
+If you are seeing the frontend extension, but it is not working, check
+that the server extension is enabled:
+
+```bash
+jupyter server extension list
+```
+
+If the server extension is installed and enabled, but you are not seeing
+the frontend extension, check the frontend extension is installed:
+
+```bash
+jupyter labextension list
+```
+
 
 ## Contributing
 
-### Install
+### Development install
+
+Note: You will need NodeJS to build the extension package.
 
 The `jlpm` command is JupyterLab's pinned version of
 [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
@@ -43,44 +63,48 @@ The `jlpm` command is JupyterLab's pinned version of
 
 ```bash
 # Clone the repo to your local environment
-git clone https://github.com/sciencemesh/cs3api4lab.git
-
-# Move to cs3api4lab directory
-cd cs3api4lab
-
-# Install the contents manager
+# Change directory to the cs3api4lab directory
+# Install package in development mode
 pip install -e .
-
-# Install dependencies
-jlpm
-
-# Build Typescript source
-jlpm build
-
 # Link your development version of the extension with JupyterLab
 jupyter labextension develop . --overwrite
-
-# Rebuild JupyterLab after making any changes
-jupyter lab build
+# Server extension must be manually installed in develop mode
+jupyter server extension enable cs3api4lab
+# Rebuild extension Typescript source after making changes
+jlpm run build
 ```
 
-You can watch the source directory and run JupyterLab in watch mode to watch for changes in the extension's source and automatically rebuild the extension and application.
+You can watch the source directory and run JupyterLab at the same time in different terminals to watch for changes in the extension's source and automatically rebuild the extension.
 
 ```bash
-# Watch the source directory in another terminal tab
-jlpm watch
-# Run jupyterlab in watch mode in one terminal tab
-jupyter lab --watch
+# Watch the source directory in one terminal, automatically rebuilding when needed
+jlpm run watch
+# Run JupyterLab in another terminal
+jupyter lab
 ```
 
-Now every change will be built locally and bundled into JupyterLab. Be sure to refresh your browser page after saving file changes to reload the extension (note: you'll need to wait for webpack to finish, which can take 10s+ at times).
+With the watch command running, every saved change will immediately be built locally and available in your running JupyterLab. Refresh JupyterLab to load the change in your browser (you may need to wait several seconds for the extension to be rebuilt).
 
-### Uninstall
+By default, the `jlpm run build` command generates the source maps for this extension to make it easier to debug using the browser dev tools. To also generate source maps for the JupyterLab core extensions, you can run the following command:
 
 ```bash
+jupyter lab build --minimize=False
+```
+
+
+
+### Development uninstall
+
+```bash
+# Server extension must be manually disabled in develop mode
+jupyter server extension disable cs3api4lab
 pip uninstall cs3api4lab
-jupyter labextension uninstall @sciencemesh/cs3api4lab
 ```
+
+In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
+command. To find its location, you can run `jupyter labextension list` to figure out where the `labextensions`
+folder is located. Then you can remove the symlink named `cs3api4lab` within that folder.
+
 
 ### Setup env for integration testing
 
@@ -250,13 +274,4 @@ docker run -p 8888:8888 -e CS3_CLIENT_ID=einstein -e CS3_CLIENT_SECRET=relativit
 Run docker image after overwriting the config variables explicitly or in the reva_config.env:
 ```bash
 docker run -p 8888:8888 --env-file reva_config.env cs3api4lab
-```
-
-### Quick build
-```bash
-pip install -e .
-jlpm
-jlpm build
-jupyter lab 
-
 ```
