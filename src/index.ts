@@ -254,7 +254,11 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         splitPanel.addWidget(shareWithMePanel)
 
         docManager.services.contents.addDrive(driveShareWithMe);
-
+        // without it the model is updated after the next call to contents endpoint
+        // which causes user-unfriendly delays
+        docManager.services.contents.fileChanged.connect(() => {
+            fileBrowser.model.refresh()
+        })
         //
         // Example tab
         //
