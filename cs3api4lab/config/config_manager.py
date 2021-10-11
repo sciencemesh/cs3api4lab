@@ -13,6 +13,7 @@ class Config(LoggingConfigurable):
         "endpoint": "/",
         "home_dir": "/home",
         "root_dir_list": "/home,/reva", # List of root dirs. Example: Exaple config "/home,/reva" for storage-references: https://developer.sciencemesh.io/docs/iop/deployment/kubernetes/providers/
+        "enable_ocm": True,
         "chunk_size": "4194304",
         "secure_channel": False,
         "client_cert": "",
