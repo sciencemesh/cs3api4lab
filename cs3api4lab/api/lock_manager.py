@@ -24,10 +24,13 @@ from cs3api4lab.exception.exceptions import LockNotFoundError
 
 class LockManager:
     user = None
+<<<<<<< HEAD
 =======
 
 class LockManager:
 >>>>>>> c3f5ea6 (Locking for shares part 1 #11)
+=======
+>>>>>>> 185a219 (*WIP* minor fixes)
 
     def __init__(self, log):
         self.log = log
@@ -58,6 +61,7 @@ class LockManager:
         return 'lock_' + user.username + '_' + user.id.idp + '_' + user.id.opaque_id
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     def _lock_file(self, file_path, endpoint):
         self.storage_logic.set_metadata(self.generate_lock_entry(), file_path, endpoint)
 
@@ -73,23 +77,29 @@ class LockManager:
         file_name = '.' + file_path.split('/')[-1] + '.lock'
         return self.config['home_dir'] + '/' + file_name
 
+=======
+>>>>>>> 185a219 (*WIP* minor fixes)
     def lock_file(self, file_path, endpoint):
         self.storage_logic.set_metadata(self.generate_lock_entry(), file_path, endpoint)
 
-    def is_lock_mine(self, file_path, endpoint):
-        lock = self._get_lock(file_path, endpoint)
+    def is_lock_mine(self, lock):
         user = self._get_current_user()
         if lock:
-            return lock['username'] == user.username #todo add more checks, ie idp
+            return lock['username'] == user.username and lock['idp'] == user.id.idp and lock['opaque_id'] == user.id.opaque_id
         return False        
 
+<<<<<<< HEAD
     def is_lock_expired(self, file_path, endpoint):
         lock = self._get_lock(file_path, endpoint)
 >>>>>>> c3f5ea6 (Locking for shares part 1 #11)
+=======
+    def is_lock_expired(self, lock):
+>>>>>>> 185a219 (*WIP* minor fixes)
         if not lock:
             return True
         return time.time() - lock['updated'] > datetime.timedelta(seconds=self.locks_expiration_time).total_seconds()
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     def resolve_file_path(self, file_path, endpoint):
         lock = self._get_lock(file_path, endpoint)
@@ -136,26 +146,29 @@ class LockManager:
         return self.user.user
 =======
     def is_file_locked(self, file_path, endpoint):
-        lock = self._get_lock(file_path, endpoint)
-        return True if lock else False
-
+=======
     def handle_locks_write(self, file_path, endpoint):
-        is_locked = self.is_file_locked(file_path, endpoint)
-        is_mine = self.is_lock_mine(file_path, endpoint)
+>>>>>>> 185a219 (*WIP* minor fixes)
+        lock = self._get_lock(file_path, endpoint)
 
-        if is_locked and not is_mine and not self.is_lock_expired(file_path, endpoint):
+        is_locked = True if lock else False
+        is_mine = self.is_lock_mine(lock)
+
+        if is_locked and not is_mine and not self.is_lock_expired(lock):
             file_name = file_path.split('/')[-1]
             return (self.config['home_dir'] + '/' + file_name + '.conflict')
 
         return file_path
 
     def handle_locks_read(self, file_path, endpoint):
-        if not self.is_file_locked(file_path, endpoint):
+        lock = self._get_lock(file_path, endpoint)
+
+        if not lock:
             self.lock_file(file_path, endpoint)
         else:
-            if self.is_lock_mine(file_path, endpoint):
+            if self.is_lock_mine(lock):
                 self.lock_file(file_path, endpoint)
-            if self.is_lock_expired(file_path, endpoint):
+            if self.is_lock_expired(lock):
                 self.lock_file(file_path, endpoint)
         return
 
@@ -163,13 +176,14 @@ class LockManager:
         lock = self._get_lock(file_path, None) #todo: test endpoint
         if not lock:
             raise LockNotFoundError("Lock not found for file: " + file_path)
-        if self.is_lock_mine(file_path, None):
+        if self.is_lock_mine(lock):
             raise LockNotFoundError("Lock belongs to the user")
-        if self.is_lock_expired(file_path, None):
+        if self.is_lock_expired(lock):
             raise LockNotFoundError("Lock is expired")
         return lock
 
     def _get_current_user(self):
+<<<<<<< HEAD
         user = self.cs3_api.WhoAmI(request=cs3gw.WhoAmIRequest(token=self.auth.authenticate()),
                                    metadata=self._get_token())
         return user.user
@@ -177,6 +191,12 @@ class LockManager:
     def _get_token(self):
         return [('x-access-token', self.auth.authenticate())]
 >>>>>>> c3f5ea6 (Locking for shares part 1 #11)
+=======
+        if self.user == None:
+            self.user = self.cs3_api.WhoAmI(request=cs3gw.WhoAmIRequest(token=self.auth.authenticate()),
+                                   metadata=[('x-access-token', self.auth.authenticate())])
+        return self.user.user
+>>>>>>> 185a219 (*WIP* minor fixes)
 
     def _get_lock(self, file_path, endpoint):
         metadata = self.storage_logic.get_metadata(file_path, endpoint)
