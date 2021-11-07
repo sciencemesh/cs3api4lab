@@ -101,6 +101,7 @@ class LockManager:
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     def resolve_file_path(self, file_path, endpoint):
         lock = self._get_lock(file_path, endpoint)
 
@@ -149,6 +150,9 @@ class LockManager:
 =======
     def handle_locks_write(self, file_path, endpoint):
 >>>>>>> 185a219 (*WIP* minor fixes)
+=======
+    def resolve_file_path(self, file_path, endpoint):
+>>>>>>> cf96e2d (changes for .conflict files)
         lock = self._get_lock(file_path, endpoint)
 
         is_locked = True if lock else False
@@ -156,11 +160,22 @@ class LockManager:
 
         if is_locked and not is_mine and not self.is_lock_expired(lock):
             file_name = file_path.split('/')[-1]
-            return (self.config['home_dir'] + '/' + file_name + '.conflict')
+            file_dir = file_path.replace(file_name, '')
+            return self._resolve_directory(file_dir, endpoint) + self._resolve_filename(file_name)
 
         return file_path
 
-    def handle_locks_read(self, file_path, endpoint):
+    def _resolve_directory(self, dir_path, endpoint):#right now its possible to write in somone else's directory without it being shared
+        try:
+            self.storage_logic.stat(dir_path, endpoint)
+            return dir_path
+        except:
+            return self.config['home_dir'] + '/'
+
+    def _resolve_filename(self, file_name):
+        return file_name + '.' + datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.conflict'
+
+    def handle_locks(self, file_path, endpoint):
         lock = self._get_lock(file_path, endpoint)
 
         if not lock:

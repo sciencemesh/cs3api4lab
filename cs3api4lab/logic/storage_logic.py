@@ -32,10 +32,14 @@ class StorageLogic:
         return
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> cf96e2d (changes for .conflict files)
     def get_unified_file_ref(self, file_path, endpoint):
         ref = FileUtils.get_reference(file_path, endpoint)
         stat = self._stat_internal(ref)
         if stat is None or stat.status.code == cs3code.CODE_NOT_FOUND:
+<<<<<<< HEAD
             return None
         else:
             stat_unified = self._stat_internal(ref=storage_provider.Reference(
@@ -48,10 +52,16 @@ class StorageLogic:
         else:
             stat_unified = self._stat(ref=storage_provider.Reference(
 >>>>>>> c3f5ea6 (Locking for shares part 1 #11)
+=======
+            return None
+        else:
+            stat_unified = self._stat_internal(ref=storage_provider.Reference(
+>>>>>>> cf96e2d (changes for .conflict files)
                 resource_id=storage_provider.ResourceId(storage_id=stat.info.id.storage_id,
                                      opaque_id=stat.info.id.opaque_id)))
             return storage_provider.Reference(path=stat_unified.info.path)
     
+<<<<<<< HEAD
 <<<<<<< HEAD
     def stat(self, file_path, endpoint):
         ref = FileUtils.get_reference(file_path, endpoint)
@@ -70,11 +80,22 @@ class StorageLogic:
     def stat_info(self, file_id, endpoint):
         ref = FileUtils.get_reference(file_id, endpoint)
         return self._stat(ref).info
+=======
+    def stat(self, file_path, endpoint):
+        ref = FileUtils.get_reference(file_path, endpoint)
+        return self._stat_internal(ref).info
+>>>>>>> cf96e2d (changes for .conflict files)
     
-    def _stat(self, ref):
-        return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
+    def _stat_internal(self, ref): #Reva returns runtime error if the file doesn't exist, change this when fixed in Reva
+        try:        
+            return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
                                  metadata=[('x-access-token', self.auth.authenticate())])
+<<<<<<< HEAD
 >>>>>>> c3f5ea6 (Locking for shares part 1 #11)
+=======
+        except:
+            return None
+>>>>>>> cf96e2d (changes for .conflict files)
 
     def set_metadata(self, data, file_path, endpoint):
         ref = self.get_unified_file_ref(file_path, endpoint)
@@ -84,6 +105,7 @@ class StorageLogic:
                 arbitrary_metadata=storage_provider.ArbitraryMetadata(metadata=data)),
             metadata=self._get_token())
         if set_metadata_response.status.code != cs3code.CODE_OK:
+<<<<<<< HEAD
 <<<<<<< HEAD
             raise Exception('Unable to set metadata for: ' + file_path + ' ' + str(set_metadata_response.status))
     
@@ -102,6 +124,16 @@ class StorageLogic:
         
         return stat.info.arbitrary_metadata.metadata
 >>>>>>> c3f5ea6 (Locking for shares part 1 #11)
+=======
+            raise Exception('Unable to set metadata for: ' + file_path + ' ' + str(set_metadata_response.status))
+    
+    def get_metadata (self, file_path, endpoint):
+        ref = self.get_unified_file_ref(file_path, endpoint)
+        stat = self._stat_internal(ref)
+        if stat:
+            return stat.info.arbitrary_metadata.metadata
+        return None
+>>>>>>> cf96e2d (changes for .conflict files)
 
     def init_file_upload(self, file_path, endpoint, content_size):
         reference = FileUtils.get_reference(file_path, endpoint)
