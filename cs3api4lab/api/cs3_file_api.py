@@ -89,11 +89,7 @@ class Cs3FileApi:
         """
         Read a file using the given userid as access token.
         """
-        import cs3api4lab.api.share_api_facade as share_ap
-        share_api = share_ap.ShareAPIFacade(self.log)
-        
-        if share_api.is_shared_file(file_path, endpoint):
-            self.lock_manager.handle_locks_read(file_path, endpoint) #this will refresh the lock on every file chunk read
+        self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
 
         time_start = time.time()
 
@@ -125,12 +121,7 @@ class Cs3FileApi:
         Write a file using the given userid as access token. The entire content is written
         and any pre-existing file is deleted (or moved to the previous version if supported).
         """
-        import cs3api4lab.api.share_api_facade as share_ap
-        share_api = share_ap.ShareAPIFacade(self.log)
-        
-        is_shared = share_api.is_shared_file(file_path, endpoint)
-        if is_shared:
-            file_path = self.lock_manager.handle_locks_write(file_path, endpoint)
+        file_path = self.lock_manager.resolve_file_path(file_path, endpoint)
 
         time_start = time.time()
 
@@ -140,8 +131,7 @@ class Cs3FileApi:
         try:
             upload_reponse = self.storage_logic.upload_content(file_path, content, content_size, init_file_upload)
 
-            if is_shared:
-                self.lock_manager.lock_file(file_path, endpoint)
+            self.lock_manager.lock_file(file_path, endpoint)
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when uploading file to Reva" reason="%s"' % e)
             raise IOError(e)
@@ -156,6 +146,8 @@ class Cs3FileApi:
         self.log.info(
             'msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (
                 file_path, (time_end - time_start) * 1000))
+
+        return file_path
 
     def remove(self, file_path, endpoint=None):
         """

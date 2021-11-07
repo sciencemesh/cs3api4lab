@@ -4,6 +4,9 @@ cs3api4lab setup
 import json
 import sys
 from pathlib import Path
+import site
+import sys
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 import setuptools
 

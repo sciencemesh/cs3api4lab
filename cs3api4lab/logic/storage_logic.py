@@ -31,24 +31,27 @@ class StorageLogic:
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         return
 
-    def get_unified_file_ref(self, file_id, endpoint):
-        ref = FileUtils.get_reference(file_id, endpoint)
-        stat = self._stat(ref)
-        if stat.status.code == cs3code.CODE_NOT_FOUND:
+    def get_unified_file_ref(self, file_path, endpoint):
+        ref = FileUtils.get_reference(file_path, endpoint)
+        stat = self._stat_internal(ref)
+        if stat is None or stat.status.code == cs3code.CODE_NOT_FOUND:
             return None
         else:
-            stat_unified = self._stat(ref=storage_provider.Reference(
+            stat_unified = self._stat_internal(ref=storage_provider.Reference(
                 resource_id=storage_provider.ResourceId(storage_id=stat.info.id.storage_id,
                                      opaque_id=stat.info.id.opaque_id)))
             return storage_provider.Reference(path=stat_unified.info.path)
     
-    def stat_info(self, file_id, endpoint):
-        ref = FileUtils.get_reference(file_id, endpoint)
-        return self._stat(ref).info
+    def stat(self, file_path, endpoint):
+        ref = FileUtils.get_reference(file_path, endpoint)
+        return self._stat_internal(ref).info
     
-    def _stat(self, ref):
-        return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
+    def _stat_internal(self, ref): #Reva returns runtime error if the file doesn't exist, change this when fixed in Reva
+        try:        
+            return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
                                  metadata=[('x-access-token', self.auth.authenticate())])
+        except:
+            return None
 
     def set_metadata(self, data, file_path, endpoint):
         ref = self.get_unified_file_ref(file_path, endpoint)
@@ -58,13 +61,14 @@ class StorageLogic:
                 arbitrary_metadata=storage_provider.ArbitraryMetadata(metadata=data)),
             metadata=self._get_token())
         if set_metadata_response.status.code != cs3code.CODE_OK:
-            raise Exception('Unable to set metadata for: ' + ref.path + ' ' + set_metadata_response.status)
+            raise Exception('Unable to set metadata for: ' + file_path + ' ' + str(set_metadata_response.status))
     
     def get_metadata (self, file_path, endpoint):
         ref = self.get_unified_file_ref(file_path, endpoint)
-        stat = self._stat(ref)
-        
-        return stat.info.arbitrary_metadata.metadata
+        stat = self._stat_internal(ref)
+        if stat:
+            return stat.info.arbitrary_metadata.metadata
+        return None
 
     def init_file_upload(self, file_path, endpoint, content_size):
         reference = FileUtils.get_reference(file_path, endpoint)

@@ -17,7 +17,6 @@ from cs3api4lab.logic.storage_logic import StorageLogic
 
 
 class ShareAPIFacade:
-    date_fmt = '%Y-%m-%dT%H:%M:%SZ'
     TYPE_FILE = 1
     TYPE_DIRECTORY = 2
 
