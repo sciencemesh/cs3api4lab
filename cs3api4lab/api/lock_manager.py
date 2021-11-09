@@ -173,7 +173,7 @@ class LockManager:
             return self.config['home_dir'] + '/'
 
     def _resolve_filename(self, file_name):
-        return file_name + '.' + datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.conflict'
+        return file_name + '_' + self._get_current_user() + '.' + datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.conflict'
 
     def handle_locks(self, file_path, endpoint):
         lock = self._get_lock(file_path, endpoint)
