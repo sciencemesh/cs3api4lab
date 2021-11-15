@@ -8,17 +8,17 @@ export const findFileIcon = (fileInfo: Contents.IModel): LabIcon => {
     const splitName = fileInfo.name.split('.');
     const fileExtension = '.' + splitName[splitName.length - 1];
 
-    const fileType = DocumentRegistry.getDefaultFileTypes().filter(
-        (fileType: Partial<DocumentRegistry.IFileType>) => {
+    const fileType :Partial<DocumentRegistry.IFileType>[] = DocumentRegistry.getDefaultFileTypes().filter(
+        (fileType :Partial<DocumentRegistry.IFileType>) => {
             return (
-                fileType.contentType == 'directory' ||
-                fileType.extensions.lastIndexOf(fileExtension) >= 0
+                fileType.contentType === 'directory' ||
+                fileType!.extensions!.lastIndexOf(fileExtension) >= 0
             );
         }
     );
 
     return fileType.length > 0
-        ? fileType[0].icon
+        ? fileType[0].icon as LabIcon
         : LabIcon.resolve({
             icon: 'ui-components:file'
         });

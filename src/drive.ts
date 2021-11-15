@@ -16,14 +16,17 @@ export class CS3Contents implements Contents.IDrive {
     protected _isDisposed = false;
     protected _state: IStateDB;
     protected _docManager: IDocumentManager;
+    readonly serverSettings: ServerConnection.ISettings;
 
     constructor(
         registry: DocumentRegistry,
         stateDB: IStateDB,
-        docManager: IDocumentManager
+        docManager: IDocumentManager,
+        serverSettings: ServerConnection.ISettings
     ) {
         this._docRegistry = registry;
         this._docManager = docManager;
+        this.serverSettings = serverSettings;
 
         // Construct a function to make a best-guess IFileType
         // for a given path.
@@ -53,10 +56,6 @@ export class CS3Contents implements Contents.IDrive {
         return 'cs3drive';
     }
 
-    /**
-     * Server settings (unused for interfacing with Google Drive).
-     */
-    readonly serverSettings: ServerConnection.ISettings;
 
     /**
      * Get a file or directory.
@@ -181,8 +180,8 @@ export class CS3ContentsShareWithMe extends CS3Contents {
 export async function CS3ContainerFiles(
     readType: string,
     stateDB: IStateDB,
-    path: string = null,
-    options: Contents.IFetchOptions = null
+    path: string|null = null,
+    options: Contents.IFetchOptions = {}
 ): Promise<any> {
     const share = await stateDB.fetch('share');
     const showHidden: boolean = await stateDB.fetch('showHidden') as boolean;
@@ -209,7 +208,7 @@ export async function CS3ContainerFiles(
 }
 
 async function getFileList(
-    path: string,
+    path: string | null,
     options: Contents.IFetchOptions,
     showHidden: boolean,
     stateDB: IStateDB

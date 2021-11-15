@@ -10,9 +10,10 @@ import {
     MainProps,
     MenuProps,
     ShareProps,
-    SharesProps,
+    SharesProps, User,
     UsersRequest
 } from './types';
+import {LabIcon} from "@jupyterlab/ui-components";
 
 /**
  * Main container.
@@ -119,7 +120,7 @@ const Content = (props: ContentProps): JSX.Element => {
 };
 
 const Header = (props: HeaderProps): JSX.Element => {
-    const Icon = findFileIcon(props.fileInfo);
+    const Icon :LabIcon = findFileIcon(props.fileInfo);
 
     return (
         <div className="jp-file-info-header">
@@ -199,8 +200,20 @@ const Info = (props: InfoProps): JSX.Element => {
 // }
 
 const Shares = (props: SharesProps): JSX.Element => {
-    const [grantees, setGrantees] = useState([]);
-    const [filteredGrantees, setFilteredGrantees] = useState([]);
+    const [grantees, setGrantees] = useState([{
+        displayName: '',
+        name: '',
+        idp: '',
+        opaqueId: '',
+        permission: ''
+    }]);
+    const [filteredGrantees, setFilteredGrantees] = useState([{
+        displayName: '',
+        name: '',
+        idp: '',
+        opaqueId: '',
+        permission: ''
+    }]);
 
     useEffect(() => {
         const getGrantees = async (): Promise<any> => {
@@ -236,11 +249,23 @@ const Shares = (props: SharesProps): JSX.Element => {
                 }
 
                 Promise.all([...granteesPromises]).then(responses => {
-                    const granteesArray: Array<object> = [];
+                    const granteesArray :[User] = [{
+                        displayName: '',
+                        name: '',
+                        idp: '',
+                        opaqueId: '',
+                        permission: ''
+                    }];
                     for (const res of responses) {
                         for (const gr of granteesSet) {
                             if (gr.opaque_id == res.opaque_id) {
-                                granteesArray.push({...gr, displayName: res.display_name});
+                                granteesArray.push({
+                                    idp: res.idp,
+                                    opaqueId: res.opaque_id,
+                                    name: res.name,
+                                    displayName: res.display_name,
+                                    permission: res.permission
+                                });
                             }
                         }
                     }
@@ -270,11 +295,11 @@ const Shares = (props: SharesProps): JSX.Element => {
         );
     };
     const filterGrantees = (
-        event: React.ChangeEvent<HTMLInputElement> | null
+        event: React.ChangeEvent<HTMLInputElement>
     ): void => {
         setFilteredGrantees(
             grantees.filter(item => {
-                if (event.target.value.toString().trim() === '') {
+                if (event?.target.value.toString().trim() === '') {
                     return true;
                 }
 
