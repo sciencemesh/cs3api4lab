@@ -52,6 +52,7 @@ export type UsersRequest = {
     name: string;
     idp: string;
     opaque_id: string;
+    permission: string;
 };
 
 export type User = {
@@ -59,4 +60,5 @@ export type User = {
     name: string;
     idp: string;
     opaqueId: string;
+    permission: string;
 };

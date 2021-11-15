@@ -5,7 +5,7 @@ import {
     JupyterFrontEndPlugin,
 } from '@jupyterlab/application';
 import {ISettingRegistry} from '@jupyterlab/settingregistry';
-import {Dialog, ICommandPalette, showDialog, WidgetTracker} from '@jupyterlab/apputils';
+import {Dialog, ICommandPalette, ReactWidget, showDialog, WidgetTracker} from '@jupyterlab/apputils';
 import {IDocumentManager} from '@jupyterlab/docmanager';
 import {IStateDB} from '@jupyterlab/statedb';
 import {ILauncher} from '@jupyterlab/launcher';
@@ -20,6 +20,7 @@ import {Cs3BottomWidget, Cs3HeaderWidget, Cs3Panel, Cs3TabWidget} from './cs3pan
 import {addLaunchersButton, createShareBox} from './utils';
 import {DockPanel, SplitPanel, Widget} from '@lumino/widgets';
 import {kernelIcon, caseSensitiveIcon, inspectorIcon, newFolderIcon} from '@jupyterlab/ui-components';
+import {Contents} from "@jupyterlab/services";
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -192,13 +193,13 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         //
         // Header
         //
-        const cs3HeaderWidget = new Cs3HeaderWidget('cs3Api4Lab', 'cs3-header-widget');
+        const cs3HeaderWidget :ReactWidget = new Cs3HeaderWidget('cs3Api4Lab', 'cs3-header-widget');
         cs3Panel.addHeader(cs3HeaderWidget);
 
         //
         // CS3 File browser
         //
-        const drive = new CS3Contents(app.docRegistry, stateDB, docManager);
+        const drive :Contents.IDrive = new CS3Contents(app.docRegistry, stateDB, docManager, app.serviceManager.serverSettings);
         const fileBrowser = factory.createFileBrowser('test_v2', {
             driveName: drive.name
         });
@@ -210,7 +211,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         //
         // Bottom
         //
-        const cs3BottomWidget = new Cs3BottomWidget('cs3Api Bottom', 'cs3-bottom-widget', {}, stateDB, fileBrowser, drive);
+        const cs3BottomWidget :ReactWidget = new Cs3BottomWidget('cs3Api Bottom', 'cs3-bottom-widget', {}, stateDB, fileBrowser, drive);
         cs3Panel.addBottom(cs3BottomWidget);
 
         addLaunchersButton(app, fileBrowser, labShell);
@@ -230,13 +231,18 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         //
         // ShareByMe
         //
-        const driveShareByMe = new CS3ContentsShareByMe(app.docRegistry, stateDB, docManager);
+        const driveShareByMe :Contents.IDrive = new CS3ContentsShareByMe(
+            app.docRegistry,
+            stateDB,
+            docManager,
+            app.serviceManager.serverSettings
+        );
         const fileBrowserShareByMe: FileBrowser = factory.createFileBrowser('test_v2_share_by_me', {
             driveName: driveShareByMe.name
         });
         fileBrowserShareByMe.toolbar.hide();
 
-        const shareByMePanel = createShareBox('cs3-share-by-me', 'Share by Me', fileBrowserShareByMe);
+        const shareByMePanel :Widget = createShareBox('cs3-share-by-me', 'Share by Me', fileBrowserShareByMe);
         splitPanel.addWidget(shareByMePanel)
 
         docManager.services.contents.addDrive(driveShareByMe);
@@ -244,7 +250,12 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         //
         // ShareWithMe
         //
-        const driveShareWithMe = new CS3ContentsShareWithMe(app.docRegistry, stateDB, docManager);
+        const driveShareWithMe :Contents.IDrive = new CS3ContentsShareWithMe(
+            app.docRegistry,
+            stateDB,
+            docManager,
+            app.serviceManager.serverSettings
+        );
         const fileBrowserShareWithMe: FileBrowser = factory.createFileBrowser('test_v2_share_with_me', {
             driveName: driveShareWithMe.name
         });
@@ -254,15 +265,11 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         splitPanel.addWidget(shareWithMePanel)
 
         docManager.services.contents.addDrive(driveShareWithMe);
-        // without it the model is updated after the next call to contents endpoint
-        // which causes user-unfriendly delays
-        docManager.services.contents.fileChanged.connect(() => {
-            fileBrowser.model.refresh()
-        })
+
         //
         // Example tab
         //
-        const cs3TabWidget3 = new Cs3TabWidget('Projects', newFolderIcon);
+        const cs3TabWidget3 :ReactWidget = new Cs3TabWidget('Projects', newFolderIcon);
 
         cs3Panel.addTab(fileBrowser);
         cs3Panel.addTab(cs3TabWidget3);
@@ -270,21 +277,21 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
 
         cs3Panel.node.onclick = (e) => {
             // Hiding bottom widget when file browser is not active
-            const cs3PanelIterator = cs3Panel.layout.iter();
-            let widget: Widget;
+            const cs3PanelIterator = cs3Panel.layout?.iter();
+            let widget: Widget | undefined;
             do {
-                widget = cs3PanelIterator.next();
+                widget = cs3PanelIterator?.next();
                 if (widget instanceof DockPanel) {
-                    const dockPanelIterator = widget.layout.iter();
-                    let tab: Widget
+                    const dockPanelIterator = widget?.layout?.iter();
+                    let tab: Widget | undefined;
                     do {
-                        tab = dockPanelIterator.next()
+                        tab = dockPanelIterator?.next()
                         if(tab instanceof FileBrowser){
-                            if(tab.isHidden && !tab.isVisible){
-                                cs3BottomWidget.hide()
+                            if(tab?.isHidden && !tab.isVisible){
+                                cs3BottomWidget?.hide()
                             }
-                            else if(cs3BottomWidget.isHidden){
-                                cs3BottomWidget.show()
+                            else if(cs3BottomWidget?.isHidden){
+                                cs3BottomWidget?.show()
                             }
                         }
                     } while (tab)

@@ -6,7 +6,7 @@ import {IStateDB} from "@jupyterlab/statedb";
 import {BottomProps} from "./types";
 import {useState} from "react";
 import {FileBrowser} from "@jupyterlab/filebrowser";
-import {CS3Contents} from "./drive";
+import {Contents} from "@jupyterlab/services";
 
 export class Cs3Panel extends Widget {
     protected header: BoxPanel;
@@ -116,12 +116,12 @@ export const Bottom = (props: BottomProps): JSX.Element => {
 }
 
 export class Cs3BottomWidget extends ReactWidget {
-    private bottomProps: { db: IStateDB; drive: CS3Contents, browser: FileBrowser };
+    private bottomProps: { db: IStateDB; drive: Contents.IDrive, browser: FileBrowser };
 
     constructor(title: string, id: string, options: Widget.IOptions = {},
                 stateDB: IStateDB,
                 browser: FileBrowser,
-                drive: CS3Contents) {
+                drive: Contents.IDrive) {
         super(options);
         this.addClass('c3-bottom-widget');
         this.id = id;
