@@ -173,7 +173,7 @@ class LockManager:
             return self.config['home_dir'] + '/'
 
     def _resolve_filename(self, file_name):
-        return file_name + '_' + self._get_current_user() + '.' + datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.conflict'
+        return file_name + '.' + self._get_current_user() + '.' + datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.conflict'
 
     def handle_locks(self, file_path, endpoint):
         lock = self._get_lock(file_path, endpoint)
@@ -186,16 +186,6 @@ class LockManager:
             if self.is_lock_expired(lock):
                 self.lock_file(file_path, endpoint)
         return
-
-    def get_lock(self, file_path):
-        lock = self._get_lock(file_path, None) #todo: test endpoint
-        if not lock:
-            raise LockNotFoundError("Lock not found for file: " + file_path)
-        if self.is_lock_mine(lock):
-            raise LockNotFoundError("Lock belongs to the user")
-        if self.is_lock_expired(lock):
-            raise LockNotFoundError("Lock is expired")
-        return lock
 
     def _get_current_user(self):
 <<<<<<< HEAD
