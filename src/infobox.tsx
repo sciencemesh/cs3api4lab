@@ -1,19 +1,21 @@
-import React, {useEffect, useState} from 'react';
+import React, { useState} from 'react';
 import {Contents} from '@jupyterlab/services';
-import {ReactWidget} from '@jupyterlab/apputils';
+import {ReactWidget, WidgetTracker} from '@jupyterlab/apputils';
 import {findFileIcon, requestAPI} from './services';
+import {INotification} from "jupyterlab_toastify";
 import moment from 'moment';
 import {
-    ContentProps,
+    ContentProps, CreateShareProps,
     HeaderProps,
     InfoProps,
     MainProps,
-    MenuProps,
+    MenuProps, ShareFormProps,
     ShareProps,
-    SharesProps, User,
+    SharesProps,
     UsersRequest
 } from './types';
 import {LabIcon} from "@jupyterlab/ui-components";
+import Select, {SelectRenderer} from 'react-dropdown-select';
 
 /**
  * Main container.
@@ -21,6 +23,7 @@ import {LabIcon} from "@jupyterlab/ui-components";
  * @constructor
  */
 class Main extends React.Component<any, any> {
+    private readonly widgetTracker :WidgetTracker;
     public state = {
         activeTab: 'info',
         grantees: new Map()
@@ -33,10 +36,7 @@ class Main extends React.Component<any, any> {
      */
     public constructor(props: MainProps) {
         super(props);
-        this.setState({
-            ...this.state,
-            props
-        });
+        this.widgetTracker = props.widgetTracker;
     }
 
     /**
@@ -63,6 +63,7 @@ class Main extends React.Component<any, any> {
                 <Content
                     contentType={this.state.activeTab}
                     content={this.props.fileInfo}
+                    widgetTracker={this.widgetTracker}
                     // getGrantees={this.getGranteesForResource}
                 />
             </div>
@@ -95,6 +96,16 @@ export const Menu = (props: MenuProps): JSX.Element => {
                     >
                         SHARES
                     </li>
+
+                    <li
+                        className={activeTab == 'sharefile' ? 'active' : ''}
+                        onClick={() => {
+                            setActiveTab('sharefile');
+                            props.tabHandler('sharefile');
+                        }}
+                    >
+                        SHARE FILE
+                    </li>
                     <li>LINKS</li>
                 </ul>
             </nav>
@@ -110,7 +121,9 @@ const Content = (props: ContentProps): JSX.Element => {
         case 'shares':
             elementToDisplay = Shares({content: props.content});
             break;
-
+        case 'sharefile':
+            elementToDisplay = CreateShare({fileInfo: props.content, widgetTracker: props.widgetTracker});
+            break;
         case 'info':
         default:
             elementToDisplay = Info({content: props.content});
@@ -135,15 +148,17 @@ const Header = (props: HeaderProps): JSX.Element => {
  */
 export class InfoboxWidget extends ReactWidget {
     private readonly fileInfo: Contents.IModel;
+    private readonly widgetTracker: WidgetTracker;
 
     public constructor(props: ShareProps) {
         super();
         this.addClass('jp-ReactWidget');
         this.fileInfo = props.fileInfo;
+        this.widgetTracker = props.widgetTracker;
     }
 
     protected render(): JSX.Element {
-        return <Main fileInfo={this.fileInfo}/>;
+        return <Main fileInfo={this.fileInfo} widgetTracker={this.widgetTracker}/>;
     }
 }
 
@@ -158,17 +173,13 @@ const Info = (props: InfoProps): JSX.Element => {
                     <th>Mimetype:</th>
                     <td>{props.content.mimetype}</td>
                 </tr>
-            ) : (
-                ''
-            )}
+            ) : null}
             {props.content.size ? (
                 <tr>
                     <th>Size:</th>
                     <td>{props.content.size} Bytes</td>
                 </tr>
-            ) : (
-                ''
-            )}
+            ) : null}
             <tr>
                 <th>Type:</th>
                 <td>{props.content.type}</td>
@@ -200,7 +211,7 @@ const Info = (props: InfoProps): JSX.Element => {
 // }
 
 const Shares = (props: SharesProps): JSX.Element => {
-    const [grantees, setGrantees] = useState([{
+    const [grantees] = useState([{
         displayName: '',
         name: '',
         idp: '',
@@ -215,85 +226,6 @@ const Shares = (props: SharesProps): JSX.Element => {
         permission: ''
     }]);
 
-    useEffect(() => {
-        const getGrantees = async (): Promise<any> => {
-            const resource = '/' + props.content.path.replace('cs3driveShareByMe:', '');
-
-            requestAPI<any>('/api/cs3/shares/file?file_path=' + resource, {
-                method: 'GET'
-            }).then(async granteesRequest => {
-                if (!granteesRequest.shares) {
-                    return false;
-                }
-
-                const granteesSet: Array<{
-                    opaque_id: string;
-                    permission: string;
-                    idp: string;
-                }> = [];
-                granteesRequest.shares.forEach((item: any) => {
-                    granteesSet.push({
-                        opaque_id: item.grantee.opaque_id,
-                        permission: item.grantee.permissions,
-                        idp: item.grantee.idp
-                    });
-                });
-
-                if (granteesSet.length <= 0) {
-                    return false;
-                }
-
-                const granteesPromises: Array<any> = [];
-                for (const gr of granteesSet) {
-                    granteesPromises.push(await getUsernames(gr.opaque_id, gr.idp));
-                }
-
-                Promise.all([...granteesPromises]).then(responses => {
-                    const granteesArray :[User] = [{
-                        displayName: '',
-                        name: '',
-                        idp: '',
-                        opaqueId: '',
-                        permission: ''
-                    }];
-                    for (const res of responses) {
-                        for (const gr of granteesSet) {
-                            if (gr.opaque_id == res.opaque_id) {
-                                granteesArray.push({
-                                    idp: res.idp,
-                                    opaqueId: res.opaque_id,
-                                    name: res.name,
-                                    displayName: res.display_name,
-                                    permission: res.permission
-                                });
-                            }
-                        }
-                    }
-
-                    setGrantees(granteesArray);
-                    setFilteredGrantees(granteesArray);
-                });
-            });
-
-            return new Promise(resolve => {
-                resolve(null);
-            });
-        };
-
-        getGrantees();
-    }, []);
-
-    const getUsernames = async (
-        opaqueId: string,
-        idp: string
-    ): Promise<UsersRequest> => {
-        return await requestAPI<any>(
-            '/api/cs3/user?opaque_id=' + opaqueId + '&idp=' + idp,
-            {
-                method: 'GET'
-            }
-        );
-    };
     const filterGrantees = (
         event: React.ChangeEvent<HTMLInputElement>
     ): void => {
@@ -342,5 +274,147 @@ const Shares = (props: SharesProps): JSX.Element => {
                 })}
             </div>
         </div>
+    );
+};
+
+// SHARE A FILE
+
+/**
+ * Share form widget.
+ *
+ * @param shareProps
+ *
+ * @constructor
+ */
+const ShareForm: React.FC<ShareFormProps> = (
+    shareProps: ShareFormProps
+): JSX.Element => {
+    const [userList, setUserList] = useState([]);
+    const [selectedUser, setSelectedUser] = useState([
+        {
+            idp: '',
+            grantee: ''
+        }
+    ]);
+
+    const [formValues, setFormState] = useState({
+        endpoint: '/',
+        file_path: '/home/' + shareProps.fileInfo.path.replace('cs3drive:', ''),
+        grantee: '',
+        idp: '',
+        role: 'viewer',
+        grantee_type: 'user'
+    });
+
+    const getUsers = ({state}: SelectRenderer<Object>): Array<string> => {
+        if (state.search.length <= 0)
+            return [];
+
+        shareProps.getUsers(state.search).then(users => {
+            const parsedUsers: any = [];
+
+            let i = 1;
+            for (const user of users) {
+                parsedUsers.push({
+                    id: i++,
+                    name: user.display_name,
+                    displayName: user.display_name,
+                    idp: user.idp,
+                    grantee: user.opaque_id
+                });
+            }
+            setUserList(parsedUsers);
+        });
+
+        return [];
+    }
+
+    const setFormStateFromValues = (
+        param:
+            | React.ChangeEvent<HTMLInputElement>
+            | React.ChangeEvent<HTMLSelectElement>
+    ) => {
+        const tmpFormState: any = {...formValues};
+        tmpFormState[param.target.name] = param.target.value;
+        setFormState(tmpFormState);
+    };
+
+    const localMakeRequest = () => {
+        const [user] = [...selectedUser];
+        const _formValues = {...formValues};
+
+        _formValues.idp = user.idp;
+        _formValues.grantee = user.grantee;
+
+        shareProps.makeRequest(_formValues);
+    };
+
+    return (
+        <div className="jp-shareform">
+            <div className="jp-shareform-line">
+                <div className="jp-shareform-title">Grantee</div>
+                <div className="jp-shareform-element">
+                    <Select
+                        searchable={true}
+                        options={userList}
+                        values={[]}
+                        create={false}
+                        valueField="name"
+                        labelField="displayName"
+                        placeholder="Select user..."
+                        onChange={(userValue :any) => {
+                            const user = userValue[0] as {[key:string]: string}
+                            setSelectedUser([{
+                                idp: user['idp'],
+                                grantee: user['grantee']
+                            }])}}
+                        handleKeyDownFn={getUsers}
+                    />
+                </div>
+            </div>
+            <div className="jp-shareform-line">
+                <div className="jp-shareform-title">Role</div>
+                <div className="jp-shareform-title">
+                    <select onChange={setFormStateFromValues} name="role">
+                        <option value="viewer">Viewer</option>
+                        <option value="editor">Editor</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onClick={localMakeRequest}>Make request</button>
+        </div>
+    );
+};
+
+/**
+ * Main container.
+ *
+ * @constructor
+ */
+const CreateShare = (props: CreateShareProps): JSX.Element => {
+    return (
+        <>
+            <ShareForm
+                fileInfo={props.fileInfo}
+                getUsers={async (query): Promise<Array<UsersRequest>> => {
+                    return await requestAPI('api/cs3/user/query?query=' + query, {});
+                }}
+                makeRequest={async (params: object) => {
+                    try {
+                       await requestAPI<any>('/api/cs3/shares', {
+                            method: 'POST',
+                            body: JSON.stringify(params)
+                        });
+
+                        await INotification.success('This file is now shared');
+                    } catch (e) {
+                        await INotification.error('Error encountered while sharing a file');
+                    }
+
+                    props.widgetTracker.currentWidget?.close();
+                }}
+            />
+        </>
     );
 };

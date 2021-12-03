@@ -229,3 +229,40 @@
 {
     padding-top: 5px;
 }
+
+
+#cs3-share-by-me-box-panel
+{
+    padding-top: 5px;
+}
+
+.jp-shareform
+{
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+.jp-shareform-line
+{
+    flex-direction: row;
+    flex-grow: 1;
+    justify-content: flex-start;
+    align-items: stretch;
+    padding-bottom: 2%;
+}
+
+.jp-shareform-title
+{
+    flex-basis: 30%;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.jp-shareform-element {
+    flex-basis: 70%;
+    flex-direction: column;
+}
+
+.react-dropdown-select {
+    width: 90%;
+}

@@ -1,6 +1,7 @@
 import {Contents} from '@jupyterlab/services';
 import {IStateDB} from "@jupyterlab/statedb";
 import {FileBrowser} from "@jupyterlab/filebrowser";
+import {WidgetTracker} from "@jupyterlab/apputils";
 
 export type ResultProps = {
     message: string;
@@ -12,12 +13,14 @@ export type ShareFormProps = {
 };
 export type CreateShareProps = {
     fileInfo: Contents.IModel;
+    widgetTracker: WidgetTracker;
 };
 export type WidgetProps = {
     fileInfo: Contents.IModel;
 };
 export type MainProps = {
     fileInfo: Contents.IModel;
+    widgetTracker: WidgetTracker;
 };
 export type MenuProps = {
     tabHandler: (tabname: string) => void;
@@ -25,6 +28,7 @@ export type MenuProps = {
 export type ContentProps = {
     content: Contents.IModel;
     contentType: string;
+    widgetTracker: WidgetTracker;
     // getGrantees: Promise<Map<string, string>>
     // grantees: Map<string, string>
 };
@@ -33,6 +37,7 @@ export type HeaderProps = {
 };
 export type ShareProps = {
     fileInfo: Contents.IModel;
+    widgetTracker: WidgetTracker
 };
 export type InfoProps = {
     content: Contents.IModel;
