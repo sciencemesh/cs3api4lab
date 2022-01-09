@@ -1,4 +1,5 @@
 import json
+import re
 import time
 import datetime
 import grpc
@@ -45,7 +46,7 @@ class LockManager:
         user = self._get_current_user()
         return 'lock_' + user.username + '_' + user.id.idp + '_' + user.id.opaque_id
 
-    def lock_file(self, file_path, endpoint):
+    def _lock_file(self, file_path, endpoint):
         self.storage_logic.set_metadata(self.generate_lock_entry(), file_path, endpoint)
 
     def is_lock_mine(self, lock):
@@ -68,7 +69,7 @@ class LockManager:
         if is_locked and not is_mine and not self.is_lock_expired(lock):
             file_name = file_path.split('/')[-1]
             file_dir = file_path.replace(file_name, '')
-            return self._resolve_directory(file_dir, endpoint) + self._resolve_filename(file_name)
+            return self._resolve_directory(file_dir, endpoint) + self._get_conflict_filename(file_name)
 
         return file_path
 
@@ -79,20 +80,23 @@ class LockManager:
         except:
             return self.config['home_dir'] + '/'
 
-    def _resolve_filename(self, file_name):
-        return file_name + '.' + self._get_current_user() + '.' + datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.conflict'
+    def _get_conflict_filename(self, file_name):
+        return file_name + '.' + self._get_current_user().username + '.' + datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.conflict'
 
     def handle_locks(self, file_path, endpoint):
         lock = self._get_lock(file_path, endpoint)
 
         if not lock:
-            self.lock_file(file_path, endpoint)
+            self._lock_file(file_path, endpoint)
+            return
         else:
             if self.is_lock_mine(lock):
-                self.lock_file(file_path, endpoint)
+                self._lock_file(file_path, endpoint)
+                return
             if self.is_lock_expired(lock):
-                self.lock_file(file_path, endpoint)
-        return
+                self._lock_file(file_path, endpoint)
+                return
+        raise IOError("File locked")
 
     def _get_current_user(self):
         if self.user == None:

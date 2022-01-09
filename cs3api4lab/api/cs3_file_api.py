@@ -89,9 +89,10 @@ class Cs3FileApi:
         """
         Read a file using the given userid as access token.
         """
-        self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
-
         time_start = time.time()
+        
+        if self.storage_logic.stat(file_path, endpoint) is not None:
+            self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
 
         init_file_download = self.storage_logic.init_file_download(file_path, endpoint)
 
@@ -125,13 +126,16 @@ class Cs3FileApi:
 
         time_start = time.time()
 
+        if self.storage_logic.stat(file_path, endpoint) is not None:
+            self.lock_manager.handle_locks(file_path, endpoint)
+
         content_size = FileUtils.calculate_content_size(content)
         init_file_upload = self.storage_logic.init_file_upload(file_path, endpoint, content_size)
 
         try:
             upload_reponse = self.storage_logic.upload_content(file_path, content, content_size, init_file_upload)
 
-            self.lock_manager.lock_file(file_path, endpoint)
+            self.lock_manager.handle_locks(file_path, endpoint)
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when uploading file to Reva" reason="%s"' % e)
             raise IOError(e)

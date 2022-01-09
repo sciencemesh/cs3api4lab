@@ -20,6 +20,7 @@ class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
     shared_file_path = '/reva/einstein/test_locks.txt'
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
     share_id = None
+    conflict_name = None
     
     def test_lock_created_when_file_written(self):
         self.file_name = self.file_path + self.get_random_suffix()
@@ -81,18 +82,19 @@ class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
             self.share_id = created_share['opaque_id']
 
             self.file_api.write_file(self.file_name, 'content')
-            self.confict_name = self.richard_file_api.write_file(shared_name, "richard_content")
+            self.conflict_name = self.richard_file_api.write_file(shared_name, "richard_content")
             
-            lock_stat = self.richard_file_api.stat(self.confict_name)
-            self.assertEqual(lock_stat['filepath'], self.confict_name)
+            lock_stat = self.richard_file_api.stat(self.conflict_name)
+            self.assertEqual(lock_stat['filepath'], self.conflict_name)
 
-            content = self.read_file_content(self.richard_file_api, self.confict_name)
+            content = self.read_file_content(self.richard_file_api, self.conflict_name)
             self.assertEqual(content, 'richard_content', 'File ' + self.file_name + ' should contain the string: ' + 'richard_content')
         finally:
             if self.share_id:
                 self.remove_test_share('einstein', self.share_id)
             self.remove_test_file('einstein', self.file_name)
-            self.remove_test_file('richard', self.confict_name)
+            if self.conflict_name:
+                self.remove_test_file('richard', self.conflict_name)
 
     def test_write_dir_file_locked(self):
         suffix = self.get_random_suffix()
@@ -103,23 +105,24 @@ class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
             try:
                 self.file_api.create_directory('/home/testdir')
             except:
-                pass #ignore already existing container
+                pass #ignore already existing directory
             created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
             self.share_id = created_share['opaque_id']
 
             self.file_api.write_file(self.file_name, 'content')
-            self.confict_name = self.richard_file_api.write_file(shared_name, "richard_content")
+            self.conflict_name = self.richard_file_api.write_file(shared_name, "richard_content")
             
-            lock_stat = self.richard_file_api.stat(self.confict_name)
-            self.assertEqual(lock_stat['filepath'], self.confict_name)
+            lock_stat = self.richard_file_api.stat(self.conflict_name)
+            self.assertEqual(lock_stat['filepath'], self.conflict_name)
 
-            content = self.read_file_content(self.richard_file_api, self.confict_name)
+            content = self.read_file_content(self.richard_file_api, self.conflict_name)
             self.assertEqual(content, 'richard_content', 'File ' + self.file_name + ' should contain the string: ' + 'richard_content')
         finally:
             if self.share_id:
                 self.remove_test_share('einstein', self.share_id)
             self.remove_test_file('einstein', self.file_name)
-            self.remove_test_file('richard', self.confict_name)
+            if self.conflict_name:
+                self.remove_test_file('richard', self.conflict_name)
 
     def test_write_file_lock_expired(self):
         suffix = self.get_random_suffix()

@@ -30,7 +30,7 @@ class Config(LoggingConfigurable):
         config_path = jupyter_config_path()
         if self.__config_dir not in config_path:
             # add self.config_dir to the front, if set manually
-            config_path.insert(0, os.getcwd() + self.__config_dir)
+            config_path.insert(0, os.getcwd() + self.__config_dir) #might be (0, os.getcwd() + '\\cs3api4lab' + self.__config_dir) depending on the environment setup"
         cm = ConfigManager(read_config_path=config_path)
         config_file = cm.get(self.__config_file_name)
         config = config_file.get("cs3")

@@ -44,7 +44,10 @@ class StorageLogic:
     
     def stat(self, file_path, endpoint):
         ref = FileUtils.get_reference(file_path, endpoint)
-        return self._stat_internal(ref).info
+        stat = self._stat_internal(ref)
+        if stat and stat.status.code is not cs3code.CODE_NOT_FOUND:
+            return stat.info
+        return None
     
     def _stat_internal(self, ref): #Reva returns runtime error if the file doesn't exist, change this when fixed in Reva
         try:        
