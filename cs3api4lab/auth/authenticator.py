@@ -69,7 +69,7 @@ class Auth:
     __auth_instance = None
 
     @classmethod
-    def get_authenticator(cls, config=None, log=None):
+    def get_authenticator(cls, config=None, log=None): #singletons should be replaced by dependency injection
 
         if cls.__auth_instance is None:
 

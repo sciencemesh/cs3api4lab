@@ -8,7 +8,11 @@ class ModelUtils:
     date_fmt = '%Y-%m-%dT%H:%M:%SZ'
 
     @staticmethod
+<<<<<<< HEAD
     def create_respond_model():
+=======
+    def _create_respond_model():
+>>>>>>> c3f5ea6 (Locking for shares part 1 #11)
 
         model = {}
         model['name'] = "/"
@@ -26,6 +30,7 @@ class ModelUtils:
         return model
 
     @staticmethod
+<<<<<<< HEAD
     def map_share_to_file_model(share, stat):
 
         model = ModelUtils._map_share_to_base_model(share, stat)
@@ -45,6 +50,8 @@ class ModelUtils:
         return model
 
     @staticmethod
+=======
+>>>>>>> c3f5ea6 (Locking for shares part 1 #11)
     def _map_share_to_base_model(share, stat):
 
         created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime(ModelUtils.date_fmt)
@@ -63,4 +70,26 @@ class ModelUtils:
         model['content'] = None
         model['format'] = None
         model['writable'] = writable
+<<<<<<< HEAD
+=======
+        return model
+
+    @staticmethod
+    def _map_share_to_file_model(share, stat):
+
+        model = ModelUtils._map_share_to_base_model(share, stat)
+        model['size'] = stat['size']
+        model['type'] = 'file'
+        model['mimetype'] = mimetypes.guess_type(stat['filepath'])[0]
+
+        return model
+
+    @staticmethod
+    def _map_share_to_dir_model(share, stat):
+
+        model = ModelUtils._map_share_to_base_model(share, stat)
+        model['size'] = None
+        model['type'] = 'directory'
+        model['mimetype'] = None
+>>>>>>> c3f5ea6 (Locking for shares part 1 #11)
         return model

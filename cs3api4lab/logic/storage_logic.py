@@ -31,6 +31,7 @@ class StorageLogic:
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         return
 
+<<<<<<< HEAD
     def get_unified_file_ref(self, file_path, endpoint):
         ref = FileUtils.get_reference(file_path, endpoint)
         stat = self._stat_internal(ref)
@@ -38,10 +39,20 @@ class StorageLogic:
             return None
         else:
             stat_unified = self._stat_internal(ref=storage_provider.Reference(
+=======
+    def get_unified_file_ref(self, file_id, endpoint):
+        ref = FileUtils.get_reference(file_id, endpoint)
+        stat = self._stat(ref)
+        if stat.status.code == cs3code.CODE_NOT_FOUND:
+            return None
+        else:
+            stat_unified = self._stat(ref=storage_provider.Reference(
+>>>>>>> c3f5ea6 (Locking for shares part 1 #11)
                 resource_id=storage_provider.ResourceId(storage_id=stat.info.id.storage_id,
                                      opaque_id=stat.info.id.opaque_id)))
             return storage_provider.Reference(path=stat_unified.info.path)
     
+<<<<<<< HEAD
     def stat(self, file_path, endpoint):
         ref = FileUtils.get_reference(file_path, endpoint)
         stat = self._stat_internal(ref)
@@ -55,6 +66,15 @@ class StorageLogic:
                                  metadata=[('x-access-token', self.auth.authenticate())])
         except:
             return None
+=======
+    def stat_info(self, file_id, endpoint):
+        ref = FileUtils.get_reference(file_id, endpoint)
+        return self._stat(ref).info
+    
+    def _stat(self, ref):
+        return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
+                                 metadata=[('x-access-token', self.auth.authenticate())])
+>>>>>>> c3f5ea6 (Locking for shares part 1 #11)
 
     def set_metadata(self, data, file_path, endpoint):
         ref = self.get_unified_file_ref(file_path, endpoint)
@@ -64,6 +84,7 @@ class StorageLogic:
                 arbitrary_metadata=storage_provider.ArbitraryMetadata(metadata=data)),
             metadata=self._get_token())
         if set_metadata_response.status.code != cs3code.CODE_OK:
+<<<<<<< HEAD
             raise Exception('Unable to set metadata for: ' + file_path + ' ' + str(set_metadata_response.status))
     
     def get_metadata (self, file_path, endpoint):
@@ -72,6 +93,15 @@ class StorageLogic:
         if stat:
             return stat.info.arbitrary_metadata.metadata
         return None
+=======
+            raise Exception('Unable to set metadata for: ' + ref.path + ' ' + set_metadata_response.status)
+    
+    def get_metadata (self, file_path, endpoint):
+        ref = self.get_unified_file_ref(file_path, endpoint)
+        stat = self._stat(ref)
+        
+        return stat.info.arbitrary_metadata.metadata
+>>>>>>> c3f5ea6 (Locking for shares part 1 #11)
 
     def init_file_upload(self, file_path, endpoint, content_size):
         reference = FileUtils.get_reference(file_path, endpoint)
