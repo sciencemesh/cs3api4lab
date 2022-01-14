@@ -108,21 +108,11 @@ dmypy.json
 
 *.iml
 .idea/
-<<<<<<< HEAD
 .vscode/
 cs3api4lab/.vscode/
+/cs3api4lab/labextension/
 
 # End of https://www.gitignore.io/api/python
 
 # OSX files
 .DS_Store
-=======
-/cs3api4lab/labextension/
-<<<<<<< HEAD
-.vscode/launch.json
-.vscode/settings.json
-cs3api4lab/.vscode/settings.json
->>>>>>> 8e0a78a (correct method names in model_utils)
-=======
-.vscode/
->>>>>>> 185a219 (*WIP* minor fixes)

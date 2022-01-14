@@ -92,12 +92,9 @@ class Cs3FileApi:
         self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
 
         time_start = time.time()
-<<<<<<< HEAD
         
         if self.storage_logic.stat(file_path, endpoint) is not None:
             self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
-=======
->>>>>>> c3f5ea6 (Locking for shares part 1 #11)
 
         init_file_download = self.storage_logic.init_file_download(file_path, endpoint)
 
@@ -127,27 +124,12 @@ class Cs3FileApi:
         Write a file using the given userid as access token. The entire content is written
         and any pre-existing file is deleted (or moved to the previous version if supported).
         """
-<<<<<<< HEAD
-<<<<<<< HEAD
         file_path = self.lock_manager.resolve_file_path(file_path, endpoint)
 
         time_start = time.time()
 
         if self.storage_logic.stat(file_path, endpoint) is not None:
             self.lock_manager.handle_locks(file_path, endpoint)
-=======
-        import cs3api4lab.api.share_api_facade as share_ap
-        share_api = share_ap.ShareAPIFacade(self.log)
-        
-        is_shared = share_api.is_shared_file(file_path, endpoint)
-        if is_shared:
-            file_path = self.lock_manager.handle_locks_write(file_path, endpoint)
-=======
-        file_path = self.lock_manager.resolve_file_path(file_path, endpoint)
->>>>>>> cf96e2d (changes for .conflict files)
-
-        time_start = time.time()
->>>>>>> c3f5ea6 (Locking for shares part 1 #11)
 
         content_size = FileUtils.calculate_content_size(content)
         init_file_upload = self.storage_logic.init_file_upload(file_path, endpoint, content_size)
@@ -155,16 +137,7 @@ class Cs3FileApi:
         try:
             upload_reponse = self.storage_logic.upload_content(file_path, content, content_size, init_file_upload)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
             self.lock_manager.handle_locks(file_path, endpoint)
-=======
-            if is_shared:
-                self.lock_manager.lock_file(file_path, endpoint)
->>>>>>> c3f5ea6 (Locking for shares part 1 #11)
-=======
-            self.lock_manager.lock_file(file_path, endpoint)
->>>>>>> cf96e2d (changes for .conflict files)
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when uploading file to Reva" reason="%s"' % e)
             raise IOError(e)
