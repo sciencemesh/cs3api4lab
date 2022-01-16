@@ -17,7 +17,7 @@ class FileUtils:
         if endpoint == 'default' or endpoint is None:
             raise IOError('A CS3API-compatible storage endpoint must be identified by a storage UUID')
         # assume we have an opaque fileid
-        return storage_provider.Reference(id=storage_provider.ResourceId(storage_id=endpoint, opaque_id=file_id))
+        return storage_provider.Reference(resource_id=storage_provider.ResourceId(storage_id=endpoint, opaque_id=file_id))
 
     @staticmethod
     def _check_and_transform_file_path(file_id):
