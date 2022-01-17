@@ -41,7 +41,7 @@ export function addLaunchersButton(
   if (labShell) {
     const launcher = new ToolbarButton({
       icon: addIcon,
-      onClick: () => {
+      onClick: (): Promise<any> => {
         return commands
           .execute('launcher:create', { cwd: model.path })
           .then((launcher: MainAreaWidget<Launcher>) => {
