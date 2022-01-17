@@ -41,9 +41,7 @@ export class CS3Contents implements Contents.IDrive {
     };
     // Construct a function to return a best-guess IFileType
     // for a given contents model.
-    this._fileTypeForContentsModel = (
-      model: Partial<Contents.IModel>
-    ): DocumentRegistry.IFileType => {
+    this._fileTypeForContentsModel = (model: Partial<Contents.IModel>) => {
       return registry.getFileTypeForModel(model);
     };
 
@@ -56,8 +54,6 @@ export class CS3Contents implements Contents.IDrive {
 
   /**
    * The name of the drive.
-   *
-   * @returns string Drive name
    */
   get name(): string {
     return 'cs3drive';
@@ -66,8 +62,9 @@ export class CS3Contents implements Contents.IDrive {
   /**
    * Get a file or directory.
    *
-   * @param path string The path to the file.
-   * @param options Contents.IModel|undefined The options used to fetch the file.
+   * @param path: The path to the file.
+   *
+   * @param options: The options used to fetch the file.
    *
    * @returns A promise which resolves with the file content.
    */
@@ -80,8 +77,6 @@ export class CS3Contents implements Contents.IDrive {
 
   /**
    * A signal emitted when a file operation takes place.
-   *
-   * @returns ISignal Signal check if file has changed
    */
   get fileChanged(): ISignal<this, Contents.IChangedArgs> {
     return this._fileChanged;
@@ -89,8 +84,6 @@ export class CS3Contents implements Contents.IDrive {
 
   /**
    * Test whether the manager has been disposed.
-   *
-   * @returns CS3Contents._isDisposed Is disposed
    */
   get isDisposed(): boolean {
     return this._isDisposed;
@@ -186,14 +179,6 @@ export class CS3ContentsShareWithMe extends CS3Contents {
   }
 }
 
-/**
- * CS3 file container
- *
- * @param readType string Read type
- * @param stateDB IStateDb State
- * @param path string Path
- * @param options Contents.IFetchOptions Fetch options
- */
 export async function CS3ContainerFiles(
   readType: string,
   stateDB: IStateDB,
@@ -206,7 +191,7 @@ export async function CS3ContainerFiles(
   if (readType !== 'filelist') {
     shareType = readType;
   } else if (share !== undefined) {
-    shareType = (share as ReadonlyJSONObject)['shareType'];
+    shareType = (share as ReadonlyJSONObject)['share_type'];
   }
 
   if (path !== '') {
@@ -224,14 +209,6 @@ export async function CS3ContainerFiles(
   }
 }
 
-/**
- * Get file list
- *
- * @param path string|null Path
- * @param options Contents.IFetchOptions Options
- * @param showHidden boolean Show hidden files
- * @param stateDB IStateDb State
- */
 async function getFileList(
   path: string | null,
   options: Contents.IFetchOptions,
@@ -270,20 +247,14 @@ async function getFileList(
   return result;
 }
 
-/**
- *
- */
 async function getSharedByMe(): Promise<any> {
   return await requestAPI('/api/cs3/shares/list', {
     method: 'get'
   });
 }
 
-/**
- *
- */
 async function getSharedWithMe(): Promise<any> {
   return await requestAPI('/api/cs3/shares/received', {
-    method: 'get',
+    method: 'get'
   });
 }

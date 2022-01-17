@@ -94,7 +94,7 @@ export class Cs3HeaderWidget extends ReactWidget {
 export const Bottom = (props: BottomProps): JSX.Element => {
   const [text, setText] = useState('');
 
-  const setLabel = async (): Promise<void> => {
+  const setLabel = async () => {
     const showHidden: boolean = (await props.db.fetch('showHidden')) as boolean;
     const hiddenFilesNo: number = (await props.db.fetch(
       'hiddenFilesNo'
@@ -134,7 +134,7 @@ export class Cs3BottomWidget extends ReactWidget {
     this.id = id;
     this.title.closable = false;
     this.bottomProps = { db: stateDB, drive: drive, browser: browser };
-    this.node.onclick = async (): Promise<void> => {
+    this.node.onclick = async () => {
       const showHidden = await stateDB.fetch('showHidden');
       await stateDB.save('showHidden', !showHidden);
       await browser.model.refresh();

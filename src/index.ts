@@ -67,7 +67,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
     const createFileBrowser = (
       id: string,
       options: IFileBrowserFactory.IOptions = {}
-    ): Widget => {
+    ) => {
       const model = new FilterFileBrowserModel({
         auto: options.auto ?? true,
         manager: docManager,
@@ -79,10 +79,10 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
             : options.state || state || undefined
       });
       // Get the file path changed signal.
-      model.fileChanged.connect(async () => {
-        return await model.refresh();
+      model.fileChanged.connect(() => {
+        void model.refresh();
       });
-      model.uploadChanged;
+      void model.uploadChanged;
 
       const restore = options.restore;
       const widget = new FileBrowser({ id, model, restore });
@@ -102,7 +102,6 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
     return { createFileBrowser, defaultBrowser, tracker };
   }
 };
-
 /**
  * Initialization data for the cs3api4lab extension.
  */
@@ -171,7 +170,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
   ): void {
     const cs3Panel = new Cs3Panel('cs3 panel', 'cs3-panel', kernelIcon);
 
-    void stateDB.save('share', { shareType: 'filelist' });
+    void stateDB.save('share', { share_type: 'filelist' });
     void stateDB.save('showHidden', false);
 
     //
@@ -291,7 +290,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     cs3Panel.addTab(cs3TabWidget3);
     cs3Panel.addTab(splitPanel);
 
-    cs3Panel.node.onclick = (): void => {
+    cs3Panel.node.onclick = () => {
       // Hiding bottom widget when file browser is not active
       const cs3PanelIterator = cs3Panel.layout?.iter();
       let widget: Widget | undefined;
