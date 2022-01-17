@@ -14,4 +14,4 @@ build_cmd = "build:prod"
 npm = ["jlpm"]
 
 [tool.check-manifest]
-ignore = ["cs3api4lab/labextension/**", "yarn.lock", ".*", "package-lock.json"]
+ignore = ["cs3api4lab/labextension/**", "yarn.lock", ".*", "package-lock.json", "Dockerfile", "reva_config.env", "swagger/**", "tests/jupyter-config/**"]
