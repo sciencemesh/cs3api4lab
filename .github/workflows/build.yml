@@ -45,7 +45,7 @@ jobs:
           yarn-
     
     - name: Install dependencies
-      run: python -m pip install -U jupyterlab~=3.1 check-manifest
+      run: python -m pip install -U jupyterlab==3.0 check-manifest
     - name: Build the extension
       run: |
         set -eux
@@ -93,6 +93,6 @@ jobs:
         sudo rm -rf $(which node)
         sudo rm -rf $(which node)
         pip install cs3api4lab.tar.gz
-        pip install jupyterlab
+        pip install jupyterlab==3.0
         jupyter labextension list 2>&1 | grep -ie "cs3api4lab.*OK"
         python -m jupyterlab.browser_check --no-chrome-test
