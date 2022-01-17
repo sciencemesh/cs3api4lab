@@ -67,7 +67,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
     const createFileBrowser = (
       id: string,
       options: IFileBrowserFactory.IOptions = {}
-    ) => {
+    ): FileBrowser => {
       const model = new FilterFileBrowserModel({
         auto: options.auto ?? true,
         manager: docManager,
@@ -82,7 +82,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
       model.fileChanged.connect(() => {
         void model.refresh();
       });
-      void model.uploadChanged;
+      model.uploadChanged;
 
       const restore = options.restore;
       const widget = new FileBrowser({ id, model, restore });
@@ -170,7 +170,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
   ): void {
     const cs3Panel = new Cs3Panel('cs3 panel', 'cs3-panel', kernelIcon);
 
-    void stateDB.save('share', { share_type: 'filelist' });
+    void stateDB.save('share', { shareType: 'filelist' });
     void stateDB.save('showHidden', false);
 
     //
@@ -290,7 +290,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     cs3Panel.addTab(cs3TabWidget3);
     cs3Panel.addTab(splitPanel);
 
-    cs3Panel.node.onclick = () => {
+    cs3Panel.node.onclick = (): void => {
       // Hiding bottom widget when file browser is not active
       const cs3PanelIterator = cs3Panel.layout?.iter();
       let widget: Widget | undefined;

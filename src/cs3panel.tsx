@@ -94,7 +94,7 @@ export class Cs3HeaderWidget extends ReactWidget {
 export const Bottom = (props: BottomProps): JSX.Element => {
   const [text, setText] = useState('');
 
-  const setLabel = async () => {
+  const setLabel = async (): Promise<void> => {
     const showHidden: boolean = (await props.db.fetch('showHidden')) as boolean;
     const hiddenFilesNo: number = (await props.db.fetch(
       'hiddenFilesNo'

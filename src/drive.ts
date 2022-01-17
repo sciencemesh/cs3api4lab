@@ -41,7 +41,9 @@ export class CS3Contents implements Contents.IDrive {
     };
     // Construct a function to return a best-guess IFileType
     // for a given contents model.
-    this._fileTypeForContentsModel = (model: Partial<Contents.IModel>) => {
+    this._fileTypeForContentsModel = (
+      model: Partial<Contents.IModel>
+    ): DocumentRegistry.IFileType => {
       return registry.getFileTypeForModel(model);
     };
 
@@ -191,7 +193,7 @@ export async function CS3ContainerFiles(
   if (readType !== 'filelist') {
     shareType = readType;
   } else if (share !== undefined) {
-    shareType = (share as ReadonlyJSONObject)['share_type'];
+    shareType = (share as ReadonlyJSONObject)['shareType'];
   }
 
   if (path !== '') {
