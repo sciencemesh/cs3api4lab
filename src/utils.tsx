@@ -6,11 +6,6 @@ import { MainAreaWidget, ToolbarButton } from '@jupyterlab/apputils';
 import { addIcon } from '@jupyterlab/ui-components';
 import { Launcher } from '@jupyterlab/launcher';
 
-/**
- * @param id
- * @param title
- * @param fileWidget
- */
 export function createShareBox(
   id: string,
   title: string,
@@ -35,11 +30,6 @@ export function createShareBox(
   return boxPanel;
 }
 
-/**
- * @param app
- * @param fileBrowser
- * @param labShell
- */
 export function addLaunchersButton(
   app: JupyterFrontEnd<JupyterFrontEnd.IShell>,
   fileBrowser: FileBrowser,
@@ -51,8 +41,8 @@ export function addLaunchersButton(
   if (labShell) {
     const launcher = new ToolbarButton({
       icon: addIcon,
-      onClick: async (): Promise<void> => {
-        commands
+      onClick: () => {
+        return commands
           .execute('launcher:create', { cwd: model.path })
           .then((launcher: MainAreaWidget<Launcher>) => {
             model.pathChanged.connect(() => {

@@ -21,7 +21,7 @@ import Select, { SelectRenderer } from 'react-dropdown-select';
 /**
  * Main container.
  *
- * @class
+ * @constructor
  */
 class Main extends React.Component<any, any> {
   private readonly widgetTracker: WidgetTracker;
@@ -33,7 +33,7 @@ class Main extends React.Component<any, any> {
   /**
    * Main component constructor.
    *
-   * @param props MainProps
+   * @param props
    */
   public constructor(props: MainProps) {
     super(props);
@@ -43,7 +43,7 @@ class Main extends React.Component<any, any> {
   /**
    * Switch between views on file properties.
    *
-   * @param tabname string Active tab name
+   * @param tabname
    */
   protected switchTabs = (tabname: string): void => {
     this.setState({
@@ -51,7 +51,12 @@ class Main extends React.Component<any, any> {
     });
   };
 
-  public render(): JSX.Element {
+  // protected getGranteesForResource = async () :Promise<Map<string, string>> => {
+  //
+  //     // return grantees;
+  // }
+
+  public render() {
     return (
       <div className="jp-file-info">
         <Header fileInfo={this.props.fileInfo} />
@@ -60,6 +65,7 @@ class Main extends React.Component<any, any> {
           contentType={this.state.activeTab}
           content={this.props.fileInfo}
           widgetTracker={this.widgetTracker}
+          // getGrantees={this.getGranteesForResource}
         />
       </div>
     );
@@ -75,7 +81,7 @@ export const Menu = (props: MenuProps): JSX.Element => {
         <ul>
           <li
             className={activeTab === 'info' ? 'active' : ''}
-            onClick={(): void => {
+            onClick={() => {
               setActiveTab('info');
               props.tabHandler('info');
             }}
@@ -84,7 +90,7 @@ export const Menu = (props: MenuProps): JSX.Element => {
           </li>
           <li
             className={activeTab === 'share' ? 'active' : ''}
-            onClick={(): void => {
+            onClick={() => {
               setActiveTab('share');
               props.tabHandler('shares');
             }}
@@ -94,7 +100,7 @@ export const Menu = (props: MenuProps): JSX.Element => {
 
           <li
             className={activeTab === 'sharefile' ? 'active' : ''}
-            onClick={(): void => {
+            onClick={() => {
               setActiveTab('sharefile');
               props.tabHandler('sharefile');
             }}
@@ -283,9 +289,9 @@ const Shares = (): JSX.Element => {
 /**
  * Share form widget.
  *
- * @param shareProps ShareFormProps
+ * @param shareProps
  *
- * @returns JSX.Element
+ * @constructor
  */
 const ShareForm: React.FC<ShareFormProps> = (
   shareProps: ShareFormProps
@@ -337,13 +343,13 @@ const ShareForm: React.FC<ShareFormProps> = (
     param:
       | React.ChangeEvent<HTMLInputElement>
       | React.ChangeEvent<HTMLSelectElement>
-  ): void => {
+  ) => {
     const tmpFormState: any = { ...formValues };
     tmpFormState[param.target.name] = param.target.value;
     setFormState(tmpFormState);
   };
 
-  const localMakeRequest = (): void => {
+  const localMakeRequest = () => {
     const [user] = [...selectedUser];
     const _formValues = { ...formValues };
 
@@ -366,7 +372,7 @@ const ShareForm: React.FC<ShareFormProps> = (
             valueField="name"
             labelField="displayName"
             placeholder="Select user..."
-            onChange={(userValue: any): void => {
+            onChange={(userValue: any) => {
               const user = userValue[0] as { [key: string]: string };
               setSelectedUser([
                 {
@@ -397,9 +403,7 @@ const ShareForm: React.FC<ShareFormProps> = (
 /**
  * Main container.
  *
- * @param props CreateShareProps
- *
- * @returns JSX.Element
+ * @constructor
  */
 const CreateShare = (props: CreateShareProps): JSX.Element => {
   return (
