@@ -134,7 +134,7 @@ export class Cs3BottomWidget extends ReactWidget {
     this.id = id;
     this.title.closable = false;
     this.bottomProps = { db: stateDB, drive: drive, browser: browser };
-    this.node.onclick = async (): Promise<void> => {
+    this.node.onclick = async () => {
       const showHidden = await stateDB.fetch('showHidden');
       await stateDB.save('showHidden', !showHidden);
       await browser.model.refresh();
