@@ -286,7 +286,8 @@ def setup_handlers(web_app, url_path):
         (r"/api/cs3/ocm/received", OcmReceivedSharesHandler),
         (r"/api/cs3/user", UserInfoHandler),
         (r"/api/cs3/user/claim", UserInfoClaimHandler),
-        (r"/api/cs3/user/query", UserQueryHandler)
+        (r"/api/cs3/user/query", UserQueryHandler),
+        (r"/api/cs3/file/home", GetHome)
     ]
 
     for handler in handlers:
