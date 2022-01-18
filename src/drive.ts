@@ -232,18 +232,19 @@ async function getFileList(
     '/api/contents/' + path + '' + url,
     { method: 'get' }
   );
+  if (path !== null && !path.includes('.')) {
+    const hiddenFilesNo: number = result.content.filter(
+      (file: { name: string }) => file.name.startsWith('.')
+    ).length;
+    await stateDB.save('hiddenFilesNo', hiddenFilesNo);
 
-  const hiddenFilesNo: number = result.content.filter(
-    (file: { name: string }) => file.name.startsWith('.')
-  ).length;
-  await stateDB.save('hiddenFilesNo', hiddenFilesNo);
-
-  if (!showHidden && Array.isArray(result.content)) {
-    const filteredResult = JSON.parse(JSON.stringify(result));
-    filteredResult.content = (result.content as Array<any>).filter(
-      (file: { name: string }) => !file.name.startsWith('.')
-    );
-    return filteredResult;
+    if (!showHidden && Array.isArray(result.content)) {
+      const filteredResult = JSON.parse(JSON.stringify(result));
+      filteredResult.content = (result.content as Array<any>).filter(
+        (file: { name: string }) => !file.name.startsWith('.')
+      );
+      return filteredResult;
+    }
   }
   return result;
 }
