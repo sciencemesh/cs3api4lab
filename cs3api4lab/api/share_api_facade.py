@@ -158,17 +158,10 @@ class ShareAPIFacade:
                         continue
                     model = self._map_share_to_dir_model(share, stat)
                 model['writable'] = True if ShareUtils.map_permissions_to_role(share.permissions.permissions) == 'editor' else False
-            except:
-                model = {'name': share.resource_id.opaque_id.rsplit('/', 1)[-1],
-                         'path': share.resource_id.opaque_id,
-                         'last_modified': '',
-                         'created': '',
-                         'content': None,
-                         'format': None,
-                         'writable': False,
-                         'size': 13,
-                         'type': 'file',
-                         'mimetype': 'text/plain'}
+            except Exception as e:
+                self.log.error("Unable to map share " + share.resource_id.opaque_id + ", " + e.__str__())
+                continue
+
             if received:
                 model['accepted'] = ShareUtils.is_accepted(list_response.shares[share_no].state)
             if model['path'] not in path_list:
