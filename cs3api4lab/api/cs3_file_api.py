@@ -40,6 +40,16 @@ class Cs3FileApi:
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         return
 
+    def mount_point(self):
+        """
+        This returns current mount point for the user
+        """
+        request = cs3sp.GetHomeRequest()
+        response = self.cs3_api.GetHome(request)
+        return {
+            "path": response.path
+        }
+
     def stat(self, file_id, endpoint=None):
         """
         Stat a file and returns (size, mtime) as well as other extended info using the given userid as access token.

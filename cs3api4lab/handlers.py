@@ -9,6 +9,7 @@ from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from notebook.utils import url_path_join
 
 class ShareHandler(APIHandler):
@@ -91,6 +92,15 @@ class ListSharesForFile(APIHandler):
         file_path = self.get_query_argument('file_path')
         RequestHandler.handle_request(self, self.share_api.list_grantees_for_file, 200, file_path)
 
+class GetHome(APIHandler):
+    @property
+    def file_api(self):
+        return Cs3FileApi(self.log)
+
+    @web.authenticated
+    @gen.coroutine
+    def get(self):
+        RequestHandler.handle_request(self, self.file_api.mount_point, 200)
 
 class PublicSharesHandler(APIHandler):
     @property
