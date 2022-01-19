@@ -164,7 +164,12 @@ export class CS3ContentsShareByMe extends CS3Contents {
     path: string,
     options?: Contents.IFetchOptions
   ): Promise<Contents.IModel> {
-    return await CS3ContainerFiles('by_me', this._state, path, options);
+    const activeTab: string = (await this._state.fetch('activeTab')) as string;
+    if (activeTab === 'sharesPanel') {
+      return await CS3ContainerFiles('by_me', this._state, path, options);
+    } else {
+      return Promise.resolve({} as Contents.IModel);
+    }
   }
 }
 
@@ -177,7 +182,12 @@ export class CS3ContentsShareWithMe extends CS3Contents {
     path: string,
     options?: Contents.IFetchOptions
   ): Promise<Contents.IModel> {
-    return await CS3ContainerFiles('with_me', this._state, path, options);
+    const activeTab: string = (await this._state.fetch('activeTab')) as string;
+    if (activeTab === 'sharesPanel') {
+      return await CS3ContainerFiles('with_me', this._state, path, options);
+    } else {
+      return Promise.resolve({} as Contents.IModel);
+    }
   }
 }
 
@@ -228,25 +238,35 @@ async function getFileList(
     url += '&format=' + format;
   }
 
-  const result: Contents.IModel = await requestAPI(
-    '/api/contents/' + path + '' + url,
-    { method: 'get' }
-  );
-  if (path !== null && !path.includes('.')) {
-    const hiddenFilesNo: number = result.content.filter(
-      (file: { name: string }) => file.name.startsWith('.')
-    ).length;
-    await stateDB.save('hiddenFilesNo', hiddenFilesNo);
+  const activeTab: string = (await stateDB.fetch('activeTab')) as string;
+  console.log('active tab ' + activeTab);
+  if (activeTab === 'fileBrowser' || activeTab === undefined) {
+    const result: Contents.IModel = await requestAPI(
+      '/api/contents/' + path + '' + url,
+      { method: 'get' }
+    );
+    console.log('path ' + path);
+    if (path !== null && !path.includes('.')) {
+      const hiddenFilesNo: number = result.content.filter(
+        (file: { name: string }) => file.name.startsWith('.')
+      ).length;
+      await stateDB.save('hiddenFilesNo', hiddenFilesNo);
 
-    if (!showHidden && Array.isArray(result.content)) {
-      const filteredResult = JSON.parse(JSON.stringify(result));
-      filteredResult.content = (result.content as Array<any>).filter(
-        (file: { name: string }) => !file.name.startsWith('.')
-      );
-      return filteredResult;
+      if (!showHidden && Array.isArray(result.content)) {
+        const filteredResult = JSON.parse(JSON.stringify(result));
+        filteredResult.content = (result.content as Array<any>).filter(
+          (file: { name: string }) => !file.name.startsWith('.')
+        );
+        console.log('filtered result');
+        return filteredResult;
+      }
     }
+    console.log('result');
+    return result;
+  } else {
+    console.log('returning empty');
+    return Promise.resolve({} as Contents.IModel);
   }
-  return result;
 }
 
 async function getSharedByMe(): Promise<any> {
