@@ -7,17 +7,21 @@ import { BottomProps } from './types';
 import { useState } from 'react';
 import { FileBrowser } from '@jupyterlab/filebrowser';
 import { Contents } from '@jupyterlab/services';
+import { IIterator } from '@lumino/algorithm';
+import { ISignal, Signal } from '@lumino/signaling';
 
 export class Cs3Panel extends Widget {
   protected header: BoxPanel;
   protected main: DockPanel;
   protected bottom: BoxPanel;
+  private _sharesTabVisible = new Signal<Widget, any>(this);
 
   constructor(
     title: string,
     id: string,
     icon: LabIcon,
-    options: Widget.IOptions = {}
+    options: Widget.IOptions = {},
+    stateDB: IStateDB
   ) {
     super(options);
 
@@ -61,6 +65,30 @@ export class Cs3Panel extends Widget {
     rootLayout.addWidget(this.bottom);
 
     this.layout = rootLayout;
+
+    // detect which tab is opened to limit calls
+    this.main.layoutModified.connect((dockPanel): void => {
+      if (dockPanel.layout !== null) {
+        const dockPanelIterator: IIterator<Widget> = dockPanel.layout.iter();
+        let tab: Widget | undefined;
+        do {
+          tab = dockPanelIterator?.next();
+          if (tab !== undefined) {
+            if (this.isWidgetVisible(tab)) {
+              if (tab.id === 'fileBrowser') {
+                this.bottom.show();
+              }
+              if (tab.id === 'sharesPanel') {
+                // emit signal to refresh the tab
+                this._sharesTabVisible.emit(this);
+                this.bottom.hide();
+              }
+              stateDB.save('activeTab', tab.id);
+            }
+          }
+        } while (tab);
+      }
+    });
   }
 
   public addTab(widget: Widget, options: DockPanel.IAddOptions = {}): void {
@@ -73,6 +101,17 @@ export class Cs3Panel extends Widget {
 
   public addBottom(widget: Widget): void {
     this.bottom.addWidget(widget);
+  }
+
+  private isWidgetVisible(widget: Widget): boolean {
+    if (widget === undefined) {
+      return false;
+    }
+    return widget.isVisible;
+  }
+
+  public sharesTabVisible(): ISignal<Widget, any> {
+    return this._sharesTabVisible;
   }
 }
 

@@ -31,7 +31,7 @@ import {
   Cs3TabWidget
 } from './cs3panel';
 import { addLaunchersButton, createShareBox } from './utils';
-import { DockPanel, SplitPanel, Widget } from '@lumino/widgets';
+import { SplitPanel, Widget } from '@lumino/widgets';
 import {
   kernelIcon,
   caseSensitiveIcon,
@@ -167,7 +167,13 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     labShell: ILabShell,
     stateDB: IStateDB
   ): void {
-    const cs3Panel = new Cs3Panel('cs3 panel', 'cs3-panel', kernelIcon);
+    const cs3Panel = new Cs3Panel(
+      'cs3 panel',
+      'cs3-panel',
+      kernelIcon,
+      {},
+      stateDB
+    );
 
     void stateDB.save('share', { shareType: 'filelist' });
     void stateDB.save('showHidden', false);
@@ -190,7 +196,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
       docManager,
       app.serviceManager.serverSettings
     );
-    const fileBrowser = factory.createFileBrowser('test_v2', {
+    const fileBrowser = factory.createFileBrowser('fileBrowser', {
       driveName: drive.name
     });
     fileBrowser.title.label = 'My Files';
@@ -217,7 +223,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     // Share split panel
     //
     const splitPanel = new SplitPanel();
-    splitPanel.id = 'split-panel-example';
+    splitPanel.id = 'sharesPanel';
     splitPanel.spacing = 5;
     splitPanel.orientation = 'vertical';
     splitPanel.title.iconClass = 'jp-example-view';
@@ -234,18 +240,18 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
       docManager,
       app.serviceManager.serverSettings
     );
-    const fileBrowserShareByMe: FileBrowser = factory.createFileBrowser(
-      'test_v2_share_by_me',
+    const fileBrowserSharedByMe: FileBrowser = factory.createFileBrowser(
+      'fileBrowserSharedByMe',
       {
         driveName: driveShareByMe.name
       }
     );
-    fileBrowserShareByMe.toolbar.hide();
+    fileBrowserSharedByMe.toolbar.hide();
 
     const shareByMePanel: Widget = createShareBox(
       'cs3-share-by-me',
-      'Share by Me',
-      fileBrowserShareByMe
+      'Shared by Me',
+      fileBrowserSharedByMe
     );
     splitPanel.addWidget(shareByMePanel);
 
@@ -260,18 +266,18 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
       docManager,
       app.serviceManager.serverSettings
     );
-    const fileBrowserShareWithMe: FileBrowser = factory.createFileBrowser(
-      'test_v2_share_with_me',
+    const fileBrowserSharedWithMe: FileBrowser = factory.createFileBrowser(
+      'fileBrowserSharedWithMe',
       {
         driveName: driveShareWithMe.name
       }
     );
-    fileBrowserShareWithMe.toolbar.hide();
+    fileBrowserSharedWithMe.toolbar.hide();
 
     const shareWithMePanel = createShareBox(
       'cs3-share-with-me',
       'Share with Me',
-      fileBrowserShareWithMe
+      fileBrowserSharedWithMe
     );
     splitPanel.addWidget(shareWithMePanel);
 
@@ -289,28 +295,10 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     cs3Panel.addTab(cs3TabWidget3);
     cs3Panel.addTab(splitPanel);
 
-    cs3Panel.node.onclick = (): void => {
-      // Hiding bottom widget when file browser is not active
-      const cs3PanelIterator = cs3Panel.layout?.iter();
-      let widget: Widget | undefined;
-      do {
-        widget = cs3PanelIterator?.next();
-        if (widget instanceof DockPanel) {
-          const dockPanelIterator = widget?.layout?.iter();
-          let tab: Widget | undefined;
-          do {
-            tab = dockPanelIterator?.next();
-            if (tab instanceof FileBrowser) {
-              if (tab?.isHidden && !tab.isVisible) {
-                cs3BottomWidget?.hide();
-              } else if (cs3BottomWidget?.isHidden) {
-                cs3BottomWidget?.show();
-              }
-            }
-          } while (tab);
-        }
-      } while (widget);
-    };
+    cs3Panel.sharesTabVisible().connect(() => {
+      fileBrowserSharedWithMe.model.refresh();
+      fileBrowserSharedByMe.model.refresh();
+    });
 
     window.addEventListener('resize', () => {
       cs3Panel.fit();
