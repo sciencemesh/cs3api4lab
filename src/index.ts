@@ -84,7 +84,6 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
       model.fileChanged.connect(() => {
         void model.refresh();
       });
-      void model.uploadChanged;
 
       const restore = options.restore;
       const widget = new FileBrowser({ id, model, restore });
