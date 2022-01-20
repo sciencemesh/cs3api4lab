@@ -23,8 +23,7 @@ import { LabIcon } from '@jupyterlab/ui-components';
  */
 class Main extends React.Component<any, any> {
   public state = {
-    activeTab: 'info',
-    grantees: new Map()
+    activeTab: 'info'
   };
 
   /**
@@ -34,10 +33,6 @@ class Main extends React.Component<any, any> {
    */
   public constructor(props: MainProps) {
     super(props);
-    this.setState({
-      ...this.state,
-      props
-    });
   }
 
   /**
