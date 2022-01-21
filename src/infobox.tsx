@@ -50,11 +50,6 @@ class Main extends React.Component<any, any> {
     });
   };
 
-  // protected getGranteesForResource = async () :Promise<Map<string, string>> => {
-  //
-  //     // return grantees;
-  // }
-
   public render() {
     return (
       <div className="jp-file-info">
@@ -64,7 +59,6 @@ class Main extends React.Component<any, any> {
           contentType={this.state.activeTab}
           content={this.props.fileInfo}
           widgetTracker={this.widgetTracker}
-          // getGrantees={this.getGranteesForResource}
         />
       </div>
     );
