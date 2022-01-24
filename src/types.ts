@@ -1,10 +1,8 @@
 import { Contents } from '@jupyterlab/services';
 import { IStateDB } from '@jupyterlab/statedb';
 import { FileBrowser } from '@jupyterlab/filebrowser';
+import { WidgetTracker } from '@jupyterlab/apputils';
 
-export type ResultProps = {
-  message: string;
-};
 export type ShareFormProps = {
   makeRequest: (params: any) => void;
   getUsers: (query: string) => Promise<Array<UsersRequest>>;
@@ -12,12 +10,11 @@ export type ShareFormProps = {
 };
 export type CreateShareProps = {
   fileInfo: Contents.IModel;
-};
-export type WidgetProps = {
-  fileInfo: Contents.IModel;
+  widgetTracker: WidgetTracker;
 };
 export type MainProps = {
   fileInfo: Contents.IModel;
+  widgetTracker: WidgetTracker;
 };
 export type MenuProps = {
   tabHandler: (tabname: string) => void;
@@ -25,18 +22,18 @@ export type MenuProps = {
 export type ContentProps = {
   content: Contents.IModel;
   contentType: string;
+  widgetTracker: WidgetTracker;
+  // getGrantees: Promise<Map<string, string>>
+  // grantees: Map<string, string>
 };
 export type HeaderProps = {
   fileInfo: Contents.IModel;
 };
 export type ShareProps = {
   fileInfo: Contents.IModel;
+  widgetTracker: WidgetTracker;
 };
 export type InfoProps = {
-  content: Contents.IModel;
-};
-export type SharesProps = {
-  // grantees: Map<string, string>,
   content: Contents.IModel;
 };
 
@@ -50,13 +47,5 @@ export type UsersRequest = {
   name: string;
   idp: string;
   opaque_id: string;
-  permission: string;
-};
-
-export type User = {
-  displayName: string;
-  name: string;
-  idp: string;
-  opaqueId: string;
   permission: string;
 };
