@@ -299,7 +299,7 @@ const ShareForm: React.FC<ShareFormProps> = (
 
   const [formValues, setFormState] = useState({
     endpoint: '/',
-    file_path: '/home/' + shareProps.fileInfo.path.replace('cs3drive:', ''),
+    file_path: '/' + shareProps.fileInfo.path.replace('cs3drive:', ''),
     grantee: '',
     idp: '',
     role: 'viewer',
@@ -404,10 +404,16 @@ const CreateShare = (props: CreateShareProps): JSX.Element => {
       <ShareForm
         fileInfo={props.fileInfo}
         getUsers={async (query): Promise<Array<UsersRequest>> => {
-          return await requestAPI('api/cs3/user/query?query=' + query, {});
+          return await requestAPI('/api/cs3/user/query?query=' + query, {});
         }}
         makeRequest={async (params: any): Promise<void> => {
           try {
+            const home: any = await requestAPI<any>('/api/cs3/file/home', {
+              method: 'GET'
+            });
+
+            params.file_path = home.path + params.file_path;
+
             await requestAPI<any>('/api/cs3/shares', {
               method: 'POST',
               body: JSON.stringify(params)
