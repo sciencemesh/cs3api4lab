@@ -54,7 +54,7 @@ setup_args = dict(
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
     install_requires=[
-        "jupyterlab~=3.0",
+        "jupyterlab~=3.0.6",
         "cs3apis==0.1.dev71",
         "grpcio",
         "grpcio-tools",
