@@ -24,6 +24,7 @@ from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.exception.exceptions import *
 from cs3api4lab.api.share_utils import ShareUtils
 
+import google.protobuf.field_mask_pb2 as field_masks
 
 class Cs3ShareApi:
     cs3_api = None
@@ -185,12 +186,26 @@ class Cs3ShareApi:
             return Grantee.GROUP
 
     def update_received(self, share_id, state=State.ACCEPTED):
-        share_id_object = sharing_res.ShareId(opaque_id=share_id)
-        ref = sharing_res.ShareReference(id=share_id_object)
         share_state = ShareUtils.map_state(state)
-        update_request = sharing.UpdateReceivedShareRequest(ref=ref,
-                                                            field=sharing.UpdateReceivedShareRequest.UpdateField(
-                                                                state=share_state))
+        list_request = sharing.ListReceivedSharesRequest()
+        list_response = self.cs3_api.ListReceivedShares(request=list_request,
+                                                        metadata=[('x-access-token', self.get_token())])
+        share_to_update = None
+        for share in list_response.shares:
+            if share_id == share.share.id.opaque_id:
+                share_to_update = share
+        if not share_to_update:
+            raise Exception("Received share not found")
+
+        update_request = sharing.UpdateReceivedShareRequest(
+            share=sharing_res.ReceivedShare(
+                share=share_to_update.share,
+                state=share_state,
+                mount_point=FileUtils.get_reference(share_to_update.share.resource_id.opaque_id,
+                                                    share_to_update.share.resource_id.storage_id)),
+            update_mask=field_masks.FieldMask(paths=["state"])
+        )
+
         update_response = self.cs3_api.UpdateReceivedShare(request=update_request,
                                                            metadata=[('x-access-token', self.get_token())])
         if self._is_code_ok(update_response):
