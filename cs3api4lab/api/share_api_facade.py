@@ -127,7 +127,11 @@ class ShareAPIFacade:
 
     def is_ocm_received_share(self, share_id):
         """Checks if share is present on OCM received shares list"""
-        return self.ocm_share_api.get_received_ocm_shares(share_id)['id'] != ''
+        received_shares = self.ocm_share_api.list_received()
+        for share in received_shares.shares:
+            if share_id == share.share.id.opaque_id:
+                return True
+        return False
 
     def map_shares(self, share_list, ocm_share_list, received=False):
         """Converts both types of shares into Jupyter model"""

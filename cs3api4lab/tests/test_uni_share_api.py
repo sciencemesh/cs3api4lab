@@ -125,7 +125,7 @@ class TestCs3UniShareApi(TestCase, LoggingConfigurable):
     marie_idp = 'cesnet.cz'
     richard_id = '932b4540-8d16-481e-8ef4-588e4b6b151c'
     richard_idp = 'example.org'
-    receiver_role = 'viewer'
+    receiver_role = 'editor'
     receiver_grantee_type = 'user'
     file_path = '/home/test.txt'
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
@@ -135,6 +135,9 @@ class TestCs3UniShareApi(TestCase, LoggingConfigurable):
         self.share_api = Cs3ShareApi(self.log)
         self.ocm_api = Cs3OcmShareApi(self.log)
         self.uni_api = ShareAPIFacade(self.log)
+
+        self.share_id = None
+        self.ocm_share_id = None
 
         marie_ext_config = {
             "reva_host": "127.0.0.1:29000",
@@ -233,14 +236,20 @@ class TestCs3UniShareApi(TestCase, LoggingConfigurable):
     def test_update_received(self):
         try:
             self.file_name = self.file_path + self._get_file_suffix()
-            created_share = self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
             self.ocm_file_name = self.file_path + self._get_file_suffix()
             created_ocm_share = self.create_ocm_share('marie', self.einstein_id, self.einstein_idp, self.ocm_file_name)
-            self.share_id = created_share['opaque_id']
+
+            received_shares = self.share_api.list_received()
+            for share in received_shares.shares:
+                if self.file_name.split('/')[-1] in share.share.resource_id.opaque_id:
+                    self.share_id = share.share.id.opaque_id
+
             self.ocm_share_id = created_ocm_share['id']
 
             self.uni_api.update_received(self.share_id, 'ACCEPTED')
             received_file_path = '/home/MyShares/' + self.file_name.split('/')[-1]
+
             file_stat = self.file_api.stat(received_file_path, self.storage_id)
             if file_stat['filepath'] != received_file_path:
                 raise Exception('Share not updated')
