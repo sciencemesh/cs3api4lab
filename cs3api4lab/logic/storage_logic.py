@@ -53,7 +53,7 @@ class StorageLogic:
         try:        
             return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
                                  metadata=[('x-access-token', self.auth.authenticate())])
-        except:
+        except Exception:
             return None
 
     def set_metadata(self, data, file_path, endpoint):

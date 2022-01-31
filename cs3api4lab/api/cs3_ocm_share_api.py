@@ -28,8 +28,6 @@ from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.common.strings import *
 from cs3.storage.provider.v1beta1.resources_pb2 import *
 
-from cs3api4lab.api.cs3_share_api import Cs3ShareApi
-
 
 class Cs3OcmShareApi:
 

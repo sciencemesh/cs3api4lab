@@ -110,7 +110,7 @@ dmypy.json
 .idea/
 .vscode/
 cs3api4lab/.vscode/
-/cs3api4lab/labextension/
+cs3api4lab/labextension/
 
 # End of https://www.gitignore.io/api/python
 

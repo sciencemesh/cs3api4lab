@@ -4,7 +4,6 @@ from unittest import TestCase
 from time import sleep
 from cs3api4lab.tests.share_test_base import ShareTestBase
 from traitlets.config import LoggingConfigurable
-from cs3api4lab.tests.extensions import *
 
 
 class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
@@ -72,7 +71,7 @@ class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
                 self.remove_test_share('einstein', self.share_id)
             self.remove_test_file('einstein', self.file_name)
 
-    def test_write_file_locked(self):
+    def test_write_file_locked_conflict_created(self):
         suffix = self.get_random_suffix()
         self.file_name = self.file_path + suffix
         shared_name = self.shared_file_path + suffix
@@ -134,7 +133,7 @@ class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
             self.share_id = created_share['opaque_id']
             self.file_api.write_file(self.file_name, 'content')
 
-            sleep(10)
+            sleep(12)
             self.richard_file_api.write_file(shared_name, "richard_content")
 
             content = self.read_file_content(self.file_api, self.file_name)

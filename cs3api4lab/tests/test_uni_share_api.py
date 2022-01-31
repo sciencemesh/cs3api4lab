@@ -112,7 +112,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
 
             self.uni_api.update_received(received_ocm_share[0].share.id.opaque_id, 'ACCEPTED')
 
-            #todo fix: accepted files from ocm are not son in /home/My/shares
+            #todo fix: accepted files from ocm are not present in /home/My/shares
             
             # received_ocm_file_path = '/home/MyShares/' + self.ocm_file_name.split('/')[-1]
             # ocm_file_stat = self.file_api.stat(received_ocm_file_path, self.storage_id)

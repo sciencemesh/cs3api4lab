@@ -110,7 +110,8 @@ class ShareAPIFacade:
         response = {"file_path": file_path, "shares": shares}
         return response
 
-    def _get_share_info(self, share):
+    @staticmethod
+    def _get_share_info(share):
         return {
             "opaque_id": share.id.opaque_id,
             "grantee": {

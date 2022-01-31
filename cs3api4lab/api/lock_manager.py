@@ -1,5 +1,4 @@
 import json
-import re
 import time
 import datetime
 import grpc
@@ -13,7 +12,7 @@ from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.logic.storage_logic import StorageLogic
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from cs3api4lab.config.config_manager import Cs3ConfigManager
-from cs3api4lab.exception.exceptions import LockNotFoundError
+
 
 class LockManager:
     user = None
@@ -68,7 +67,7 @@ class LockManager:
 
         if is_locked and not is_mine and not self.is_lock_expired(lock):
             file_name = file_path.split('/')[-1]
-            file_dir = file_path.replace(file_name, '')
+            file_dir = '/'.join(file_path.split('/')[0:-1])
             return self._resolve_directory(file_dir, endpoint) + self._get_conflict_filename(file_name)
 
         return file_path
@@ -77,7 +76,7 @@ class LockManager:
         try:
             self.storage_logic.stat(dir_path, endpoint)
             return dir_path
-        except:
+        except Exception:
             return self.config['home_dir'] + '/'
 
     def _get_conflict_filename(self, file_name):
@@ -99,7 +98,7 @@ class LockManager:
         raise IOError("File locked")
 
     def _get_current_user(self):
-        if self.user == None:
+        if self.user is None:
             self.user = self.cs3_api.WhoAmI(request=cs3gw.WhoAmIRequest(token=self.auth.authenticate()),
                                    metadata=[('x-access-token', self.auth.authenticate())])
         return self.user.user

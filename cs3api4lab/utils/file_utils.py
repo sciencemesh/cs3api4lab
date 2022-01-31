@@ -1,6 +1,7 @@
 import cs3.storage.provider.v1beta1.resources_pb2 as storage_provider
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 
+
 class FileUtils:
 
     @staticmethod
@@ -35,5 +36,5 @@ class FileUtils:
         else:
             content_len = len(content.decode('utf-8'))
         # providing '0' as size leads to unexpected additional file creation
-        content_size = str(content_len) if content_len > 0 else str(1)
+        content_size = str(content_len)
         return content_size

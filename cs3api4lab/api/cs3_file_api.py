@@ -23,6 +23,7 @@ from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.api.lock_manager import LockManager
 
+
 class Cs3FileApi:
     log = None
     cs3_api = None
@@ -89,8 +90,6 @@ class Cs3FileApi:
         """
         Read a file using the given userid as access token.
         """
-        self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
-
         time_start = time.time()
         
         if self.storage_logic.stat(file_path, endpoint) is not None:
@@ -107,17 +106,15 @@ class Cs3FileApi:
 
         time_end = time.time()
 
-        data = file_get.content
-
-        if file_get.status_code != http.HTTPStatus.OK:
+        if not file_get or file_get.status_code != http.HTTPStatus.OK:
             self.log.error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (
                 file_get.status_code, file_get.reason))
             raise IOError(file_get.reason)
         else:
             self.log.info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (
                 file_path, (time_end - time_start) * 1000))
-            for i in range(0, len(data), int(self.config['chunk_size'])):
-                yield data[i:i + int(self.config['chunk_size'])]
+            for i in range(0, len(file_get.content), int(self.config['chunk_size'])):
+                yield file_get.content[i:i + int(self.config['chunk_size'])]
 
     def write_file(self, file_path, content, endpoint=None):
         """
@@ -135,7 +132,7 @@ class Cs3FileApi:
         init_file_upload = self.storage_logic.init_file_upload(file_path, endpoint, content_size)
 
         try:
-            upload_reponse = self.storage_logic.upload_content(file_path, content, content_size, init_file_upload)
+            upload_response = self.storage_logic.upload_content(file_path, content, content_size, init_file_upload)
 
             self.lock_manager.handle_locks(file_path, endpoint)
         except requests.exceptions.RequestException as e:
@@ -144,10 +141,10 @@ class Cs3FileApi:
 
         time_end = time.time()
 
-        if upload_reponse.status_code != http.HTTPStatus.OK:
+        if upload_response.status_code != http.HTTPStatus.OK:
             self.log.error(
-                'msg="Error uploading file to Reva" code="%d" reason="%s"' % (upload_reponse.status_code, upload_reponse.reason))
-            raise IOError(upload_reponse.reason)
+                'msg="Error uploading file to Reva" code="%d" reason="%s"' % (upload_response.status_code, upload_response.reason))
+            raise IOError(upload_response.reason)
 
         self.log.info(
             'msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (
