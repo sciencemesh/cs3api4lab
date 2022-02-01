@@ -136,7 +136,7 @@ class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
             sleep(12)
             self.richard_file_api.write_file(shared_name, "richard_content")
 
-            content = self.read_file_content(self.file_api, self.file_name)
+            content = self.read_file_content(self.richard_file_api, shared_name)
             self.assertEqual(content, 'richard_content', 'File ' + self.file_name + ' should contain the string: ' + 'richard_content')
         finally:
             if self.share_id:
