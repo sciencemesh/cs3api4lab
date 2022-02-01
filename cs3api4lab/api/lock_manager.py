@@ -80,7 +80,9 @@ class LockManager:
             return self.config['home_dir'] + '/'
 
     def _get_conflict_filename(self, file_name):
-        return file_name + '.' + self._get_current_user().username + '.' + datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S") + '.conflict'
+        file_extension = file_name.split('.')[-1]
+        name = '.'.join(file_name.split('.')[0:-1])
+        return name + '-' + self._get_current_user().username + '.' + datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S") + '-conflict.' + file_extension
 
     def handle_locks(self, file_path, endpoint):
         lock = self._get_lock(file_path, endpoint)

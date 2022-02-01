@@ -35,6 +35,5 @@ class FileUtils:
             content_len = len(content)
         else:
             content_len = len(content.decode('utf-8'))
-        # providing '0' as size leads to unexpected additional file creation
         content_size = str(content_len)
         return content_size
