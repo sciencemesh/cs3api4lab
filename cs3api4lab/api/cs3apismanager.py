@@ -8,7 +8,7 @@ from tornado import web
 from notebook import _tz as tz
 from nbformat.v4 import new_notebook
 from cs3api4lab.config.config_manager import Cs3ConfigManager
-from cs3api4lab.api.share_utils import ShareUtils
+from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
 
 

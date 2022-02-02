@@ -1,9 +1,8 @@
+import json
+
 from notebook.base.handlers import APIHandler
 from tornado import gen, web
-import json
-import os
 from grpc._channel import _InactiveRpcError
-
 from cs3api4lab.exception.exceptions import *
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
@@ -11,6 +10,7 @@ from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from notebook.utils import url_path_join
+
 
 class ShareHandler(APIHandler):
     @property
@@ -330,7 +330,7 @@ class RequestHandler(APIHandler):
     def get_response_code(err):
         if isinstance(err, ShareAlreadyExistsError):
             return 409
-        if isinstance(err, ShareNotExistsError):
+        if isinstance(err, ShareNotFoundError, LockNotFoundError):
             return 404
         if isinstance(err, (InvalidTypeError, KeyError, FileNotFoundError, ParamError)):
             return 400
@@ -338,4 +338,3 @@ class RequestHandler(APIHandler):
             return 503
         else:
             return 500
-

@@ -3,9 +3,9 @@ cs3api4lab setup
 """
 import json
 import sys
+import setuptools
 from pathlib import Path
 
-import setuptools
 
 HERE = Path(__file__).parent.resolve()
 

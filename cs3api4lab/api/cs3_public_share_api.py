@@ -18,7 +18,7 @@ import grpc
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
-from cs3api4lab.api.file_utils import FileUtils
+from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 from cs3api4lab.auth.channel_connector import ChannelConnector

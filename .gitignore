@@ -106,6 +106,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+*.iml
+.idea/
+.vscode/
+cs3api4lab/.vscode/
+cs3api4lab/labextension/
+
 # End of https://www.gitignore.io/api/python
 
 # OSX files

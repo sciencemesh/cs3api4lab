@@ -8,20 +8,20 @@ Authors:
 
 import http
 import time
-import webdav3.client as webdav
+import grpc
+import requests
 
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.v1beta1.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
-import cs3.types.v1beta1.types_pb2 as types
-import grpc
-import requests
 
-from cs3api4lab.api.file_utils import FileUtils as file_utils
+from cs3api4lab.utils.file_utils import FileUtils
+from cs3api4lab.logic.storage_logic import StorageLogic
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
+from cs3api4lab.api.lock_manager import LockManager
 
 
 class Cs3FileApi:
@@ -29,6 +29,7 @@ class Cs3FileApi:
     cs3_api = None
     auth = None
     config = None
+    lock_manager = None
 
     def __init__(self, log):
         self.log = log
@@ -38,6 +39,10 @@ class Cs3FileApi:
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
+        self.storage_logic = StorageLogic(log)
+
+        self.lock_manager = LockManager(log)
+
         return
 
     def mount_point(self):
@@ -57,7 +62,7 @@ class Cs3FileApi:
         or an id (which MUST NOT start with a /).
         """
         time_start = time.time()
-        ref = file_utils.get_reference(file_id, endpoint)
+        ref = FileUtils.get_reference(file_id, endpoint)
         stat_info = self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
                                       metadata=[('x-access-token', self.auth.authenticate())])
         time_end = time.time()
@@ -86,130 +91,73 @@ class Cs3FileApi:
         Read a file using the given userid as access token.
         """
         time_start = time.time()
-        #
-        # Prepare endpoint
-        #
-        reference = file_utils.get_reference(file_path, endpoint)
-        req = cs3sp.InitiateFileDownloadRequest(ref=reference)
-        init_file_download = self.cs3_api.InitiateFileDownload(request=req, metadata=[
-            ('x-access-token', self.auth.authenticate())])
+        
+        if self.storage_logic.stat(file_path, endpoint) is not None:
+            self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
 
-        if init_file_download.status.code == cs3code.CODE_NOT_FOUND:
-            self.log.info('msg="File not found on read" filepath="%s"' % file_path)
-            raise IOError('No such file or directory')
+        init_file_download = self.storage_logic.init_file_download(file_path, endpoint)
 
-        elif init_file_download.status.code != cs3code.CODE_OK:
-            self.log.debug('msg="Failed to initiateFileDownload on read" filepath="%s" reason="%s"' % file_path,
-                           init_file_download.status.message)
-            raise IOError(init_file_download.status.message)
-
-        self.log.debug(
-            'msg="readfile: InitiateFileDownloadRes returned" protocols="%s"' % init_file_download.protocols)
-
-        #
-        # Download
-        #
         file_get = None
         try:
-            protocol = [p for p in init_file_download.protocols if p.protocol == "simple"][0]
-            # if file is shared via OCM the request needs to go through webdav
-            if protocol.opaque and init_file_download.protocols[0].opaque.map['webdav-file-path'].value:
-                download_url = protocol.download_endpoint + str(protocol.opaque.map['webdav-file-path'].value, 'utf-8')[1:]
-                file_get = webdav.Client({}).session.request(
-                    method='GET',
-                    url=download_url,
-                    headers={
-                        'X-Access-Token': str(protocol.opaque.map['webdav-token'].value, 'utf-8')}
-                )
-            else:
-                headers = {
-                    'x-access-token': self.auth.authenticate(),
-                    'X-Reva-Transfer': protocol.token  # needed if the downloads pass through the data gateway in reva
-                }
-                file_get = requests.get(url=protocol.download_endpoint, headers=headers)
+            file_get = self.storage_logic.download_content(init_file_download)
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when downloading file from Reva" reason="%s"' % e)
             raise IOError(e)
 
         time_end = time.time()
-        data = file_get.content
 
-        if file_get.status_code != http.HTTPStatus.OK:
+        if not file_get or file_get.status_code != http.HTTPStatus.OK:
             self.log.error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (
                 file_get.status_code, file_get.reason))
             raise IOError(file_get.reason)
         else:
             self.log.info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (
                 file_path, (time_end - time_start) * 1000))
-            for i in range(0, len(data), int(self.config['chunk_size'])):
-                yield data[i:i + int(self.config['chunk_size'])]
+            for i in range(0, len(file_get.content), int(self.config['chunk_size'])):
+                yield file_get.content[i:i + int(self.config['chunk_size'])]
 
     def write_file(self, file_path, content, endpoint=None):
         """
         Write a file using the given userid as access token. The entire content is written
         and any pre-existing file is deleted (or moved to the previous version if supported).
         """
-        #
-        # Prepare endpoint
-        #
+        file_path = self.lock_manager.resolve_file_path(file_path, endpoint)
+
         time_start = time.time()
-        reference = file_utils.get_reference(file_path, endpoint)
 
-        if isinstance(content, str):
-            content_len = len(content)
-        else:
-            content_len = len(content.decode('utf-8'))
-        # providing '0' as size leads to unexpected additional file creation
-        content_size = str(content_len) if content_len > 0 else str(1)
+        if self.storage_logic.stat(file_path, endpoint) is not None:
+            self.lock_manager.handle_locks(file_path, endpoint)
 
-        meta_data = types.Opaque(map={"Upload-Length": types.OpaqueEntry(decoder="plain", value=str.encode(content_size))})
-        req = cs3sp.InitiateFileUploadRequest(ref=reference, opaque=meta_data)
-        init_file_upload_res = self.cs3_api.InitiateFileUpload(request=req, metadata=[
-            ('x-access-token', self.auth.authenticate())])
+        content_size = FileUtils.calculate_content_size(content)
+        init_file_upload = self.storage_logic.init_file_upload(file_path, endpoint, content_size)
 
-        if init_file_upload_res.status.code != cs3code.CODE_OK:
-            self.log.debug('msg="Failed to initiateFileUpload on write" file_path="%s" reason="%s"' % \
-                           (file_path, init_file_upload_res.status.message))
-            raise IOError(init_file_upload_res.status.message)
-
-        self.log.debug(
-            'msg="writefile: InitiateFileUploadRes returned" protocols="%s"' % init_file_upload_res.protocols)
-
-        #
-        # Upload
-        #
         try:
-            protocol = [p for p in init_file_upload_res.protocols if p.protocol == "simple"][0]
-            headers = {
-                'Tus-Resumable': '1.0.0',
-                'File-Path': file_path,
-                'File-Size': content_size,
-                'x-access-token': self.auth.authenticate(),
-                'X-Reva-Transfer': protocol.token
-            }
-            put_res = requests.put(url=protocol.upload_endpoint, data=content, headers=headers)
+            upload_response = self.storage_logic.upload_content(file_path, content, content_size, init_file_upload)
 
+            self.lock_manager.handle_locks(file_path, endpoint)
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when uploading file to Reva" reason="%s"' % e)
             raise IOError(e)
 
         time_end = time.time()
 
-        if put_res.status_code != http.HTTPStatus.OK:
+        if upload_response.status_code != http.HTTPStatus.OK:
             self.log.error(
-                'msg="Error uploading file to Reva" code="%d" reason="%s"' % (put_res.status_code, put_res.reason))
-            raise IOError(put_res.reason)
+                'msg="Error uploading file to Reva" code="%d" reason="%s"' % (upload_response.status_code, upload_response.reason))
+            raise IOError(upload_response.reason)
 
         self.log.info(
             'msg="File open for write" filepath="%s" elapsedTimems="%.1f"' % (
                 file_path, (time_end - time_start) * 1000))
+
+        return file_path
 
     def remove(self, file_path, endpoint=None):
         """
         Remove a file or container using the given userid as access token.
         """
 
-        reference = file_utils.get_reference(file_path, endpoint)
+        reference = FileUtils.get_reference(file_path, endpoint)
         req = cs3sp.DeleteRequest(ref=reference)
         res = self.cs3_api.Delete(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 
@@ -228,7 +176,7 @@ class Cs3FileApi:
         Read a directory.
         """
         tstart = time.time()
-        reference = file_utils.get_reference(path, endpoint)
+        reference = FileUtils.get_reference(path, endpoint)
         req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
         res = self.cs3_api.ListContainer(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 
@@ -252,8 +200,8 @@ class Cs3FileApi:
         Move a file or container.
         """
         tstart = time.time()
-        src_reference = file_utils.get_reference(source_path, endpoint)
-        dest_reference = file_utils.get_reference(destination_path, endpoint)
+        src_reference = FileUtils.get_reference(source_path, endpoint)
+        dest_reference = FileUtils.get_reference(destination_path, endpoint)
 
         req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
         res = self.cs3_api.Move(request=req, metadata=[('x-access-token', self.auth.authenticate())])
@@ -272,7 +220,7 @@ class Cs3FileApi:
         Create a directory.
         """
         tstart = time.time()
-        reference = file_utils.get_reference(path, endpoint)
+        reference = FileUtils.get_reference(path, endpoint)
         req = cs3sp.CreateContainerRequest(ref=reference)
         res = self.cs3_api.CreateContainer(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 
