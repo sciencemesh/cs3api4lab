@@ -6,20 +6,14 @@ from traitlets.config import LoggingConfigurable
 
 class Config(LoggingConfigurable):
     config = {
-        "reva_host": "",
-        "client_id": "",
-        "client_secret": "",
         "auth_token_validity": "3600",
         "endpoint": "/",
         "home_dir": "/home",
         "root_dir_list": "/home,/reva", # List of root dirs. Example: Exaple config "/home,/reva" for storage-references: https://developer.sciencemesh.io/docs/iop/deployment/kubernetes/providers/
         "chunk_size": "4194304",
-        "secure_channel": False,
-        "client_cert": "",
-        "client_key": "",
-        "ca_cert": "",
-        "login_type": "basic",
+        "secure_channel": True,
         "authenticator_class": "cs3api4lab.auth.RevaPassword",
+        "login_type": "basic",
         "locks_expiration_time": 150
     }
     __config_dir = "\\jupyter-config"
@@ -35,20 +29,14 @@ class Config(LoggingConfigurable):
         config_file = cm.get(self.__config_file_name)
         config = config_file.get("cs3")
 
-        # overwriting default values with config file
-        if config is not None:
-            for key in self.config.keys():
-                if key in config.keys():
-                    self.config[key] = config[key]
+        self.config = self.config | config
 
         # overwriting the values with env vars
-        for key in self.config.keys():
-            env_name = "CS3_" + key.upper()
-            if env_name in os.environ:
-                self.config[key] = os.environ[env_name]
+        env_vars = {env[4:].lower():os.environ[env] for env in os.environ if env.startswith("CS3_")}
+        self.config = self.config | env_vars
 
         if len(self.config["root_dir_list"]) > 0:
-            root_dir_list = tuple(k.strip() for k in self.config["root_dir_list"].split(','))
+            root_dir_list = tuple(dir.strip() for dir in self.config["root_dir_list"].split(','))
             self.config["root_dir_list"] = root_dir_list
         else:
             self.config["root_dir_list"] = tuple()
@@ -57,6 +45,8 @@ class Config(LoggingConfigurable):
             raise KeyError("Reva host not provided")
         if not self.config["client_id"]:
             raise KeyError("Client ID not provided")
+
+        self.log.debug(f"Provided configuraton: {self.config}")
 
 
 class Cs3ConfigManager:
