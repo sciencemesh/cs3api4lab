@@ -32,11 +32,11 @@ class Config(LoggingConfigurable):
         self.config = self.config | config
 
         # overwriting the values with env vars
-        env_vars = {k[4:].lower():os.environ[k] for k in os.environ if k.startswith("CS3_")}
+        env_vars = {env[4:].lower():os.environ[env] for env in os.environ if env.startswith("CS3_")}
         self.config = self.config | env_vars
 
         if len(self.config["root_dir_list"]) > 0:
-            root_dir_list = tuple(k.strip() for k in self.config["root_dir_list"].split(','))
+            root_dir_list = tuple(dir.strip() for dir in self.config["root_dir_list"].split(','))
             self.config["root_dir_list"] = root_dir_list
         else:
             self.config["root_dir_list"] = tuple()
