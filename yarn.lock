@@ -360,12 +360,12 @@
     sanitize-html "~2.3.3"
     url "^0.11.0"
 
-"@jupyterlab/builder@~3.1.19":
-  version "3.1.19"
-  resolved "https://registry.yarnpkg.com/@jupyterlab/builder/-/builder-3.1.19.tgz#37ff103573c5d157d6cb03c20a73f7ac07daace7"
-  integrity sha512-wfQAcUtKEoYadZJHH777vfqtm2WXjP0Vyy6y5TeV/bjrIGsIkrs+Kwh6OsWWET0w2346FoBD1LP+7jd2sra7kQ==
+"@jupyterlab/builder@^3.0.9":
+  version "3.2.8"
+  resolved "https://registry.yarnpkg.com/@jupyterlab/builder/-/builder-3.2.8.tgz#ea317e552c5964470dadf68ed14ae7b5f47698ab"
+  integrity sha512-mZrr4GDzS7AEXi/28lakliE1noDz0sjE+VH7VSiAIlN/bhWaVaJM5XjRZbD+GTYFaIBeanmnsQBZjkJqNJCqxg==
   dependencies:
-    "@jupyterlab/buildutils" "^3.1.19"
+    "@jupyterlab/buildutils" "^3.2.8"
     "@lumino/algorithm" "^1.3.3"
     "@lumino/application" "^1.16.0"
     "@lumino/commands" "^1.12.0"
@@ -401,7 +401,7 @@
     webpack-merge "^5.1.2"
     worker-loader "^3.0.2"
 
-"@jupyterlab/buildutils@^3.1.19":
+"@jupyterlab/buildutils@^3.2.8":
   version "3.2.8"
   resolved "https://registry.yarnpkg.com/@jupyterlab/buildutils/-/buildutils-3.2.8.tgz#eadda3b399cea4b7d09e64da373ec1f3f810afcb"
   integrity sha512-27Z6RD0gGvu0sjB1a9YV1LpJcjnEWGp5oTQ85n25LdtYCryHm/Xe8JTZpUA7fgmV398LbwpXptW76aYD4nY5Hw==
