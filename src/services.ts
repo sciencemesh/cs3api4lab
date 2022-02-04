@@ -8,18 +8,20 @@ export const findFileIcon = (fileInfo: Contents.IModel): LabIcon => {
   const splitName = fileInfo.name.split('.');
   const fileExtension = '.' + splitName[splitName.length - 1];
 
-  const fileType: Partial<DocumentRegistry.IFileType>[] =
-    DocumentRegistry.getDefaultFileTypes().filter(
-      (fileType: Partial<DocumentRegistry.IFileType>) => {
-        const fileTypeLastIndex: number | undefined =
-          fileType.extensions?.lastIndexOf(fileExtension);
+  const fileType: Partial<
+    DocumentRegistry.IFileType
+  >[] = DocumentRegistry.getDefaultFileTypes().filter(
+    (fileType: Partial<DocumentRegistry.IFileType>) => {
+      const fileTypeLastIndex:
+        | number
+        | undefined = fileType.extensions?.lastIndexOf(fileExtension);
 
-        return (
-          fileType.contentType === 'directory' ||
-          (fileTypeLastIndex !== undefined && fileTypeLastIndex >= 0)
-        );
-      }
-    );
+      return (
+        fileType.contentType === 'directory' ||
+        (fileTypeLastIndex !== undefined && fileTypeLastIndex >= 0)
+      );
+    }
+  );
 
   return fileType.length > 0
     ? (fileType[0].icon as LabIcon)
