@@ -32,8 +32,9 @@ export class CS3Contents implements Contents.IDrive {
     // for a given path.
     this._fileTypeForPath = (path: string): DocumentRegistry.IFileType => {
       const fileTypes = registry.getFileTypesForPath(path);
-      const fileType: DocumentRegistry.IFileType | undefined =
-        registry.getFileType('text');
+      const fileType:
+        | DocumentRegistry.IFileType
+        | undefined = registry.getFileType('text');
 
       return fileTypes.length === 0 && fileType !== undefined
         ? fileType
