@@ -137,8 +137,8 @@ const cs3share: JupyterFrontEndPlugin<void> = {
               buttons: [Dialog.okButton({ label: 'Close' })]
             });
 
-            dialog.activate();
-            dialog.show();
+            // dialog.activate();
+            // dialog.show();
             dialog.launch();
             dialogTracker.add(dialog);
           });
@@ -146,7 +146,7 @@ const cs3share: JupyterFrontEndPlugin<void> = {
       },
       iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
       label: () => {
-        return 'CS3 info';
+        return 'File info';
       }
     });
   }
@@ -296,8 +296,8 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     cs3Panel.addTab(splitPanel);
 
     cs3Panel.sharesTabVisible().connect(() => {
-      fileBrowserSharedWithMe.model.refresh();
-      fileBrowserSharedByMe.model.refresh();
+      void fileBrowserSharedWithMe.model.refresh();
+      void fileBrowserSharedByMe.model.refresh();
     });
 
     window.addEventListener('resize', () => {

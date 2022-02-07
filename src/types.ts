@@ -44,8 +44,20 @@ export type BottomProps = {
 
 export type UsersRequest = {
   display_name: string;
-  name: string;
   idp: string;
   opaque_id: string;
-  permission: string;
+  permissions: string;
+};
+
+export type User = {
+  displayName: string;
+  idp: string;
+  opaqueId: string;
+  permissions: string;
+};
+
+export type Grantee = {
+  opaque_id: string;
+  permissions: string;
+  idp: string;
 };

@@ -131,6 +131,7 @@
 .jp-shares-list-container .jp-shares-element > div
 {
     flex-grow: 1;
+    align-items: center;
 }
 
 .jp-shares-element .jp-shares-owner
@@ -150,14 +151,20 @@
     padding: 3px;
 }
 
-.jp-shares-list-container .write-label
+.jp-shares-list-container .label-editor
 {
     background: var(--jp-accent-color1);
+    color: #fff;
+    padding: 6px;
+    text-transform:capitalize;
 }
 
-.jp-shares-list-container .read-label
+.jp-shares-list-container .label-viewer
 {
     background: var(--jp-brand-color1);
+    color: #fff;
+    padding: 6px;
+    text-transform:capitalize;
 }
 
 .jp-shares-search-container

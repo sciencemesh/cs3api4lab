@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Contents } from '@jupyterlab/services';
 import { ReactWidget, WidgetTracker } from '@jupyterlab/apputils';
-import { findFileIcon, requestAPI } from './services';
+import { formatFileSize, findFileIcon, requestAPI } from './services';
 import { INotification } from 'jupyterlab_toastify';
 import moment from 'moment';
 import {
   ContentProps,
   CreateShareProps,
+  Grantee,
   HeaderProps,
   InfoProps,
   MainProps,
   MenuProps,
   ShareFormProps,
   ShareProps,
+  User,
   UsersRequest
 } from './types';
 import { LabIcon } from '@jupyterlab/ui-components';
@@ -98,9 +100,9 @@ export const Menu = (props: MenuProps): JSX.Element => {
               props.tabHandler('sharefile');
             }}
           >
-            SHARE FILE
+            PUBLIC LINK
           </li>
-          <li>LINKS</li>
+          {/*<li>LINKS</li>*/}
         </ul>
       </nav>
       <hr className="jp-file-info-menu-separator" />
@@ -113,7 +115,10 @@ const Content = (props: ContentProps): JSX.Element => {
 
   switch (props.contentType) {
     case 'shares':
-      elementToDisplay = Shares();
+      elementToDisplay = Shares({
+        fileInfo: props.content,
+        widgetTracker: props.widgetTracker
+      });
       break;
     case 'sharefile':
       elementToDisplay = CreateShare({
@@ -174,7 +179,7 @@ const Info = (props: InfoProps): JSX.Element => {
         {props.content.size ? (
           <tr>
             <th>Size:</th>
-            <td>{props.content.size} Bytes</td>
+            <td>{formatFileSize(props.content.size, 1, 1024)} Bytes</td>
           </tr>
         ) : null}
         <tr>
@@ -207,25 +212,89 @@ const Info = (props: InfoProps): JSX.Element => {
 //     return (<div>PUBLIC LINKS</div>);
 // }
 
-const Shares = (): JSX.Element => {
-  const [grantees] = useState([
-    {
-      displayName: '',
-      name: '',
-      idp: '',
-      opaqueId: '',
-      permission: ''
-    }
-  ]);
-  const [filteredGrantees, setFilteredGrantees] = useState([
-    {
-      displayName: '',
-      name: '',
-      idp: '',
-      opaqueId: '',
-      permission: ''
-    }
-  ]);
+const Shares = (props: ShareProps): JSX.Element => {
+  const [grantees, setGrantees] = useState<User[]>([]);
+  const [filteredGrantees, setFilteredGrantees] = useState<User[]>([]);
+
+  useEffect(() => {
+    const getGrantees = async (): Promise<any> => {
+      const home: any = await requestAPI<any>('/api/cs3/file/home', {
+        method: 'GET'
+      });
+
+      const resource =
+        home.path +
+        '/' +
+        props.fileInfo.path
+          .replace('cs3driveShareByMe:', '')
+          .replace('cs3drive:', '')
+          .replace('cs3driveShareWithMe:', '');
+
+      requestAPI<any>('/api/cs3/shares/file?file_path=' + resource, {
+        method: 'GET'
+      }).then(async granteesRequest => {
+        if (!granteesRequest.shares) {
+          return false;
+        }
+
+        const granteesSet: Array<Grantee> = [];
+        granteesRequest.shares.forEach((item: any) => {
+          granteesSet.push({
+            opaque_id: item.grantee.opaque_id,
+            permissions: item.grantee.permissions,
+            idp: item.grantee.idp
+          });
+        });
+
+        if (granteesSet.length <= 0) {
+          return false;
+        }
+
+        const granteesPromises: Array<any> = [];
+        for (const gr of granteesSet) {
+          granteesPromises.push(await getUsernames(gr.opaque_id, gr.idp));
+        }
+
+        Promise.all([...granteesPromises]).then(responses => {
+          const granteesArray: User[] = [];
+
+          for (const res of responses) {
+            for (const gr of granteesSet) {
+              if (gr.opaque_id === res.opaque_id) {
+                granteesArray.push({
+                  idp: res.idp,
+                  opaqueId: res.opaque_id,
+                  displayName: res.display_name,
+                  permissions: gr.permissions
+                });
+              }
+            }
+          }
+
+          setGrantees(granteesArray);
+          setFilteredGrantees(granteesArray);
+        });
+      });
+
+      return new Promise(resolve => {
+        resolve(null);
+      });
+    };
+
+    void getGrantees();
+  }, []);
+
+  const getUsernames = async (
+    opaqueId: string,
+    idp: string
+  ): Promise<UsersRequest> => {
+    return await requestAPI<any>(
+      '/api/cs3/user?opaque_id=' + opaqueId + '&idp=' + idp,
+      {
+        method: 'GET'
+      }
+    );
+  };
 
   const filterGrantees = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setFilteredGrantees(
@@ -235,7 +304,7 @@ const Shares = (): JSX.Element => {
         }
 
         return (
-          item.displayName
+          item?.displayName
             .toString()
             .trim()
             .search(new RegExp(event.target.value.toString().trim(), 'i')) !==
@@ -265,8 +334,8 @@ const Shares = (): JSX.Element => {
             <div className="jp-shares-element" key={key}>
               <div className="jp-shares-owner">{granteeItem.displayName}</div>
               <div className="jp-shares-label">
-                <span className={granteeItem.permission}>
-                  {granteeItem.permission}
+                <span className={'label-' + granteeItem.permissions}>
+                  {granteeItem.permissions}
                 </span>
               </div>
             </div>
