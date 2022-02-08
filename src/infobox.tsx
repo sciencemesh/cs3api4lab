@@ -100,9 +100,8 @@ export const Menu = (props: MenuProps): JSX.Element => {
               props.tabHandler('sharefile');
             }}
           >
-            PUBLIC LINK
+            PUBLIC LINKS
           </li>
-          {/*<li>LINKS</li>*/}
         </ul>
       </nav>
       <hr className="jp-file-info-menu-separator" />
@@ -179,7 +178,7 @@ const Info = (props: InfoProps): JSX.Element => {
         {props.content.size ? (
           <tr>
             <th>Size:</th>
-            <td>{formatFileSize(props.content.size, 1, 1024)} Bytes</td>
+            <td>{formatFileSize(props.content.size, 1, 1024)}</td>
           </tr>
         ) : null}
         <tr>
@@ -204,13 +203,6 @@ const Info = (props: InfoProps): JSX.Element => {
     </table>
   );
 };
-
-// type PublicLinksProps = {
-//
-// }
-// const PublicLinks = (props :PublicLinksProps) :JSX.Element => {
-//     return (<div>PUBLIC LINKS</div>);
-// }
 
 const Shares = (props: ShareProps): JSX.Element => {
   const [grantees, setGrantees] = useState<User[]>([]);
