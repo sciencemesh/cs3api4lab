@@ -137,8 +137,6 @@ const cs3share: JupyterFrontEndPlugin<void> = {
               buttons: [Dialog.okButton({ label: 'Close' })]
             });
 
-            // dialog.activate();
-            // dialog.show();
             dialog.launch();
             dialogTracker.add(dialog);
           });
