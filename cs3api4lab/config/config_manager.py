@@ -14,7 +14,10 @@ class Config(LoggingConfigurable):
         "secure_channel": True,
         "authenticator_class": "cs3api4lab.auth.RevaPassword",
         "login_type": "basic",
-        "locks_expiration_time": 150
+        "locks_expiration_time": 150,
+        "client_key": None,
+        "client_cert": None,
+        "ca_cert": None
     }
     __config_dir = "\\jupyter-config"
     __config_file_name = 'jupyter_cs3_config'
@@ -27,7 +30,7 @@ class Config(LoggingConfigurable):
             config_path.insert(0, os.getcwd() + self.__config_dir) #might be (0, os.getcwd() + '\\cs3api4lab' + self.__config_dir) depending on the environment setup"
         cm = ConfigManager(read_config_path=config_path)
         config_file = cm.get(self.__config_file_name)
-        config = config_file.get("cs3")
+        config = config_file.get("cs3", {})
 
         self.config = self.config | config
 
