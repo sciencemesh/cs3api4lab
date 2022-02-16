@@ -13,6 +13,6 @@
 	"client_id": "einstein",
 	"client_secret": "relativity",
 	"locks_expiration_time": 150,
-    "tus_enabled": true
+	"tus_enabled": false
 	}
 }
