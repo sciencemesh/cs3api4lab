@@ -93,11 +93,18 @@ class StorageLogic:
 
     def upload_content(self, file_path, content, content_size, init_file_upload_response):
         protocol = [p for p in init_file_upload_response.protocols if p.protocol == "simple"][0]
-        headers = {
+        if self.config['tus_enabled']:
+            headers = {
                 'Tus-Resumable': '1.0.0',
                 'File-Path': file_path,
                 'File-Size': content_size,
                 'x-access-token': self.auth.authenticate(),
+                'X-Reva-Transfer': protocol.token
+            }
+        else:
+            headers = {
+                'x-access-token': self.auth.authenticate(),
+                'Upload-Length': size,
                 'X-Reva-Transfer': protocol.token
             }
         put_res = requests.put(url=protocol.upload_endpoint, data=content, headers=headers)
