@@ -17,7 +17,8 @@ class Config(LoggingConfigurable):
         "locks_expiration_time": 150,
         "client_key": None,
         "client_cert": None,
-        "ca_cert": None
+        "ca_cert": None,
+        "tus_enabled": True
     }
     __config_dir = "jupyter-config"
     __config_file_name = 'jupyter_cs3_config'

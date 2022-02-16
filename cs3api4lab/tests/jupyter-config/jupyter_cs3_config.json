@@ -12,6 +12,7 @@
 	"authenticator_class": "cs3api4lab.auth.RevaPassword",
 	"client_id": "einstein",
 	"client_secret": "relativity",
-	"locks_expiration_time": 10
+	"locks_expiration_time": 10,
+    "tus_enabled": true
 	}
 }
