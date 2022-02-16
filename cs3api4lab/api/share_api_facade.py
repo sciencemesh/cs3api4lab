@@ -39,7 +39,10 @@ class ShareAPIFacade:
     def create(self, endpoint, file_path, opaque_id, idp, role=Role.EDITOR, grantee_type=Grantee.USER, reshare=True):
         """Creates a share or creates an OCM share if the user is not found in local domain"""
         if self._is_ocm_user(opaque_id, idp):
-            return self.ocm_share_api.create(opaque_id, idp, idp, endpoint, file_path, grantee_type, role, reshare)
+            if self.config['enable_ocm']:
+                return self.ocm_share_api.create(opaque_id, idp, idp, endpoint, file_path, grantee_type, role, reshare)
+            else:
+                self.log.warn('Cannot create OCM share - OCM functionality is disabled')
         else:
             return self.share_api.create(endpoint, file_path, opaque_id, idp, role, grantee_type)
 
@@ -56,7 +59,10 @@ class ShareAPIFacade:
         if 'role' in kwargs:
             self.share_api.update(kwargs['share_id'], kwargs['role'])
         else:
-            self.ocm_share_api.update(kwargs['share_id'], kwargs['field'], kwargs['value'])
+            if not self.config['enable_ocm']:
+                self.log.warn('Cannot update OCM share - OCM functionality is disabled')
+            else:
+                self.ocm_share_api.update(kwargs['share_id'], kwargs['field'], kwargs['value'])
 
     def update_received(self, share_id, state):
         """Updates share's state
@@ -64,14 +70,20 @@ class ShareAPIFacade:
            :param state: accepted/rejected/pending/invalid
         """
         if self.is_ocm_received_share(share_id):
-            self.ocm_share_api.update_received(share_id, 'state', state)
+            if self.config['enable_ocm']:
+                self.ocm_share_api.update_received(share_id, 'state', state)
+            else:
+                self.log.warn('Cannot update received OCM share - OCM functionality is disabled')
         else:
-            self.share_api.update_received(share_id, State.ACCEPTED)
+            self.share_api.update_received(share_id, state)
 
     def remove(self, share_id):
         """Removes a share with given id """
         if self.is_ocm_share(share_id):
-            return self.ocm_share_api.remove(share_id)
+            if self.config['enable_ocm']:
+                return self.ocm_share_api.remove(share_id)
+            else:
+                self.log.warn('Cannot remove OCM share - OCM functionality is disabled')
         else:
             return self.share_api.remove(share_id)
 
@@ -81,7 +93,10 @@ class ShareAPIFacade:
         :rtype: dict
         """
         share_list = self.share_api.list()
-        ocm_share_list = self.ocm_share_api.list()
+        if self.config['enable_ocm']:
+            ocm_share_list = self.ocm_share_api.list()
+        else:
+            ocm_share_list = None
         return self.map_shares(share_list, ocm_share_list)
 
     def list_received(self):
@@ -90,7 +105,10 @@ class ShareAPIFacade:
         :rtype: dict
         """
         share_list = self.share_api.list_received()
-        ocm_share_list = self.ocm_share_api.list_received()
+        if self.config['enable_ocm']:
+            ocm_share_list = self.ocm_share_api.list_received()
+        else:
+            ocm_share_list = None
         return self.map_shares(share_list, ocm_share_list, True)
 
     def list_grantees_for_file(self, file_path):
@@ -99,10 +117,15 @@ class ShareAPIFacade:
         :return: list of grantees
         """
         share_list = self.share_api.list()
-        ocm_share_list = self.ocm_share_api.list()
+
+        if self.config['enable_ocm']:
+            ocm_share_list = self.ocm_share_api.list()
+        else:
+            ocm_share_list = {"shares": []}
+
         file_path = ShareUtils.purify_file_path(file_path, self.config['client_id'])
         shares = []
-        for share in [*share_list.shares, *ocm_share_list.shares]:
+        for share in [*share_list.shares, *ocm_share_list["shares"]]:
             path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id'])
             if file_path == path:
                 shares.append(self._get_share_info(share))
@@ -129,8 +152,11 @@ class ShareAPIFacade:
         return not bool(self.user_api.get_user_info(idp, opaque_id))
 
     def is_ocm_share(self, share_id):
-        """Checks if share is present on OCM shares list"""
-        return self.ocm_share_api.list(share_id)['id'] != ''
+        """Checks if share is present on shares list"""
+        for share in self.share_api.list().shares:
+            if share.id.opaque_id == share_id:
+                return False
+        return True
 
     def is_ocm_received_share(self, share_id):
         """Checks if share is present on OCM received shares list"""
@@ -143,9 +169,10 @@ class ShareAPIFacade:
     def map_shares(self, share_list, ocm_share_list, received=False):
         """Converts both types of shares into Jupyter model"""
         share_list_mapped = self.map_shares_to_model(share_list, received)
-        ocm_share_list_mapped = self.map_shares_to_model(ocm_share_list, received)
-        for share in ocm_share_list_mapped['content']:
-            share_list_mapped['content'].append(share)
+        if ocm_share_list:
+            ocm_share_list_mapped = self.map_shares_to_model(ocm_share_list, received)
+            for share in ocm_share_list_mapped['content']:
+                share_list_mapped['content'].append(share)
         return share_list_mapped
 
     def map_shares_to_model(self, list_response, received=False):

@@ -189,7 +189,7 @@ class Cs3ShareApi:
         share_state = ShareUtils.map_state(state)
         list_request = sharing.ListReceivedSharesRequest()
         list_response = self.cs3_api.ListReceivedShares(request=list_request,
-                                                        metadata=[('x-access-token', self.get_token())])
+                                                        metadata=[('x-access-token', self.auth.authenticate())])
         share_to_update = None
         for share in list_response.shares:
             if share_id == share.share.id.opaque_id:
