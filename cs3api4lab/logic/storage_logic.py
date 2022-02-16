@@ -104,7 +104,7 @@ class StorageLogic:
         else:
             headers = {
                 'x-access-token': self.auth.authenticate(),
-                'Upload-Length': size,
+                'Upload-Length': content_size,
                 'X-Reva-Transfer': protocol.token
             }
         put_res = requests.put(url=protocol.upload_endpoint, data=content, headers=headers)
