@@ -94,7 +94,6 @@ class StorageLogic:
     def upload_content(self, file_path, content, content_size, init_file_upload_response):
         protocol = [p for p in init_file_upload_response.protocols if p.protocol == "simple"][0]
         if self.config['tus_enabled']:
-            print('tus on')
             headers = {
                 'Tus-Resumable': '1.0.0',
                 'File-Path': file_path,
@@ -103,7 +102,6 @@ class StorageLogic:
                 'X-Reva-Transfer': protocol.token
             }
         else:
-            print('no tusssss')
             headers = {
                 'x-access-token': self.auth.authenticate(),
                 'Upload-Length': content_size,
