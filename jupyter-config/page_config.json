@@ -1,0 +1,6 @@
+{
+  "disabledExtensions": {
+    "@jupyterlab/filebrowser": true,
+    "@jupyterlab/filebrowser-extension": true
+  }
+}

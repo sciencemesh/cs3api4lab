@@ -51,10 +51,6 @@ export class CS3Contents implements Contents.IDrive {
     this._state = stateDB;
   }
 
-  refresh(): void {
-    console.log('refresh');
-  }
-
   /**
    * The name of the drive.
    */
@@ -112,7 +108,9 @@ export class CS3Contents implements Contents.IDrive {
     return this._docManager.services.contents.getDownloadUrl(localPath);
   }
 
-  newUntitled(options?: Contents.ICreateOptions): Promise<Contents.IModel> {
+  newUntitled(
+    options: Contents.ICreateOptions | undefined
+  ): Promise<Contents.IModel> {
     return this._docManager.services.contents.newUntitled(options);
   }
 

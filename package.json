@@ -59,8 +59,8 @@
     "@jupyterlab/settingregistry": "~3.0.7",
     "@jupyterlab/statedb": "~3.0.7",
     "@jupyterlab/theme-light-extension": "~3.0.13",
-    "@jupyterlab/translation": "~3.0.8",
     "@jupyterlab/ui-components": "^3.0.8",
+    "@jupyterlab/translation": "~3.0.10",
     "@lumino/widgets": "^1.16.1",
     "jupyterlab_toastify": "~4.2.1",
     "moment": "~2.27.0",
@@ -92,3 +92,4 @@
   },
   "styleModule": "style/index.js"
 }
+

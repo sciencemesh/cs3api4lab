@@ -1,6 +1,8 @@
 import {
   ILabShell,
+  ILayoutRestorer,
   IRouter,
+  ITreePathUpdater,
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
@@ -16,7 +18,6 @@ import { IStateDB } from '@jupyterlab/statedb';
 import { ILauncher } from '@jupyterlab/launcher';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser/lib/tokens';
 import { each } from '@lumino/algorithm';
-
 import {
   CS3Contents,
   CS3ContentsShareByMe,
@@ -39,11 +40,14 @@ import {
   newFolderIcon
 } from '@jupyterlab/ui-components';
 import { Contents } from '@jupyterlab/services';
+import { createLauncher, restoreBrowser, addCommands } from './browserCommands';
+import { IMainMenu } from '@jupyterlab/mainmenu';
+import { ITranslator } from '@jupyterlab/translation';
 
 /**
  * The command IDs used by the react-widget plugin.
  */
-namespace CommandIDs {
+namespace CS3CommandIDs {
   export const info = 'filebrowser:cs3-info';
   export const createShare = 'filebrowser:cs3-create-share';
 }
@@ -60,9 +64,12 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
   activate: (
     app: JupyterFrontEnd,
     docManager: IDocumentManager,
-    state: IStateDB | null
+    state: IStateDB | null,
+    router: IRouter | null,
+    tree: JupyterFrontEnd.ITreeResolver | null
   ): any => {
     const tracker = new WidgetTracker<FileBrowser>({ namespace: 'cs3_test' });
+    const { commands } = app;
 
     const createFileBrowser = (
       id: string,
@@ -93,10 +100,12 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
     };
 
     // Manually restore and load the default file browser.
-    const defaultBrowser = createFileBrowser('filebrowser', {
+    const defaultBrowser = createFileBrowser('cs3filebrowser', {
       auto: true,
       restore: true
     });
+
+    void restoreBrowser(defaultBrowser, commands, router, tree);
 
     return { createFileBrowser, defaultBrowser, tracker };
   }
@@ -114,13 +123,13 @@ const cs3share: JupyterFrontEndPlugin<void> = {
     const { tracker } = factory;
 
     app.contextMenu.addItem({
-      command: CommandIDs.createShare,
+      command: CS3CommandIDs.createShare,
       selector: '.jp-DirListing-item', // show only for file/directory items.
       rank: 3
     });
 
     // Add the CS3 share to file browser context menu
-    commands.addCommand(CommandIDs.createShare, {
+    commands.addCommand(CS3CommandIDs.createShare, {
       execute: () => {
         const widget = tracker.currentWidget;
         const dialogTracker = new WidgetTracker<Dialog<any>>({
@@ -156,15 +165,34 @@ const cs3share: JupyterFrontEndPlugin<void> = {
  */
 const cs3browser: JupyterFrontEndPlugin<void> = {
   id: 'cs3_api_shares_v2',
-  requires: [IDocumentManager, IFileBrowserFactory, ILabShell, IStateDB],
+  requires: [
+    IDocumentManager,
+    IFileBrowserFactory,
+    ILabShell,
+    IStateDB,
+    ILayoutRestorer,
+    ISettingRegistry,
+    ITranslator
+  ],
+  optional: [ITreePathUpdater, ICommandPalette, IMainMenu],
   autoStart: true,
   activate(
     app: JupyterFrontEnd,
     docManager: IDocumentManager,
     factory: IFileBrowserFactory,
     labShell: ILabShell,
-    stateDB: IStateDB
+    stateDB: IStateDB,
+    restorer: ILayoutRestorer,
+    settingRegistry: ISettingRegistry,
+    translator: ITranslator,
+    treePathUpdater: ITreePathUpdater | null,
+    commandPalette: ICommandPalette | null,
+    mainMenu: IMainMenu | null
   ): void {
+    // const browser = factory.defaultBrowser;
+    const { commands } = app;
+    docManager.services.contents.dispose();
+
     const cs3Panel = new Cs3Panel(
       'cs3 panel',
       'cs3-panel',
@@ -216,6 +244,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     cs3Panel.addBottom(cs3BottomWidget);
 
     addLaunchersButton(app, fileBrowser, labShell);
+    restorer.add(fileBrowser, 'cs3_filebrowser');
 
     //
     // Share split panel
@@ -288,6 +317,71 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
       'Projects',
       newFolderIcon
     );
+
+    /**
+     * Add commands - this is a part of filebrowser-plugin
+     * Copied from packages/filebrowser-extension/src/index.ts:325
+     */
+    addCommands(
+      app,
+      factory,
+      labShell,
+      docManager,
+      settingRegistry,
+      translator,
+      commandPalette,
+      mainMenu
+    );
+
+    /**
+     * Copied from packages/filebrowser-extension/src/index.ts:364
+     */
+    void Promise.all([app.restored, fileBrowser.model.restored]).then(() => {
+      function maybeCreate() {
+        // Create a launcher if there are no open items.
+        if (
+          labShell.isEmpty('main') &&
+          commands.hasCommand('launcher:create')
+        ) {
+          void createLauncher(commands, fileBrowser);
+        }
+      }
+
+      // When layout is modified, create a launcher if there are no open items.
+      labShell.layoutModified.connect(() => {
+        maybeCreate();
+      });
+    });
+
+    /**
+     * Copied from packages/filebrowser-extension/src/index.ts:377
+     */
+    let navigateToCurrentDirectory = false;
+    let useFuzzyFilter = true;
+
+    /**
+     * Copied from packages/filebrowser-extension/src/index.ts:380
+     * Changes: use new file browser instance from cs3api4lab plugin
+     */
+    void settingRegistry
+      .load('@jupyterlab/filebrowser-extension:browser')
+      .then(settings => {
+        settings.changed.connect(settings => {
+          navigateToCurrentDirectory = settings.get(
+            'navigateToCurrentDirectory'
+          ).composite as boolean;
+          fileBrowser.navigateToCurrentDirectory = navigateToCurrentDirectory;
+        });
+        navigateToCurrentDirectory = settings.get('navigateToCurrentDirectory')
+          .composite as boolean;
+        fileBrowser.navigateToCurrentDirectory = navigateToCurrentDirectory;
+        settings.changed.connect(settings => {
+          useFuzzyFilter = settings.get('useFuzzyFilter').composite as boolean;
+          fileBrowser.useFuzzyFilter = useFuzzyFilter;
+        });
+        useFuzzyFilter = settings.get('useFuzzyFilter').composite as boolean;
+        fileBrowser.useFuzzyFilter = useFuzzyFilter;
+      });
 
     cs3Panel.addTab(fileBrowser);
     cs3Panel.addTab(cs3TabWidget3);
