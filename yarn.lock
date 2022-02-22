@@ -870,7 +870,7 @@
     "@jupyterlab/statedb" "^3.2.8"
     "@lumino/coreutils" "^1.5.3"
 
-"@jupyterlab/translation@~3.0.8":
+"@jupyterlab/translation@~3.0.10":
   version "3.0.10"
   resolved "https://registry.yarnpkg.com/@jupyterlab/translation/-/translation-3.0.10.tgz#cd6203b69f86a570879b91d7643e3c8d7c70f7d4"
   integrity sha512-O+jGspAqhH8jO6OLr1hRD8MBEkn7PgyNY1AQUKyg22uM2DGOv47LNIRSHIjF31cFbHrziuh4pMMs1nZ2WitU1g==
