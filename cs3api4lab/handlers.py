@@ -39,14 +39,15 @@ class ShareHandler(APIHandler):
         share_id = self.get_query_argument('share_id')
         yield RequestHandler.async_handle_request(self, self.share_api.remove, 204, share_id)
 
+    @web.authenticated
+    @gen.coroutine
     def put(self):
-        request = self.get_json_body()
+        params = self.get_json_body()
         try:
             yield RequestHandler.async_handle_request(self,
-                                                      self.share_api.update_share,
-                                                      204,
-                                                      request['share_id'],
-                                                      request['role'])
+                                          self.share_api.update_share,
+                                          204,
+                                          params)
         except KeyError as err:
             RequestHandler.handle_error(self, ParamError(err))
 
@@ -190,7 +191,7 @@ class UserInfoHandler(APIHandler):
     def get(self):
         idp = self.get_query_argument('idp')
         opaque_id = self.get_query_argument('opaque_id')
-        yield RequestHandler.async_handle_request(self, self.user_api.get_user_info, 200, idp, opaque_id)
+        yield RequestHandler.async_handle_request(self, self.user_api.get_user, 200, idp, opaque_id)
 
 class UserInfoClaimHandler(APIHandler):
     @property

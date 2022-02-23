@@ -8,6 +8,7 @@ COPY . /opt/cs3/
 # On the other hand, we have newer dependencies (i.e node), making it easier to install
 RUN cd /opt/cs3 && \
     pip install --no-cache-dir . && \
+    npm cache clean --force && \
     jupyter lab clean && \
     rm -rf "/home/${NB_USER}/.cache/yarn" && \
     cd / && \

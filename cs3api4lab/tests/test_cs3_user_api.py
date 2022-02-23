@@ -18,12 +18,12 @@ class TestCs3UserApi(TestCase, LoggingConfigurable):
 
         expected_info = {"username": "einstein",
                     "display_name": "Albert Einstein",
+                    "full_name": "Albert Einstein (einstein)",
                     "idp": "cernbox.cern.ch",
                     "opaque_id": "4c510ada-c86b-4815-8820-42cdf82c3d51",
                     "mail": "einstein@cern.ch"}
 
         user_info = self.user_api.get_user_info(idp, opaque_id)
-
         self.assertDictEqual(user_info, expected_info)
 
     def test_get_user_info_non_existing_id(self):
@@ -48,6 +48,7 @@ class TestCs3UserApi(TestCase, LoggingConfigurable):
 
         expected_info = {"username": "einstein",
                     "display_name": "Albert Einstein",
+                    "full_name": "Albert Einstein (einstein)",
                     "idp": "cernbox.cern.ch",
                     "opaque_id": "4c510ada-c86b-4815-8820-42cdf82c3d51",
                     "mail": "einstein@cern.ch"}
@@ -61,6 +62,7 @@ class TestCs3UserApi(TestCase, LoggingConfigurable):
 
         expected_info = {"username": "einstein",
                     "display_name": "Albert Einstein",
+                    "full_name": "Albert Einstein (einstein)",
                     "idp": "cernbox.cern.ch",
                     "opaque_id": "4c510ada-c86b-4815-8820-42cdf82c3d51",
                     "mail": "einstein@cern.ch"}
@@ -86,6 +88,7 @@ class TestCs3UserApi(TestCase, LoggingConfigurable):
 
         expected_info = {"username": "einstein",
                     "display_name": "Albert Einstein",
+                    "full_name": "Albert Einstein (einstein)",
                     "idp": "cernbox.cern.ch",
                     "opaque_id": "4c510ada-c86b-4815-8820-42cdf82c3d51",
                     "mail": "einstein@cern.ch"}

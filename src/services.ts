@@ -54,6 +54,10 @@ export async function requestAPI<T>(
     throw new ServerConnection.NetworkError(error);
   }
 
+  if (response.status === 204) {
+    return Promise.resolve({} as T);
+  }
+
   const data = await response.json();
 
   if (!response.ok) {

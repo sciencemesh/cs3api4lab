@@ -242,12 +242,19 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
 
     def test_get_grantees_for_file(self):
         try:
+            expected_grantee_opaque = '932b4540-8d16-481e-8ef4-588e4b6b151c'
+            expected_grantee_idp = 'example.org'
             self.file_name = self.file_path + self.get_random_suffix()
             created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
             self.share_id = created_share['opaque_id']
 
             grantees = self.uni_api.list_grantees_for_file(self.file_name)
-            self.assertTrue(grantees['shares'], "Grantees not found")
+
+            self.assertTrue(
+                list(share for share in grantees['shares']
+                     if share['grantee']['opaque_id'] == expected_grantee_opaque
+                     and share['grantee']['idp'] == expected_grantee_idp),
+                "Grantee not present")
 
         finally:
             if self.share_id:
@@ -261,13 +268,20 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
 
     def test_get_grantees_for_file_with_drive_name(self):
         try:
+            expected_grantee_opaque = '932b4540-8d16-481e-8ef4-588e4b6b151c'
+            expected_grantee_idp = 'example.org'
             self.file_name = self.file_path + self.get_random_suffix()
             created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
             self.share_id = created_share['opaque_id']
 
             file_path = "cs3drive:" + self.file_name[1:]
             grantees = self.uni_api.list_grantees_for_file(file_path)
-            self.assertTrue(grantees['shares'], "Grantees not found")
+
+            self.assertTrue(
+                list(share for share in grantees['shares']
+                     if share['grantee']['opaque_id'] == expected_grantee_opaque
+                     and share['grantee']['idp'] == expected_grantee_idp),
+                "Grantee not present")
 
         finally:
             if self.share_id:
@@ -301,13 +315,20 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
 
     def test_get_grantees_for_file_with_drive_name_starting_with_slash(self):
         try:
+            expected_grantee_opaque = '932b4540-8d16-481e-8ef4-588e4b6b151c'
+            expected_grantee_idp = 'example.org'
             self.file_name = self.file_path + self.get_random_suffix()
             created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
             self.share_id = created_share['opaque_id']
 
             file_path = "/cs3drive:" + self.file_name[1:]
             grantees = self.uni_api.list_grantees_for_file(file_path)
-            self.assertTrue(grantees['shares'], "Grantees not found")
+
+            self.assertTrue(
+                list(share for share in grantees['shares']
+                     if share['grantee']['opaque_id'] == expected_grantee_opaque
+                     and share['grantee']['idp'] == expected_grantee_idp),
+                "Grantee not present")
 
         finally:
             if self.share_id:

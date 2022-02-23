@@ -19,7 +19,6 @@ from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.api.storage_api import StorageApi
 from cs3api4lab.exception.exceptions import OCMDisabledError
 
-
 class ShareAPIFacade:
     def __init__(self, log):
         self.log = log
@@ -48,7 +47,7 @@ class ShareAPIFacade:
         else:
             return self.share_api.create(endpoint, file_path, opaque_id, idp, role, grantee_type)
 
-    def update_share(self, **kwargs):
+    def update_share(self, params):
         """Updates a field of a share
             Paramterers:
                 :param share_id
@@ -58,13 +57,17 @@ class ShareAPIFacade:
                 :param permissions: EDITOR/VIEWER or
                 :param display_name
         """
-        if 'role' in kwargs:
-            self.share_api.update(kwargs['share_id'], kwargs['role'])
+        if self.is_share(params['share_id']):
+            self.share_api.update(params['share_id'], params['role'])
         else:
             if not self.config.enable_ocm:
                 raise OCMDisabledError('Cannot update OCM share - OCM functionality is disabled')
             else:
-                self.ocm_share_api.update(kwargs['share_id'], kwargs['field'], kwargs['value'])
+                self.ocm_share_api.update(
+                    params['share_id'],
+                    'permissions',
+                    [params['role'], 'role']
+                )
 
     def update_received(self, share_id, state):
         """Updates share's state
@@ -84,14 +87,15 @@ class ShareAPIFacade:
         return ModelUtils.map_share_to_base_model(result.share, stat)
 
     def remove(self, share_id):
-        """Removes a share with given id """
-        if self.is_ocm_share(share_id):
+        """Removes a share with given opaque_id """
+
+        if self.is_share(share_id):
+            self.share_api.remove(share_id)
+        else:
             if self.config.enable_ocm:
                 return self.ocm_share_api.remove(share_id)
             else:
                 raise OCMDisabledError('Cannot remove OCM share - OCM functionality is disabled')
-        else:
-            return self.share_api.remove(share_id)
 
     def list_shares(self):
         """
@@ -128,23 +132,25 @@ class ShareAPIFacade:
         :param file_path: path to the file
         :return: list of grantees
         """
-        share_list = self.share_api.list()
-
-        if self.config.enable_ocm:
-            ocm_share_list = self.ocm_share_api.list()
-        else:
-            ocm_share_list = {"shares": []}
 
         file_path = FileUtils.remove_drives_names(file_path)
-        file_path = ShareUtils.purify_file_path(file_path, self.config.client_id)
-        shares = []
-        for share in [*share_list.shares, *ocm_share_list["shares"]]:
-            path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config.client_id)
-            if file_path == path:
-                shares.append(ShareUtils.get_share_info(share))
+        file_path = FileUtils.check_and_transform_file_path(file_path)
 
-        response = {"file_path": file_path, "shares": shares}
-        return response
+        all_shares_list = []
+        share_list = self.share_api.list(file_path)
+        all_shares_list.extend(share_list.shares)
+
+        if self.config.enable_ocm:
+            ocm_share_list = self.ocm_share_api.list(file_path)
+            all_shares_list.extend(ocm_share_list.shares)
+
+        shares = []
+        for share in all_shares_list:
+            shares.append(ShareUtils.get_share_info(share))
+
+        return {"file_path": file_path, "shares": shares}
+
+
 
     def _token(self):
         return [('x-access-token', self.auth.authenticate())]
@@ -152,6 +158,14 @@ class ShareAPIFacade:
     def _is_ocm_user(self, opaque_id, idp):
         """Checks if user is present in local provider"""
         return not bool(self.user_api.get_user_info(idp, opaque_id))
+
+    def is_share(self, opaque_id):
+        try:
+            self.share_api.get(opaque_id)
+        except Exception:
+            return False
+
+        return True
 
     def is_ocm_share(self, share_id):
         """Checks if share is present on shares list"""
