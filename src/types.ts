@@ -15,9 +15,11 @@ export type CreateShareProps = {
 export type MainProps = {
   fileInfo: Contents.IModel;
   widgetTracker: WidgetTracker;
+  tabname: string;
 };
 export type MenuProps = {
   tabHandler: (tabname: string) => void;
+  tabname: string;
 };
 export type ContentProps = {
   content: Contents.IModel;
@@ -32,6 +34,11 @@ export type HeaderProps = {
 export type ShareProps = {
   fileInfo: Contents.IModel;
   widgetTracker: WidgetTracker;
+};
+export type InfoboxProps = {
+  fileInfo: Contents.IModel;
+  widgetTracker: WidgetTracker;
+  tabname: string;
 };
 export type InfoProps = {
   content: Contents.IModel;

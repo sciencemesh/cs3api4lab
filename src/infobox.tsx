@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Contents } from '@jupyterlab/services';
-import { ReactWidget, WidgetTracker } from '@jupyterlab/apputils';
+import { Dialog, ReactWidget, WidgetTracker } from '@jupyterlab/apputils';
 import { formatFileSize, findFileIcon, requestAPI } from './services';
 import { INotification } from 'jupyterlab_toastify';
 import moment from 'moment';
@@ -9,6 +9,7 @@ import {
   CreateShareProps,
   Grantee,
   HeaderProps,
+  InfoboxProps,
   InfoProps,
   MainProps,
   MenuProps,
@@ -27,6 +28,8 @@ import Select, { SelectRenderer } from 'react-dropdown-select';
  */
 class Main extends React.Component<any, any> {
   private readonly widgetTracker: WidgetTracker;
+  private readonly tabname: string;
+
   public state = {
     activeTab: 'info'
   };
@@ -39,6 +42,13 @@ class Main extends React.Component<any, any> {
   public constructor(props: MainProps) {
     super(props);
     this.widgetTracker = props.widgetTracker;
+    this.tabname = props.tabname;
+  }
+
+  public componentDidMount() {
+    this.setState({
+      activeTab: this.tabname
+    });
   }
 
   /**
@@ -56,7 +66,7 @@ class Main extends React.Component<any, any> {
     return (
       <div className="jp-file-info">
         <Header fileInfo={this.props.fileInfo} />
-        <Menu tabHandler={this.switchTabs} />
+        <Menu tabHandler={this.switchTabs} tabname={this.tabname} />
         <Content
           contentType={this.state.activeTab}
           content={this.props.fileInfo}
@@ -68,7 +78,7 @@ class Main extends React.Component<any, any> {
 }
 
 export const Menu = (props: MenuProps): JSX.Element => {
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState(props.tabname);
 
   return (
     <>
@@ -90,7 +100,7 @@ export const Menu = (props: MenuProps): JSX.Element => {
               props.tabHandler('shares');
             }}
           >
-            SHARES
+            SHARE INFO
           </li>
 
           <li
@@ -100,7 +110,7 @@ export const Menu = (props: MenuProps): JSX.Element => {
               props.tabHandler('sharefile');
             }}
           >
-            PUBLIC LINKS
+            SHARE FILE
           </li>
         </ul>
       </nav>
@@ -150,16 +160,24 @@ const Header = (props: HeaderProps): JSX.Element => {
 export class InfoboxWidget extends ReactWidget {
   private readonly fileInfo: Contents.IModel;
   private readonly widgetTracker: WidgetTracker;
+  private readonly tabname: string;
 
-  public constructor(props: ShareProps) {
+  public constructor(props: InfoboxProps) {
     super();
     this.addClass('jp-ReactWidget');
     this.fileInfo = props.fileInfo;
     this.widgetTracker = props.widgetTracker;
+    this.tabname = props.tabname;
   }
 
   protected render(): JSX.Element {
-    return <Main fileInfo={this.fileInfo} widgetTracker={this.widgetTracker} />;
+    return (
+      <Main
+        fileInfo={this.fileInfo}
+        widgetTracker={this.widgetTracker}
+        tabname={this.tabname}
+      />
+    );
   }
 }
 
@@ -491,3 +509,18 @@ const CreateShare = (props: CreateShareProps): JSX.Element => {
     </>
   );
 };
+
+export function createInfobox(
+  fileInfo: Contents.IModel,
+  dialogTracker: WidgetTracker<Dialog<any>>,
+  tabname: string
+): Dialog<any> {
+  return new Dialog({
+    body: new InfoboxWidget({
+      fileInfo: fileInfo,
+      widgetTracker: dialogTracker,
+      tabname: tabname
+    }),
+    buttons: [Dialog.okButton({ label: 'Close' })]
+  });
+}
