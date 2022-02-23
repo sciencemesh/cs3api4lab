@@ -23,12 +23,13 @@ import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.types.v1beta1.types_pb2 as cs3_types
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
-from cs3api4lab.exception.exceptions import ProviderNotFoundError, ResourceNotFoundError, ShareAlreadyExistsError, ShareNotFoundError
+import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
 
+from cs3api4lab.exception.exceptions import ProviderNotFoundError, ResourceNotFoundError, ShareAlreadyExistsError, ShareNotFoundError
+from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.common.strings import *
 from cs3.storage.provider.v1beta1.resources_pb2 import *
-
 
 class Cs3OcmShareApi:
 
@@ -52,7 +53,7 @@ class Cs3OcmShareApi:
                                                       value=str.encode(self._map_role(role))),
                  "name": cs3_types.OpaqueEntry(decoder="plain",
                                                value=str.encode('my_resource_name'))})
-        resource_id = storage_resources.ResourceId(storage_id=endpoint, opaque_id=file_path)
+        resource_info = self._get_resource_info(endpoint, file_path)
         user_id = identity_res.UserId(idp=idp, opaque_id=opaque_id)
         opaque_id = storage_resources.Grantee(type=ShareUtils.map_grantee(grantee_type), user_id=user_id)
         perms = sharing_res.SharePermissions(permissions=ShareUtils.get_resource_permissions(role),
@@ -60,7 +61,7 @@ class Cs3OcmShareApi:
         grant = sharing_res.ShareGrant(permissions=perms, grantee=opaque_id)
         provider_info = self._get_provider_info(domain)
         request = ocm_api.CreateOCMShareRequest(opaque=opaque,
-                                                resource_id=resource_id,
+                                                resource_id=resource_info.id,
                                                 grant=grant,
                                                 recipient_mesh_provider=provider_info)
         response = self.ocm_share_api.CreateOCMShare(request=request,
@@ -82,6 +83,7 @@ class Cs3OcmShareApi:
         request = ocm_api.RemoveOCMShareRequest(ref=ref)
         response = self.ocm_share_api.RemoveOCMShare(request=request,
                                                      metadata=self._token())
+
         if self._is_code_ok(response):
             self.log.info("OCM share deleted: " + share_id)
             return
@@ -99,11 +101,6 @@ class Cs3OcmShareApi:
                                                         permissions=sharing_res.SharePermissions(
                                                             permissions=ShareUtils.get_resource_permissions(value[0]),
                                                             reshare=bool(value[1]))
-                                                    ))
-        elif field == 'display_name':
-            request = ocm_api.UpdateOCMShareRequest(ref=ref,
-                                                    field=ocm_api.UpdateOCMShareRequest.UpdateField(
-                                                        display_name=value
                                                     ))
         else:
             raise ValueError('Unknown field to update')
@@ -147,21 +144,16 @@ class Cs3OcmShareApi:
             self._handle_error(response, "Error updating OCM received share:")
         return response.opaque
 
-    def list(self, share_id=None):
-        if share_id is None:
-            return self._list_ocm_shares()
-        else:
-            return self._get_ocm_share(share_id)
-
-    def _list_ocm_shares(self):
-        request = ocm_api.ListOCMSharesRequest()
-        response = self.ocm_share_api.ListOCMShares(request=request,
+    def list(self, file_path=None):
+        list_request = self._share_filter_by_resource(file_path)
+        response = self.ocm_share_api.ListOCMShares(request=list_request,
                                                     metadata=self._token())
+
         if not self._is_code_ok(response):
             self._handle_error(response, "Error listing OCM share:")
         return response
 
-    def _get_ocm_share(self, share_id):
+    def get(self, share_id):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
         ref = sharing_res.ShareReference(id=share_id_obj)
         request = ocm_api.GetOCMShareRequest(ref=ref)
@@ -199,6 +191,23 @@ class Cs3OcmShareApi:
             raise ShareNotFoundError(f"ocm share {share_id} not found")
         else:
             self._handle_error(response)
+
+    def _share_filter_by_resource(self, path):
+        if path is None:
+            return ocm_api.ListOCMSharesRequest()
+
+        file_stat = self.file_api.stat_info(path)
+        share_filters = []
+        resource = storage_resources.ResourceId(
+            storage_id=file_stat['inode']['storage_id'],
+            opaque_id=file_stat['inode']['opaque_id']
+        )
+
+        share_filters.append(ocm_api.ListOCMSharesRequest.Filter(
+            resource_id=resource,
+            type=ocm_api.ListOCMSharesRequest.Filter.Type.TYPE_RESOURCE_ID
+        ))
+        return ocm_api.ListOCMSharesRequest(filters=share_filters)
 
     def _map_ocm_shares(self, list_response, received=False):
         shares = []
@@ -261,3 +270,14 @@ class Cs3OcmShareApi:
 
     def _token(self):
         return [('x-access-token', self.auth.authenticate())]
+
+    def _get_resource_info(self, endpoint, file_id):
+        ref = FileUtils.get_reference(file_id, endpoint)
+        stat_response = self.cs3_api.Stat(request=storage_provider.StatRequest(ref=ref),
+                                          metadata=[('x-access-token', self.auth.authenticate())])
+        if stat_response.status.code == cs3_code.CODE_OK:
+            return stat_response.info
+        elif stat_response.status.code == cs3_code.CODE_NOT_FOUND:
+            raise ResourceNotFoundError("Resource not found")
+        else:
+            self._handle_error(stat_response)

@@ -248,9 +248,10 @@
 {
     flex-direction: row;
     flex-grow: 1;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: stretch;
     padding-bottom: 2%;
+    width: 100%;
 }
 
 .jp-shareform-title{
@@ -268,6 +269,17 @@
 .react-dropdown-select
 {
     width: 90%;
+}
+
+.jp-share-permission {
+    min-height: 25px;
+    font-size: 13px;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.jp-share-permission [placeholder] {
+    display: none;
 }
 
 .lm-AccordionPanel .lm-AccordionPanel-title {

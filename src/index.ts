@@ -11,20 +11,22 @@ import {
   Dialog,
   ICommandPalette,
   ReactWidget,
+  ToolbarButton,
   WidgetTracker
 } from '@jupyterlab/apputils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IStateDB } from '@jupyterlab/statedb';
 import { ILauncher } from '@jupyterlab/launcher';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser/lib/tokens';
-import { each } from '@lumino/algorithm';
+import { each, toArray } from '@lumino/algorithm';
+
 import {
   CS3Contents,
   CS3ContentsShareByMe,
   CS3ContentsShareWithMe
 } from './drive';
 import { FileBrowser, FilterFileBrowserModel } from '@jupyterlab/filebrowser';
-import { InfoboxWidget } from './infobox';
+import { createInfobox } from './infobox';
 import {
   Cs3BottomWidget,
   Cs3HeaderWidget,
@@ -38,7 +40,8 @@ import {
   kernelIcon,
   caseSensitiveIcon,
   inspectorIcon,
-  newFolderIcon
+  newFolderIcon,
+  circleIcon
 } from '@jupyterlab/ui-components';
 import { Contents } from '@jupyterlab/services';
 import { createLauncher, restoreBrowser, addCommands } from './browserCommands';
@@ -52,6 +55,7 @@ import { requestAPI } from './services';
  */
 namespace CS3CommandIDs {
   export const info = 'filebrowser:cs3-info';
+  export const shareInfo = 'filebrowser:cs3-share-info';
   export const createShare = 'filebrowser:cs3-create-share';
 }
 
@@ -126,9 +130,43 @@ const cs3share: JupyterFrontEndPlugin<void> = {
     const { tracker } = factory;
 
     app.contextMenu.addItem({
+      command: CS3CommandIDs.info,
+      selector: '.jp-DirListing-item', // show only for file/directory items.
+      rank: 3
+    });
+
+    app.contextMenu.addItem({
+      command: CS3CommandIDs.shareInfo,
+      selector: '.jp-DirListing-item', // show only for file/directory items.
+      rank: 3
+    });
+
+    app.contextMenu.addItem({
       command: CS3CommandIDs.createShare,
       selector: '.jp-DirListing-item', // show only for file/directory items.
       rank: 3
+    });
+
+    // Add the CS3 share to file browser context menu
+    commands.addCommand(CS3CommandIDs.info, {
+      execute: () => {
+        const widget = tracker.currentWidget;
+        const dialogTracker = new WidgetTracker<Dialog<any>>({
+          namespace: '@jupyterlab/apputils:Dialog'
+        });
+
+        if (widget) {
+          each(widget.selectedItems(), fileInfo => {
+            const dialog = createInfobox(fileInfo, 'info');
+            dialog.launch();
+            dialogTracker.add(dialog);
+          });
+        }
+      },
+      iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
+      label: () => {
+        return 'File info';
+      }
     });
 
     // Add the CS3 share to file browser context menu
@@ -141,14 +179,7 @@ const cs3share: JupyterFrontEndPlugin<void> = {
 
         if (widget) {
           each(widget.selectedItems(), fileInfo => {
-            const dialog = new Dialog({
-              body: new InfoboxWidget({
-                fileInfo: fileInfo,
-                widgetTracker: dialogTracker
-              }),
-              buttons: [Dialog.okButton({ label: 'Close' })]
-            });
-
+            const dialog = createInfobox(fileInfo, 'shares');
             dialog.launch();
             dialogTracker.add(dialog);
           });
@@ -156,7 +187,7 @@ const cs3share: JupyterFrontEndPlugin<void> = {
       },
       iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
       label: () => {
-        return 'File info';
+        return 'Share file';
       }
     });
   }
@@ -239,6 +270,35 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     fileBrowser.title.label = 'My Files';
     fileBrowser.title.caption = 'My Files';
     fileBrowser.title.icon = caseSensitiveIcon;
+
+    fileBrowser.toolbar.addItem(
+      'Share files',
+      new ToolbarButton({
+        icon: circleIcon,
+        tooltip: 'Share files',
+        onClick: () => {
+          const selectedFileList: Contents.IModel[] = toArray(
+            fileBrowser.selectedItems()
+          );
+
+          if (selectedFileList.length <= 0) {
+            alert('select a file');
+            return;
+          }
+
+          const dialogTracker = new WidgetTracker<Dialog<any>>({
+            namespace: '@jupyterlab/apputils:Dialog'
+          });
+
+          each(fileBrowser.selectedItems(), file => {
+            const dialog = createInfobox(file, 'shares');
+            void dialog.launch();
+            void dialogTracker.add(dialog);
+          });
+        }
+      })
+    );
+
     docManager.services.contents.addDrive(drive);
 
     //
