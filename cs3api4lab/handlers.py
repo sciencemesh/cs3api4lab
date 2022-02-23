@@ -330,10 +330,12 @@ class RequestHandler(APIHandler):
     def get_response_code(err):
         if isinstance(err, ShareAlreadyExistsError):
             return 409
-        if isinstance(err, ShareNotFoundError, LockNotFoundError):
+        if isinstance(err, (ShareNotFoundError, LockNotFoundError)):
             return 404
         if isinstance(err, (InvalidTypeError, KeyError, FileNotFoundError, ParamError)):
             return 400
+        if isinstance(err, OCMError):
+            return 501
         if isinstance(err, _InactiveRpcError):
             return 503
         else:
