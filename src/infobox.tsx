@@ -97,7 +97,7 @@ export const Menu = (props: MenuProps): JSX.Element => {
             className={activeTab === 'share' ? 'active' : ''}
             onClick={() => {
               setActiveTab('share');
-              props.tabHandler('shares');
+              props.tabHandler('share');
             }}
           >
             SHARE INFO
@@ -123,7 +123,7 @@ const Content = (props: ContentProps): JSX.Element => {
   let elementToDisplay: JSX.Element;
 
   switch (props.contentType) {
-    case 'shares':
+    case 'share':
       elementToDisplay = Shares({
         fileInfo: props.content,
         widgetTracker: props.widgetTracker

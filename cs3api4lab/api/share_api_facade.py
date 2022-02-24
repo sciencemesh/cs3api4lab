@@ -1,6 +1,7 @@
 import cs3.ocm.provider.v1beta1.provider_api_pb2_grpc as ocm_provider_api_grpc
 import urllib.parse
 
+from tornado import escape
 from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.api.cs3_file_api import Cs3FileApi  # todo remove this
 from cs3api4lab.common.strings import *
@@ -104,7 +105,7 @@ class ShareAPIFacade:
         shares = []
         for share in [*share_list.shares, *ocm_share_list.shares]:
             path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id'])
-            if file_path == path:
+            if file_path == escape.url_unescape(path):
                 shares.append(self._get_share_info(share))
 
         response = {"file_path": file_path, "shares": shares}
