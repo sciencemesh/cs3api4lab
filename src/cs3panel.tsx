@@ -74,7 +74,7 @@ export class Cs3Panel extends Widget {
         do {
           tab = dockPanelIterator?.next();
           if (tab !== undefined) {
-            if (this.isWidgetVisible(tab)) {
+            if (Cs3Panel.isWidgetVisible(tab)) {
               if (tab.id === 'fileBrowser') {
                 this.bottom.show();
               }
@@ -83,7 +83,7 @@ export class Cs3Panel extends Widget {
                 this._sharesTabVisible.emit(this);
                 this.bottom.hide();
               }
-              stateDB.save('activeTab', tab.id);
+              void stateDB.save('activeTab', tab.id);
             }
           }
         } while (tab);
@@ -103,7 +103,7 @@ export class Cs3Panel extends Widget {
     this.bottom.addWidget(widget);
   }
 
-  private isWidgetVisible(widget: Widget): boolean {
+  private static isWidgetVisible(widget: Widget): boolean {
     if (widget === undefined) {
       return false;
     }

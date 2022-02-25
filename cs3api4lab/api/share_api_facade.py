@@ -2,7 +2,7 @@ import cs3.ocm.provider.v1beta1.provider_api_pb2_grpc as ocm_provider_api_grpc
 import urllib.parse
 
 from cs3api4lab.auth.authenticator import Auth
-from cs3api4lab.api.cs3_file_api import Cs3FileApi  # todo remove this
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.common.strings import *
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.auth.channel_connector import ChannelConnector
@@ -72,11 +72,15 @@ class ShareAPIFacade:
         """
         if self.is_ocm_received_share(share_id):
             if self.config['enable_ocm']:
-                self.ocm_share_api.update_received(share_id, 'state', state)
+                result = self.ocm_share_api.update_received(share_id, 'state', state)
             else:
                 raise OCMDisabledError('Cannot update received OCM share - OCM functionality is disabled')
         else:
-            self.share_api.update_received(share_id, state)
+            result = self.share_api.update_received(share_id, state)
+
+        stat = self.file_api.stat(urllib.parse.unquote(result.share.resource_id.opaque_id),
+                                  result.share.resource_id.storage_id)  # todo remove this and use storage_logic
+        return ModelUtils.map_share_to_base_model(result.share, stat)
 
     def remove(self, share_id):
         """Removes a share with given id """
@@ -100,17 +104,23 @@ class ShareAPIFacade:
             ocm_share_list = None
         return self.map_shares(share_list, ocm_share_list)
 
-    def list_received(self):
+    def list_received(self, status=None):
         """
         :return: received shares and OCM received shares combined and mapped to Jupyter model
         :rtype: dict
         """
+
         share_list = self.share_api.list_received()
         if self.config['enable_ocm']:
             ocm_share_list = self.ocm_share_api.list_received()
         else:
             ocm_share_list = None
-        return self.map_shares(share_list, ocm_share_list, True)
+
+        mapped_shares = self.map_shares(share_list, ocm_share_list, True)
+        if status is not None:
+            mapped_shares['content'] = list(filter(lambda share: share['state'] == status, mapped_shares['content']))
+
+        return mapped_shares
 
     def list_grantees_for_file(self, file_path):
         """
@@ -184,26 +194,33 @@ class ShareAPIFacade:
             if received:
                 share = share.share
             try:
-                stat = self.file_api.stat(urllib.parse.unquote(share.resource_id.opaque_id), share.resource_id.storage_id)  # todo remove this and use storage_logic
+                user = self.user_api.get_user_info(share.owner.idp, share.owner.opaque_id)
+                stat = self.file_api.stat(urllib.parse.unquote(share.resource_id.opaque_id),
+                                          share.resource_id.storage_id)  # todo remove this and use storage_logic
                 # stat = self.storage_logic.stat_info(urllib.parse.unquote(share.resource_id.opaque_id), share.resource_id.storage_id)
 
                 if stat['type'] == self.TYPE_FILE:
                     if hasattr(share.permissions.permissions,
                                'initiate_file_download') and share.permissions.permissions.initiate_file_download is False:
                         continue
-                    model = ModelUtils.map_share_to_file_model(share, stat)
+                    model = ModelUtils.map_share_to_file_model(share, stat, optional={
+                        'owner': user['display_name']
+                    })
                 else:
                     if hasattr(share.permissions.permissions,
                                'list_container') and share.permissions.permissions.list_container is False:
                         continue
-                    model = ModelUtils.map_share_to_dir_model(share, stat)
-                model['writable'] = True if ShareUtils.map_permissions_to_role(share.permissions.permissions) == 'editor' else False
+                    model = ModelUtils.map_share_to_dir_model(share, stat, optional={
+                        'owner': user['display_name']
+                    })
+                model['writable'] = True if ShareUtils.map_permissions_to_role(
+                    share.permissions.permissions) == 'editor' else False
             except Exception as e:
                 self.log.error("Unable to map share " + share.resource_id.opaque_id + ", " + e.__str__())
                 continue
 
             if received:
-                model['accepted'] = ShareUtils.is_accepted(list_response.shares[share_no].state)
+                model['state'] = ShareUtils.map_state(list_response.shares[share_no].state)
             if model['path'] not in path_list:
                 respond_model['content'].append(model)
                 path_list.append(model['path'])

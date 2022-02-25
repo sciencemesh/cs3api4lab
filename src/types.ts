@@ -23,8 +23,6 @@ export type ContentProps = {
   content: Contents.IModel;
   contentType: string;
   widgetTracker: WidgetTracker;
-  // getGrantees: Promise<Map<string, string>>
-  // grantees: Map<string, string>
 };
 export type HeaderProps = {
   fileInfo: Contents.IModel;
@@ -60,4 +58,34 @@ export type Grantee = {
   opaque_id: string;
   permissions: string;
   idp: string;
+};
+
+export type PendingSharesOptions = {
+  id: string;
+  title: {
+    caption: string;
+    label: string;
+  };
+};
+
+export type PendingShareProp = {
+  content: Contents.IModel & {
+    owner: string;
+  };
+  acceptShare: (pendingShare: any) => Promise<void>;
+  declineShare: (pendingShare: any) => Promise<void>;
+};
+
+export type AcceptButtonProps = {
+  content: Contents.IModel & {
+    owner: string;
+  };
+  acceptShare: (pendingShare: any) => Promise<void>;
+};
+
+export type DeclineButtonProps = {
+  content: Contents.IModel & {
+    owner: string;
+  };
+  declineShare: (pendingShare: any) => Promise<void>;
 };

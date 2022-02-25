@@ -23,6 +23,7 @@ from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.api.lock_manager import LockManager
+from cs3api4lab.utils.model_utils import ModelUtils
 
 
 class Cs3FileApi:
@@ -41,7 +42,6 @@ class Cs3FileApi:
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.storage_logic = StorageLogic(log)
-
         self.lock_manager = LockManager(log)
 
         return
@@ -216,7 +216,7 @@ class Cs3FileApi:
 
         req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
         res = self.cs3_api.Move(request=req, metadata=[('x-access-token', self.auth.authenticate())])
-        
+
         if res.status.code != cs3code.CODE_NOT_FOUND:
             raise ResourceNotFoundError(f"source {source_path} not found")
 
@@ -245,6 +245,15 @@ class Cs3FileApi:
         tend = time.time()
         self.log.debug(
             'msg="Invoked create container" filepath="%s" elapsedTimems="%.1f"' % (path, (tend - tstart) * 1000))
+
+    def list_shared_folder(self):
+        """
+        List a shared folder - MyShares by default
+        """
+        shared_folder_path = self.config['home_dir'] + '/' + self.config['shared_folder']
+        container = self.read_directory(shared_folder_path)
+
+        return ModelUtils.convert_container_to_directory_model(shared_folder_path, container)
 
     def _handle_error(self, response):
         self.log.error(response)

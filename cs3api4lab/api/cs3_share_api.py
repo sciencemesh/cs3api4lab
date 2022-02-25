@@ -119,6 +119,7 @@ class Cs3ShareApi:
         list_request = sharing.ListReceivedSharesRequest()
         list_response = self.cs3_api.ListReceivedShares(request=list_request,
                                                         metadata=[('x-access-token', self.auth.authenticate())])
+
         if self._is_code_ok(list_response):
             self.log.debug(f"Retrieved received shares for user {self.config['client_id']}:\n{list_response}")
             return list_response
@@ -219,7 +220,7 @@ class Cs3ShareApi:
         else:
             self.log.error("Error updating received share: " + share_id + " with state " + state)
             self._handle_error(update_response)
-        return
+        return update_response.share
 
     def _resolve_share_permissions(self, share):
         has_move_permission = share.permissions.permissions.move is True

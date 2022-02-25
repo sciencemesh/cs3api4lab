@@ -1,3 +1,28 @@
+#acceptBrowser div {
+    box-sizing: border-box;
+    position: relative;
+    overflow: auto !important;
+    cursor: default;
+}
+
+/*.testscroll {*/
+/*    height: 100%;*/
+/*}*/
+
+.jp-accept {
+    box-sizing: border-box;
+    position: relative;
+    overflow: auto !important;
+    cursor: default;
+}
+
+.jp-accept2 {
+    box-sizing: border-box;
+    position: relative;
+    overflow-y: auto;
+    cursor: default;
+}
+
 .jp-file-info div
 {
     display: flex;
