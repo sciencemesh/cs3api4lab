@@ -235,6 +235,7 @@
 #cs3-share-by-me-box-panel
 {
     padding-top: 5px;
+    border-top: 3px solid #aaaaaa;
 }
 
 .jp-shareform

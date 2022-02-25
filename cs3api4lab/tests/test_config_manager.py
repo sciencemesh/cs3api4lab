@@ -23,7 +23,8 @@ class TestCS3ConfigManager(TestCase):
         'client_secret': 'relativity',
         'locks_expiration_time': 10,
         'tus_enabled': False,
-        'enable_ocm': False
+        'enable_ocm': False,
+        "shared_folder": "MyShares"
     }
 
     def setUp(self):

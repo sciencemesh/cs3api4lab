@@ -19,7 +19,8 @@ class Config(LoggingConfigurable):
         "client_cert": None,
         "ca_cert": None,
         "tus_enabled": False,
-        "enable_ocm": False
+        "enable_ocm": False,
+        "shared_folder": "MyShares"
     }
     __config_dir = "jupyter-config"
     __config_file_name = 'jupyter_cs3_config'

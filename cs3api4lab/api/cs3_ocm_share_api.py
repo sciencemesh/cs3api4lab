@@ -145,6 +145,7 @@ class Cs3OcmShareApi:
             raise ShareNotFoundError(f"ocm share {ocm_share_id} not found")
         else:
             self._handle_error(response, "Error updating OCM received share:")
+        return response.opaque
 
     def list(self, share_id=None):
         if share_id is None:

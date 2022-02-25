@@ -10,7 +10,6 @@ from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.utils.model_utils import ModelUtils
 
-
 class CS3APIsManager(ContentsManager):
     cs3_config = None
     log = None

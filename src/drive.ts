@@ -272,7 +272,7 @@ async function getSharedByMe(): Promise<any> {
 }
 
 async function getSharedWithMe(): Promise<any> {
-  return await requestAPI('/api/cs3/shares/received', {
+  return await requestAPI('/api/cs3/shares/shared_folder', {
     method: 'get'
   });
 }

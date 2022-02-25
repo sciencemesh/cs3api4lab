@@ -8,7 +8,7 @@ from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from notebook.utils import url_path_join
-
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
 
 class ShareHandler(APIHandler):
     @property
@@ -69,14 +69,14 @@ class ListReceivedSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        RequestHandler.handle_request(self, self.share_api.list_received, 200)
+        status = self.get_query_argument('status', default=None)
+        RequestHandler.handle_request(self, self.share_api.list_received, 200, status)
 
     @web.authenticated
     @gen.coroutine
     def put(self):
-        share_id = self.get_query_argument('share_id', default=None)
-        state = self.get_query_argument('state', default='pending')
-        RequestHandler.handle_request(self, self.share_api.update_received, 200, share_id, state)
+        body = self.get_json_body()
+        RequestHandler.handle_request(self, self.share_api.update_received, 200, body["share_id"], body["state"])
 
 
 class ListSharesForFile(APIHandler):
@@ -89,6 +89,16 @@ class ListSharesForFile(APIHandler):
     def get(self):
         file_path = self.get_query_argument('file_path')
         RequestHandler.handle_request(self, self.share_api.list_grantees_for_file, 200, file_path)
+
+class SharedFolder(APIHandler):
+    @property
+    def file_api(self):
+        return Cs3FileApi(self.log)
+
+    @web.authenticated
+    @gen.coroutine
+    def get(self):
+        RequestHandler.handle_request(self, self.file_api.list_shared_folder, 200)
 
 class PublicSharesHandler(APIHandler):
     @property
@@ -198,6 +208,7 @@ def setup_handlers(web_app, url_path):
         (r"/api/cs3/shares/list", ListSharesHandler),
         (r"/api/cs3/shares/received", ListReceivedSharesHandler),
         (r"/api/cs3/shares/file", ListSharesForFile),
+        (r"/api/cs3/shares/shared_folder", SharedFolder),
         (r"/api/cs3/public/shares", PublicSharesHandler),
         (r"/api/cs3/public/shares/list", ListPublicSharesHandler),
         (r"/api/cs3/public/share", GetPublicShareByTokenHandler),

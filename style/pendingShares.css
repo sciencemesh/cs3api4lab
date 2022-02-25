@@ -1,0 +1,166 @@
+#shares-panel {
+    border-bottom: 1px solid #aaaaaa;
+}
+
+#jp-pending-shares {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    outline: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+    height: inherit;
+    align-items: stretch;
+    font-size: var(--jp-ui-font-size1)
+}
+
+ .jp-pending-shares-narrow-column {
+    display: none;
+    flex: 0 0 5px;
+    padding: 4px 4px;
+    border-left: var(--jp-border-width) solid var(--jp-border-color2);
+    text-align: right;
+    color: var(--jp-border-color2);
+}
+
+.jp-pending-shares-listing-narrow-column {
+    display: none;
+    flex: 0 0 5px;
+    padding: 4px 4px;
+    color: var(--jp-border-color2);
+}
+.jp-pending-shares-narrow .jp-pending-shares-listing-narrow-column {
+    display: block;
+}
+
+.jp-pending-shares-narrow .jp-pending-shares-narrow-column {
+    display: block;
+}
+
+.jp-pending-shares-title {
+    box-sizing: border-box;
+    align-items: stretch;
+    display: flex;
+    flex: 0 1 auto;
+    margin: 5px 0;
+}
+
+.jp-pending-shares-header {
+    flex: 0 0 auto;
+    display: flex;
+    padding: 0 12px;
+    align-items: stretch;
+    border-bottom: var(--jp-border-width) solid var(--jp-border-color1);
+    box-shadow: var(--jp-toolbar-box-shadow);
+}
+
+.jp-pending-shares-header-item {
+    padding: 4px 12px 2px 12px;
+    font-weight: 500;
+}
+
+.jp-pending-shares-header-item-name {
+    flex: 1 0 100px;
+}
+
+.jp-pending-shares-header-item-shared-by {
+    flex: 1 0 110px;
+    align-items: flex-start;
+    border-left: var(--jp-border-width) solid var(--jp-border-color2);
+}
+
+.jp-pending-shares-narrow .jp-pending-shares-header-item-shared-by {
+   display: none;
+}
+
+.jp-pending-shares-header-item-buttons {
+    flex: 0 0 70px;
+    margin-left: auto;
+    border-left: var(--jp-border-width) solid var(--jp-border-color2);
+}
+
+.jp-pending-shares-content {
+    height: inherit;
+    align-items: stretch;
+    max-height: 30px;
+}
+
+.jp-pending-shares-listing-wrapper {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    outline: 0;
+}
+
+.jp-pending-shares-listing {
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+    overflow: hidden auto;
+    background-color: var(--jp-layout-color1);
+    border-top: var(--jp-border-width) solid var(--jp-border-color1);
+    box-shadow: var(--jp-toolbar-box-shadow);
+}
+
+.jp-pending-shares-listing-item:hover {
+    background: var(--jp-layout-color2);
+}
+
+.jp-pending-shares-listing-item {
+    display: flex;
+    flex-direction: row;
+    padding: 4px 0 2px 12px;
+}
+
+.jp-pending-shares-listing-icon {
+    margin-right: 5px;
+    flex: 0 0 20px;
+}
+
+.jp-pending-shares-listing-name {
+    flex: 1 0 100px;
+}
+
+.jp-pending-shares-listing-shared-by {
+    flex: 1 0 130px;
+    align-items: flex-start;
+}
+
+.jp-pending-shares-narrow .jp-pending-shares-listing-shared-by {
+    display: none;
+}
+
+.jp-pending-shares-listing-buttons-elements {
+    padding: 4px 12px 2px 12px;
+}
+
+.jp-pending-shares-listing-buttons {
+    display: flex;
+    margin-left: auto;
+    flex-wrap: nowrap;
+    flex: 0 0 70px;
+    justify-content: center;
+}
+
+.jp-pending-shares-listing-button {
+    width: 16px;
+    height: 16px;
+    align-items: center;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.jp-pending-shares-listing-icon {
+    fill: var(--jp-inverse-layout-color3);
+}
+
+.jp-pending-shares-listing-accept {
+
+}
+
+.jp-pending-shares-listing-reject {
+
+}

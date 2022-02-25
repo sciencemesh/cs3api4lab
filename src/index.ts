@@ -31,6 +31,7 @@ import {
   Cs3Panel,
   Cs3TabWidget
 } from './cs3panel';
+import { Cs3PendingSharesWidget } from './pendingShares';
 import { addLaunchersButton, createShareBox } from './utils';
 import { SplitPanel, Widget } from '@lumino/widgets';
 import {
@@ -258,6 +259,18 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     splitPanel.title.caption = 'Shares';
     splitPanel.title.label = 'Shares';
     splitPanel.title.icon = inspectorIcon;
+
+    //
+    // Pending shares
+    //
+    const acceptSharesPanel = new Cs3PendingSharesWidget({
+      title: {
+        label: 'Pending shares',
+        caption: 'Pending shares'
+      },
+      id: 'jp-pending-shares'
+    });
+    splitPanel.addWidget(acceptSharesPanel);
 
     //
     // ShareByMe
