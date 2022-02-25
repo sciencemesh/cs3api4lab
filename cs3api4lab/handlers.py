@@ -100,6 +100,16 @@ class SharedFolder(APIHandler):
     def get(self):
         RequestHandler.handle_request(self, self.file_api.list_shared_folder, 200)
 
+class SharedFolder(APIHandler):
+    @property
+    def file_api(self):
+        return Cs3FileApi(self.log)
+
+    @web.authenticated
+    @gen.coroutine
+    def get(self):
+        RequestHandler.handle_request(self, self.file_api.list_shared_folder, 200)
+
 class PublicSharesHandler(APIHandler):
     @property
     def public_share_api(self):
