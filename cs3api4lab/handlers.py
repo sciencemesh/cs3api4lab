@@ -6,7 +6,6 @@ from grpc._channel import _InactiveRpcError
 from cs3api4lab.exception.exceptions import *
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
-from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from notebook.utils import url_path_join
@@ -169,75 +168,6 @@ class ListPublicSharesHandler(APIHandler):
         RequestHandler.handle_request(self, self.public_share_api.list_public_shares, 200)
 
 
-class OcmSharesHandler(APIHandler):
-    @property
-    def ocm_share_api(self):
-        return Cs3OcmShareApi(self.log)
-
-    @web.authenticated
-    @gen.coroutine
-    def post(self):
-        request = self.get_json_body()
-        RequestHandler.handle_request(self,
-                                      self.ocm_share_api.create_ocm_share,
-                                      201,
-                                      request['grantee_opaque'],
-                                      request['idp'],
-                                      request['domain'],
-                                      request['endpoint'],
-                                      request['file_path'],
-                                      request['grantee_type'],
-                                      request['role'],
-                                      request['reshare'])
-
-    @web.authenticated
-    @gen.coroutine
-    def get(self):
-        share_id = self.get_argument('share_id') if 'share_id' in self.request.arguments else None
-        RequestHandler.handle_request(self, self.ocm_share_api.get_ocm_shares,
-                                      200,
-                                      share_id)
-
-    @web.authenticated
-    @gen.coroutine
-    def put(self):
-        request = self.get_json_body()
-        RequestHandler.handle_request(self, self.ocm_share_api.update_ocm_share,
-                                      204,
-                                      request['share_id'],
-                                      request['field'],
-                                      request['value'])
-
-    @web.authenticated
-    @gen.coroutine
-    def delete(self):
-        share_id = self.get_query_argument('share_id')
-        RequestHandler.handle_request(self, self.ocm_share_api.remove_ocm_share, 204, share_id)
-
-
-class OcmReceivedSharesHandler(APIHandler):
-    @property
-    def ocm_share_api(self):
-        return Cs3OcmShareApi(self.log)
-
-    @web.authenticated
-    @gen.coroutine
-    def get(self):
-        share_id = self.get_argument('share_id') if 'share_id' in self.request.arguments else None
-        RequestHandler.handle_request(self, self.ocm_share_api.get_received_ocm_shares,
-                                      200,
-                                      share_id)
-
-    @web.authenticated
-    @gen.coroutine
-    def put(self):
-        request = self.get_json_body()
-        RequestHandler.handle_request(self, self.ocm_share_api.update_received_ocm_share,
-                                      204,
-                                      request['share_id'],
-                                      request['field'],
-                                      request['value'])
-
 class UserInfoHandler(APIHandler):
     @property
     def user_api(self):
@@ -282,8 +212,6 @@ def setup_handlers(web_app, url_path):
         (r"/api/cs3/public/shares", PublicSharesHandler),
         (r"/api/cs3/public/shares/list", ListPublicSharesHandler),
         (r"/api/cs3/public/share", GetPublicShareByTokenHandler),
-        (r"/api/cs3/ocm", OcmSharesHandler),
-        (r"/api/cs3/ocm/received", OcmReceivedSharesHandler),
         (r"/api/cs3/user", UserInfoHandler),
         (r"/api/cs3/user/claim", UserInfoClaimHandler),
         (r"/api/cs3/user/query", UserQueryHandler),
@@ -330,10 +258,12 @@ class RequestHandler(APIHandler):
     def get_response_code(err):
         if isinstance(err, ShareAlreadyExistsError):
             return 409
-        if isinstance(err, ShareNotFoundError, LockNotFoundError):
+        if isinstance(err, (ShareNotFoundError, LockNotFoundError)):
             return 404
         if isinstance(err, (InvalidTypeError, KeyError, FileNotFoundError, ParamError)):
             return 400
+        if isinstance(err, OCMError):
+            return 501
         if isinstance(err, _InactiveRpcError):
             return 503
         else:

@@ -47,15 +47,16 @@ class Cs3UserApi:
     def find_users_by_query(self, query):
         response = self.api.FindUsers(user_api.FindUsersRequest(filter=query),
                                       metadata=[('x-access-token', self.auth.authenticate())])
-        ocm_response = self.invite_api.FindAcceptedUsers(ia.FindAcceptedUsersRequest(filter=query),
-                                                         metadata=[('x-access-token', self.auth.authenticate())])
         ocm_users = []
-        for user in ocm_response.accepted_users:
-            ocm_users.append({"username": "",
-                              "display_name": user.display_name,
-                              "idp": user.id.idp,
-                              "opaque_id": user.id.opaque_id,
-                              "mail": user.mail})
+        if self.config['enable_ocm']:
+            ocm_response = self.invite_api.FindAcceptedUsers(ia.FindAcceptedUsersRequest(filter=query),
+                                                             metadata=[('x-access-token', self.auth.authenticate())])
+            for user in ocm_response.accepted_users:
+                ocm_users.append({"username": "",
+                                  "display_name": user.display_name,
+                                  "idp": user.id.idp,
+                                  "opaque_id": user.id.opaque_id,
+                                  "mail": user.mail})
         users = []
         for user in response.users:
             users.append({"username": user.username,

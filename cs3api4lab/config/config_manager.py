@@ -18,7 +18,8 @@ class Config(LoggingConfigurable):
         "client_key": None,
         "client_cert": None,
         "ca_cert": None,
-        "tus_enabled": True
+        "tus_enabled": True,
+        "enable_ocm": False
     }
     __config_dir = "jupyter-config"
     __config_file_name = 'jupyter_cs3_config'
