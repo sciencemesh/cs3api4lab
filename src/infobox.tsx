@@ -18,7 +18,8 @@ import {
   UsersRequest
 } from './types';
 import { LabIcon } from '@jupyterlab/ui-components';
-import Select, { SelectRenderer } from 'react-dropdown-select';
+import Select from 'react-dropdown-select';
+import { debounce } from 'ts-debounce';
 
 /**
  * Main container.
@@ -367,14 +368,12 @@ const ShareForm: React.FC<ShareFormProps> = (
     grantee_type: 'user'
   });
 
-  const getUsers = ({
-    state
-  }: SelectRenderer<Record<string, any>>): Array<string> => {
-    if (state.search.length <= 0) {
-      return [];
+  const getUsers = async (search: string): Promise<void> => {
+    if (search.length <= 0) {
+      return;
     }
 
-    shareProps.getUsers(state.search).then(users => {
+    shareProps.getUsers(search).then(users => {
       const parsedUsers: any = [];
 
       let i = 1;
@@ -389,8 +388,6 @@ const ShareForm: React.FC<ShareFormProps> = (
       }
       setUserList(parsedUsers);
     });
-
-    return [];
   };
 
   const setFormStateFromValues = (
@@ -435,7 +432,9 @@ const ShareForm: React.FC<ShareFormProps> = (
                 }
               ]);
             }}
-            handleKeyDownFn={getUsers}
+            handleKeyDownFn={debounce(async event => {
+              await getUsers(event.state.search);
+            }, 500)}
           />
         </div>
       </div>
