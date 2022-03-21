@@ -21,7 +21,9 @@ class TestCS3ConfigManager(TestCase, LoggingConfigurable):
         'authenticator_class': 'cs3api4lab.auth.RevaPassword',
         'client_id': 'einstein',
         'client_secret': 'relativity',
-        'locks_expiration_time': 10
+        'locks_expiration_time': 10,
+        "tus_enabled": True,
+        "enable_ocm": False
     }
 
     def setUp(self):
@@ -40,6 +42,8 @@ class TestCS3ConfigManager(TestCase, LoggingConfigurable):
         os.environ['CS3_secure_channel'] = 'true'
         os.environ['CS3_ca_cert'] = 'abcdf12345'
         os.environ['CS3_locks_expiration_time'] = '123'
+        os.environ['CS3_tus_enabled'] = 'true'
+        os.environ['CS3_enable_ocm'] = 'false'
 
         configManager = Config()
 
