@@ -4,7 +4,7 @@ from unittest import TestCase
 from time import sleep
 from cs3api4lab.tests.share_test_base import ShareTestBase
 from traitlets.config import LoggingConfigurable
-
+import urllib.parse
 
 class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
     einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
@@ -35,7 +35,7 @@ class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
             self.assertTrue(file_info.arbitrary_metadata.metadata)
             self.assertIn("lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51", file_info.arbitrary_metadata.metadata)
             
-            lock = json.loads(file_info.arbitrary_metadata.metadata["lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51"])
+            lock = json.loads(urllib.parse.unquote(file_info.arbitrary_metadata.metadata["lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51"]))
             self.assertEquals(lock['username'], 'einstein')
             self.assertEquals(lock['idp'], 'cernbox.cern.ch')
             self.assertEquals(lock['opaque_id'], '4c510ada-c86b-4815-8820-42cdf82c3d51')
@@ -61,7 +61,7 @@ class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
             self.assertTrue(file_info.arbitrary_metadata.metadata)
             self.assertIn("lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51", file_info.arbitrary_metadata.metadata)
             
-            lock = json.loads(file_info.arbitrary_metadata.metadata["lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51"])
+            lock = json.loads(urllib.parse.unquote(file_info.arbitrary_metadata.metadata["lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51"]))
             self.assertEquals(lock['username'], 'einstein')
             self.assertEquals(lock['idp'], 'cernbox.cern.ch')
             self.assertEquals(lock['opaque_id'], '4c510ada-c86b-4815-8820-42cdf82c3d51')
