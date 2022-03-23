@@ -125,7 +125,7 @@ class Cs3FileApi:
 
         time_start = time.time()
 
-        if self.storage_logic.stat(file_path, endpoint) is not None:
+        if self.storage_logic.stat(file_path, endpoint):
             self.lock_manager.handle_locks(file_path, endpoint)
 
         content_size = FileUtils.calculate_content_size(content)

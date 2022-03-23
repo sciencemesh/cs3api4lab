@@ -34,7 +34,9 @@ class ShareTestBase:
             "authenticator_class": "cs3api4lab.auth.RevaPassword",
             "client_id": "marie",
             "client_secret": "radioactivity",
-	        "locks_expiration_time": 10
+	        "locks_expiration_time": 10,
+	        "tus_enabled": True,
+  	        "enable_ocm": False
             }
         richard_local_config = {
             "reva_host": "127.0.0.1:19000",
@@ -49,7 +51,9 @@ class ShareTestBase:
             "authenticator_class": "cs3api4lab.auth.RevaPassword",
             "client_id": "richard",
             "client_secret": "superfluidity",
-	        "locks_expiration_time": 10
+	        "locks_expiration_time": 10,
+	        "tus_enabled": True,
+  	        "enable_ocm": False
         }
         self.marie_uni_api = ExtCs3ShareApiFacade(self.log, marie_ext_config)
         self.marie_file_api = ExtCs3FileApi(self.log, marie_ext_config)
