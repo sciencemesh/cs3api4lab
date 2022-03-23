@@ -45,7 +45,10 @@ class Cs3UserApi:
             return {}
 
     def find_users_by_query(self, query):
-        response = self.api.FindUsers(user_api.FindUsersRequest(filter=query),
+        if len(query) < 3:
+            return []
+
+        response = self.api.FindUsers(user_api.FindUsersRequest(filter=query, skip_fetching_user_groups=True),
                                       metadata=[('x-access-token', self.auth.authenticate())])
         ocm_users = []
         if self.config['enable_ocm']:
