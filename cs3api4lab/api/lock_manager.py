@@ -2,6 +2,7 @@ import json
 import time
 import datetime
 import grpc
+import urllib.parse
 
 import cs3.gateway.v1beta1.gateway_api_pb2 as cs3gw
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
@@ -33,13 +34,13 @@ class LockManager:
 
     def generate_lock_entry(self):
         user = self._get_current_user()
-        return {self.get_my_lock_name(): json.dumps({
+        return {self.get_my_lock_name(): urllib.parse.quote(json.dumps({
             "username": user.username,
             "idp": user.id.idp,
             "opaque_id": user.id.opaque_id,
             "updated": time.time(),
             "created": time.time()
-        })}
+        }))}
 
     def get_my_lock_name(self):
         user = self._get_current_user()
@@ -109,4 +110,4 @@ class LockManager:
         metadata = self.storage_logic.get_metadata(file_path, endpoint)
         if not metadata:
             return
-        return json.loads(list(metadata.values())[0])
+        return json.loads(urllib.parse.unquote(list(metadata.values())[0]))
