@@ -207,6 +207,21 @@ class TestCs3FileApi(TestCase, LoggingConfigurable):
         with self.assertRaises(IOError):
             self.storage.stat(dest_id, self.endpoint)
 
+    def test_move_file_already_exists(self):
+        try:
+            source_path = "/file_to_rename.txt"
+            buffer = b"ebe5tresbsrdthbrdhvdtr"
+
+            destination_path = "/file_after_rename.txt"
+
+            self.storage.write_file(source_path, buffer, self.endpoint)
+            self.storage.write_file(destination_path, buffer, self.endpoint)
+            
+            with self.assertRaises(IOError) as context:
+                self.storage.move(source_path, destination_path, self.endpoint)
+            self.assertEquals("file already exists", context.exception.args[0])
+        finally:
+            self.storage.remove(destination_path, self.endpoint)
 
 if __name__ == '__main__':
     unittest.main()
