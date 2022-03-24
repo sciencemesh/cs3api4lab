@@ -203,6 +203,11 @@ class Cs3FileApi:
         src_reference = FileUtils.get_reference(source_path, endpoint)
         dest_reference = FileUtils.get_reference(destination_path, endpoint)
 
+        if self.storage_logic.stat(destination_path, endpoint):
+            self.log.error('msg="Failed to move" source="%s" destination="%s" reason="%s"' % (
+                source_path, destination_path, "file already exists"))
+            raise IOError("file already exists")
+
         req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
         res = self.cs3_api.Move(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 

@@ -225,6 +225,23 @@ class TestCS3APIsManager(TestCase, LoggingConfigurable):
         with self.assertRaises(web.HTTPError):
             self.contents_manager.rename_file(file_path, file_dest)
 
+    def test_rename_file_already_exits(self):
+        try:
+            file_path = "/test_rename_file.txt"
+            file_dest = "/test_after_rename_file.txt"
+            message = "Lorem ipsum dolor sit amet..."
+
+            self.storage.write_file(file_path, message, self.endpoint)
+            self.storage.write_file(file_dest, message, self.endpoint)
+
+            with self.assertRaises(web.HTTPError) as context:
+                self.contents_manager.rename_file(file_path, file_dest)
+            self.assertEquals('Error renaming file: /test_rename_file.txt file already exists', context.exception.log_message)
+                
+        finally:
+            self.storage.remove(file_path, self.endpoint)
+            self.storage.remove(file_dest, self.endpoint)
+
     def test_new_file_model(self):
         file_path = "/test_new_file_model.txt"
         model = {
