@@ -8,13 +8,14 @@ from cs3api4lab.config.config_manager import Cs3ConfigManager
 from traitlets.config import LoggingConfigurable
 
 
-class TestCS3APIsManager(TestCase, LoggingConfigurable):
+class TestCS3APIsManager(TestCase):
     user_id = None
     endpoint = None
     storage = None
     contents_manager = None
 
     def setUp(self):
+        self.log = LoggingConfigurable().log
         config = Cs3ConfigManager.get_config()
         self.user_id = config['client_id']
         self.endpoint = config['endpoint']

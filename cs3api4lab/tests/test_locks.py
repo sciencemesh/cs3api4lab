@@ -6,7 +6,7 @@ from cs3api4lab.tests.share_test_base import ShareTestBase
 from traitlets.config import LoggingConfigurable
 import urllib.parse
 
-class TestLocks(ShareTestBase, TestCase, LoggingConfigurable):
+class TestLocks(ShareTestBase, TestCase):
     einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
     einstein_idp = 'cernbox.cern.ch'
     marie_id = 'f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c'

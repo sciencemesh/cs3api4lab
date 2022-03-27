@@ -5,13 +5,14 @@ from cs3api4lab.config.config_manager import Cs3ConfigManager
 from traitlets.config import LoggingConfigurable
 
 
-class TestCs3PublicShareApi(TestCase, LoggingConfigurable):
+class TestCs3PublicShareApi(TestCase):
     file_path = '/test.txt'
     config = None
     storage = None
     api = None
 
     def setUp(self):
+        self.log = LoggingConfigurable().log
         self.config = Cs3ConfigManager.get_config()
         self.storage = Cs3FileApi(self.log)
         self.api = Cs3PublicShareApi(self.log)

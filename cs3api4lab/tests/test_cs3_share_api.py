@@ -1,139 +1,188 @@
+from cs3api4lab.tests.share_test_base import ShareTestBase
 from unittest import TestCase
-from unittest import skip
-from cs3api4lab.api.cs3_share_api import Cs3ShareApi
-from cs3api4lab.api.cs3_file_api import Cs3FileApi
-from cs3api4lab.config.config_manager import Cs3ConfigManager
 from traitlets.config import LoggingConfigurable
 
 
-class TestCs3ShareApi(TestCase, LoggingConfigurable):
-    api = None
-    config = None
-    share_id = None
-
-    receiver_id = 'f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c'
-    receiver_idp = 'cesnet.cz'
-
-    receiver2_id = '932b4540-8d16-481e-8ef4-588e4b6b151c'
-    receiver2_idp = 'example.org'
-
-    receiver_role = 'viewer'
+class TestCs3ShareApi(ShareTestBase, TestCase):
+    einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
+    einstein_idp = 'cernbox.cern.ch'
+    richard_id = '932b4540-8d16-481e-8ef4-588e4b6b151c'
+    richard_idp = 'example.org'
+    receiver_role = 'editor'
     receiver_grantee_type = 'user'
-    file_path = '/test.txt'
-    file_name = 'test.txt'
+    file_path = '/home/test.txt'
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
+    share_id = None
+    ocm_share_id = None
+    ocm_file_name = None
+    file_name = None
 
-    def setUp(self):
-        self.config = Cs3ConfigManager.get_config()
-        self.storage = Cs3FileApi(self.log)
-        self.api = Cs3ShareApi(self.log)
-
-    def test_create_and_list_directory_model(self):
-
-        created_share = self._create_share()
-        self.share_id = created_share['opaque_id']
-        share_list = self.api.list()
-
+    def test_create(self):
         try:
-            if not list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
-                raise Exception("Share not created")
+            self.file_name = self.file_path + self.get_random_suffix()
+            self.create_test_file('einstein', self.file_name)
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+            share_list = self.share_api.list()
+            self.assertTrue(list(share for share in share_list.shares if share.id.opaque_id == created_share['opaque_id']),
+                            "Share not present")
         finally:
-            self._clear_shares()
-
-    def test_create_duplicate_and_list_directory_model(self):
-
-        created_share = self._create_share()
-        self.share_id = created_share['opaque_id']
-
-        self._create_test_share(self.receiver2_id, self.receiver2_idp)
-
-        share_list = self.api.list()
-        self.assertEqual(len(share_list['content']), 1)
-
-        try:
-            if not list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
-                raise Exception("Share not created")
-        finally:
-            self._clear_shares()
-
-    def test_list_grantees_for_file(self):
-        self._create_share()
-        response = self.api.list_grantees_for_file(self.file_path)
-        try:
-            if not response:
-                raise Exception("Failed to retrieve grantees of the file")
-            if response['shares'][0]['grantee']['opaque_id'] != self.receiver_id:
-                raise Exception("Incorrect grantee")
-            if response['shares'][0]['grantee']['permissions'] != self.receiver_role:
-                raise Exception("Incorrect permissions")
-        finally:
-            self._clear_shares()
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            if self.file_name:
+                self.remove_test_file('einstein', self.file_name)
 
     def test_remove(self):
-        created_share = self._create_share()
-        self.share_id = created_share['opaque_id']
-        share_list = self.api.list()
         try:
-            if not list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
-                raise Exception("Share not created")
-        finally:
-            self.api.remove(self.share_id)
-        share_list = self.api.list()
-        if list(filter(lambda s: s['name'] == self.file_name, share_list['content'])):
-            raise Exception("Share not removed")
+            self.file_name = self.file_path + self.get_random_suffix()
+            self.create_test_file('einstein', self.file_name)
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+            share_list = self.share_api.list()
+            self.assertTrue(list(share for share in share_list.shares if share.share.id.opaque_id == created_share['opaque_id']),
+                            "Share not present")
 
-    def test_update(self):
-        created_share = self._create_share()
-        self.share_id = created_share['opaque_id']
-        self.api.update(self.share_id, 'editor')
-        share_list = self.api.list_grantees_for_file(self.file_path)
-        try:
-            if not list(filter(
-                    lambda s: s['grantee']['opaque_id'] == self.receiver_id
-                              and s['grantee']['permissions'] == 'editor',
-                    share_list['shares'])):
-                raise Exception("Share not updated")
+            self.share_api.remove(created_share['opaque_id'])
+            share_list = self.share_api.list()
+            self.assertTrue(list(share for share in share_list.shares if share.id.opaque_id == created_share['opaque_id']),
+                            "Share not removed")
+        except:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
         finally:
-            self._clear_shares()
+            if self.file_name:
+                self.remove_test_file('einstein', self.file_name)
 
-    @skip
     def test_list_received(self):
-        self.api.list_received()
-
-    @skip
-    def test_update_received(self):
-        self.api.update_received("1", "accepted")
-
-    def _create_share(self):
-        self._create_test_file()
-        return self._create_test_share()
-
-    def _clear_shares(self):
-        shares = self.api.list_grantees_for_file(self.file_path)
-        for share in shares['shares']:
-            self._remove_test_share(share['opaque_id'])
         try:
-            self._remove_test_file()
-        except IOError as e:
-            print("Error remove file:", e)
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+            share_list = self.share_api.list_received()
+            self.assertTrue(list(share for share in share_list.shares if share.share.id.opaque_id == created_share['opaque_id']),
+                            "Share not present")
+        finally:
+            if self.share_id:
+                self.remove_test_share('richard', self.share_id)
+            if self.file_name:
+                self.remove_test_file('richard', self.file_name)
 
-    def _create_test_share(self, receiver_id='f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c', receiver_idp='cesnet.cz'):
-        file_path = self.config['home_dir'] + self.file_path
-        return self.api.create(self.config['endpoint'],
-                               file_path,
-                               receiver_id,
-                               receiver_idp,
-                               self.receiver_role,
-                               self.receiver_grantee_type)
+    def test_update_received_share(self):
+        try:
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
 
-    def _remove_test_share(self, share_id):
-        self.api.remove(share_id)
+            self.share_api.update_received(self.share_id, 'ACCEPTED')
+            received_file_path = '/home/MyShares/' + self.file_name.split('/')[-1]
+            file_stat = self.file_api.stat(received_file_path, self.storage_id)
 
-    def _create_test_file(self):
-        self.storage.write_file(self.file_path,
-                                "Lorem ipsum dolor sit amet...",
-                                self.config['endpoint'])
+            self.assertEqual(file_stat['filepath'], received_file_path, 'Share not updated')
+        finally:
+            if self.share_id:
+                self.remove_test_share('richard', self.share_id)
+            if self.file_name:
+                self.remove_test_file('richard', self.file_name)
 
-    def _remove_test_file(self):
-        self.storage.remove(self.file_path,
-                            self.config['endpoint'])
+    def test_read_share(self):
+        try:
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+
+            self.share_api.update_received(self.share_id, 'ACCEPTED')
+            received_file_path = '/home/MyShares/' + self.file_name.split('/')[-1]
+            file_stat = self.file_api.stat(received_file_path, self.storage_id)
+            self.assertEqual(file_stat['filepath'], received_file_path, 'Share not updated')
+
+            self.clear_locks_on_file(received_file_path)
+            content = ''
+            for chunk in self.file_api.read_file(received_file_path, self.config['endpoint']):
+                content += chunk.decode('utf-8')
+            self.assertEqual(content, self.content)
+        finally:
+            if self.share_id:
+                self.remove_test_share('richard', self.share_id)
+            if self.file_name:
+                self.remove_test_file('richard', self.file_name)
+
+    def test_write_share(self):
+        try:
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+
+            self.share_api.update_received(self.share_id, 'ACCEPTED')
+            received_file_path = '/home/MyShares/' + self.file_name.split('/')[-1]
+            file_stat = self.file_api.stat(received_file_path, self.storage_id)
+            self.assertEqual(file_stat['filepath'], received_file_path, 'Share not updated')
+
+            self.clear_locks_on_file(received_file_path)
+            self.file_api.write_file(received_file_path, self.content + self.content)
+            content = ''
+            for chunk in self.file_api.read_file(received_file_path, self.config['endpoint']):
+                content += chunk.decode('utf-8')
+            self.assertEqual(content, self.content + self.content)
+        finally:
+            if self.share_id:
+                self.remove_test_share('richard', self.share_id)
+            if self.file_name:
+                self.remove_test_file('richard', self.file_name)
+
+    def test_read_write_file_in_shared_container(self):
+        try:
+            self.container_name = '/home/test_container' + self.get_random_suffix()
+            created_share = self.create_container_share('richard', self.einstein_id, self.einstein_idp, self.container_name)
+            self.share_id = created_share['opaque_id']
+            file_name = '/test.txt' + self.get_random_suffix()
+            self.create_test_file('richard', self.container_name + file_name)
+
+            self.share_api.update_received(self.share_id, 'ACCEPTED')
+            received_container_path = '/home/MyShares/' + self.container_name.split('/')[-1]
+            dir_read = self.file_api.read_directory(received_container_path)
+            self.assertEqual('/' + dir_read[0].path.split('/')[-1], file_name)
+
+            self.clear_locks_on_file(received_container_path + file_name)
+            content = ''
+            for chunk in self.file_api.read_file(received_container_path + file_name, self.config['endpoint']):
+                content += chunk.decode('utf-8')
+            self.assertEqual(content, self.content)
+
+            self.file_api.write_file(received_container_path + file_name, self.content + self.content)
+            self.clear_locks_on_file(received_container_path + file_name)
+            content = ''
+            for chunk in self.richard_file_api.read_file(self.container_name + file_name, self.config['endpoint']):
+                content += chunk.decode('utf-8')
+            self.assertEqual(content, self.content + self.content)
+
+        finally:
+            if self.share_id:
+                self.remove_test_share('richard', self.share_id)
+            if self.container_name:
+                self.remove_test_file('richard', self.container_name)
+
+    def test_create_file_and_dir_in_shared_container(self):
+        try:
+            self.container_name = '/home/test_container' + self.get_random_suffix()
+            created_share = self.create_container_share('richard', self.einstein_id, self.einstein_idp, self.container_name)
+            self.share_id = created_share['opaque_id']
+            self.share_api.update_received(self.share_id, 'ACCEPTED')
+
+            inner_container = '/test_container' + self.get_random_suffix()
+            file_name = '/test.txt' + self.get_random_suffix()
+
+            received_container_path = '/home/MyShares/' + self.container_name.split('/')[-1]
+            self.create_test_container('einstein', received_container_path + inner_container)
+            self.create_test_file('einstein', received_container_path + inner_container + file_name)
+
+            self.clear_locks_on_file(received_container_path + inner_container + file_name)
+            content = ''
+            for chunk in self.richard_file_api.read_file(self.container_name + inner_container + file_name, self.config['endpoint']):
+                content += chunk.decode('utf-8')
+            self.assertEqual(content, self.content)
+
+        finally:
+            if self.share_id:
+                self.remove_test_share('richard', self.share_id)
+            if self.container_name:
+                self.remove_test_file('richard', self.container_name)

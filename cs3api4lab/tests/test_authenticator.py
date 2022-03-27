@@ -12,10 +12,11 @@ from cs3api4lab.auth.reva_password import RevaPassword
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 
-class TestAuthenticator(TestCase, LoggingConfigurable):
+class TestAuthenticator(TestCase):
 
     def setUp(self) -> None:
         Auth.clean()
+        self.log = LoggingConfigurable().log
 
     def test_create(self):
         authenticator = Auth.get_authenticator(log=self.log)

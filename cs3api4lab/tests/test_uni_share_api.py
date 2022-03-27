@@ -5,7 +5,7 @@ from traitlets.config import LoggingConfigurable
 
 from unittest import skip
 
-class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
+class TestCs3UniShareApi(ShareTestBase, TestCase):
     einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
     einstein_idp = 'cernbox.cern.ch'
     marie_id = 'f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c'
@@ -29,7 +29,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
             share_list = self.uni_api.list_shares()
             contains = False
             for share in share_list['content']:
-                if share['path'].__contains__(self.file_name.split('/')[-1]):
+                if self.file_name.split('/')[-1] in share['path']:
                     contains = True
             self.assertTrue(contains, "Share not present")
         finally:
@@ -48,7 +48,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
             share_list = self.uni_api.list_shares()
             contains_ocm = False
             for share in share_list['content']:
-                if share['path'].__contains__(self.ocm_file_name.split('/')[-1]):
+                if self.ocm_file_name.split('/')[-1] in share['path']:
                     contains_ocm = True
             self.assertTrue(contains_ocm, "OCM Share not present")
         finally:
@@ -69,7 +69,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
             share_list = self.uni_api.list_received()
             contains = False
             for share in share_list['content']:
-                if share['path'].__contains__(self.file_name.split('/')[-1]):
+                if self.file_name.split('/')[-1] in share['path']:
                     contains = True
             self.assertTrue(contains, "Share not present")
         finally:
@@ -87,7 +87,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
             share_list = self.uni_api.list_received()
             contains_ocm = False
             for share in share_list['content']:
-                if share['path'].__contains__(self.ocm_file_name.split('/')[-1]):
+                if self.ocm_file_name.split('/')[-1] in share['path']:
                     contains_ocm = True
             self.assertTrue(contains_ocm, "OCM Share not present")
         finally:
@@ -152,7 +152,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
             share_list = self.uni_api.list_shares()
             contains = False
             for share in share_list['content']:
-                if share['path'].__contains__(self.file_name.split('/')[-1]):
+                if self.file_name.split('/')[-1] in share['path']:
                     contains = True
             self.assertTrue(contains, "Shares not present")
 
@@ -161,7 +161,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
             share_list = self.uni_api.list_shares()
             contains = False
             for share in share_list['content']:
-                if share['path'].__contains__(self.file_name.split('/')[-1]):
+                if self.file_name.split('/')[-1] in share['path']:
                     contains = True
             self.assertFalse(contains, "Shares not removed")
         finally:
@@ -180,7 +180,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
             share_list = self.uni_api.list_shares()
             contains_ocm = False
             for share in share_list['content']:
-                if share['path'].__contains__(self.ocm_file_name.split('/')[-1]):
+                if self.ocm_file_name.split('/')[-1] in share['path']:
                     contains_ocm = True
             self.assertTrue(contains_ocm, "OCM Share not present")
 
@@ -189,7 +189,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase, LoggingConfigurable):
             share_list = self.uni_api.list_shares()
             contains_ocm = False
             for share in share_list['content']:
-                if share['path'].__contains__(self.ocm_file_name.split('/')[-1]):
+                if self.ocm_file_name.split('/')[-1] in share['path']:
                     contains_ocm = True
             self.assertTrue(contains_ocm, "OCM Share not removed")
 

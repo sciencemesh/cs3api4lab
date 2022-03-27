@@ -5,7 +5,7 @@ from cs3api4lab.config.config_manager import Config
 from traitlets.config import LoggingConfigurable
 
 
-class TestCS3ConfigManager(TestCase, LoggingConfigurable):
+class TestCS3ConfigManager(TestCase):
     config = {
         'reva_host': '127.0.0.1:19000',
         'auth_token_validity': '3600',
@@ -22,11 +22,13 @@ class TestCS3ConfigManager(TestCase, LoggingConfigurable):
         'client_id': 'einstein',
         'client_secret': 'relativity',
         'locks_expiration_time': 10,
-        "tus_enabled": True,
-        "enable_ocm": False
+        'tus_enabled': False,
+        'enable_ocm': False
     }
 
     def setUp(self):
+        self.log = LoggingConfigurable().log
+
         for env in os.environ:
             if env.startswith('CS3_'):
                 del os.environ[env]
@@ -42,7 +44,7 @@ class TestCS3ConfigManager(TestCase, LoggingConfigurable):
         os.environ['CS3_secure_channel'] = 'true'
         os.environ['CS3_ca_cert'] = 'abcdf12345'
         os.environ['CS3_locks_expiration_time'] = '123'
-        os.environ['CS3_tus_enabled'] = 'true'
+        os.environ['CS3_tus_enabled'] = 'false'
         os.environ['CS3_enable_ocm'] = 'false'
 
         configManager = Config()

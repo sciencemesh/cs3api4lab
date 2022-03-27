@@ -18,7 +18,7 @@ class Config(LoggingConfigurable):
         "client_key": None,
         "client_cert": None,
         "ca_cert": None,
-        "tus_enabled": True,
+        "tus_enabled": False,
         "enable_ocm": False
     }
     __config_dir = "jupyter-config"

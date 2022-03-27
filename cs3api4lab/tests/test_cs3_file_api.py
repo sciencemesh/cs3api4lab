@@ -5,11 +5,12 @@ from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from traitlets.config import LoggingConfigurable
 
 
-class TestCs3FileApi(TestCase, LoggingConfigurable):
+class TestCs3FileApi(TestCase):
     client_id = None
     endpoint = None
 
     def setUp(self):
+        self.log = LoggingConfigurable().log
         config = Cs3ConfigManager.get_config()
         self.client_id = config['client_id']
         self.endpoint = config['endpoint']
