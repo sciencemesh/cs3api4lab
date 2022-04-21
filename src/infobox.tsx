@@ -211,17 +211,10 @@ const Shares = (props: ShareProps): JSX.Element => {
 
   useEffect(() => {
     const getGrantees = async (): Promise<any> => {
-      const home: any = await requestAPI<any>('/api/cs3/file/home', {
-        method: 'GET'
-      });
-
-      const resource =
-        home.path +
-        '/' +
-        props.fileInfo.path
-          .replace('cs3driveShareByMe:', '')
-          .replace('cs3drive:', '')
-          .replace('cs3driveShareWithMe:', '');
+      const resource = props.fileInfo.path
+        .replace('cs3driveShareByMe:', '')
+        .replace('cs3drive:', '')
+        .replace('cs3driveShareWithMe:', '');
 
       requestAPI<any>('/api/cs3/shares/file?file_path=' + resource, {
         method: 'GET'
@@ -468,12 +461,6 @@ const CreateShare = (props: CreateShareProps): JSX.Element => {
         }}
         makeRequest={async (params: any): Promise<void> => {
           try {
-            const home: any = await requestAPI<any>('/api/cs3/file/home', {
-              method: 'GET'
-            });
-
-            params.file_path = home.path + params.file_path;
-
             await requestAPI<any>('/api/cs3/shares', {
               method: 'POST',
               body: JSON.stringify(params)
