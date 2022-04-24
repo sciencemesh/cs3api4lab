@@ -14,7 +14,7 @@ from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.utils.model_utils import ModelUtils
 from cs3api4lab.logic.storage_logic import StorageLogic
-from cs3api4lab.exception.exceptions import OCMError
+from cs3api4lab.exception.exceptions import OCMDisabledError
 
 
 class ShareAPIFacade:
@@ -43,7 +43,7 @@ class ShareAPIFacade:
             if self.config['enable_ocm']:
                 return self.ocm_share_api.create(opaque_id, idp, idp, endpoint, file_path, grantee_type, role, reshare)
             else:
-                raise OCMError('Cannot create OCM share - OCM functionality is disabled')
+                raise OCMDisabledError('Cannot create OCM share - OCM functionality is disabled')
         else:
             return self.share_api.create(endpoint, file_path, opaque_id, idp, role, grantee_type)
 
@@ -61,7 +61,7 @@ class ShareAPIFacade:
             self.share_api.update(kwargs['share_id'], kwargs['role'])
         else:
             if not self.config['enable_ocm']:
-                raise OCMError('Cannot update OCM share - OCM functionality is disabled')
+                raise OCMDisabledError('Cannot update OCM share - OCM functionality is disabled')
             else:
                 self.ocm_share_api.update(kwargs['share_id'], kwargs['field'], kwargs['value'])
 
@@ -74,7 +74,7 @@ class ShareAPIFacade:
             if self.config['enable_ocm']:
                 self.ocm_share_api.update_received(share_id, 'state', state)
             else:
-                raise OCMError('Cannot update received OCM share - OCM functionality is disabled')
+                raise OCMDisabledError('Cannot update received OCM share - OCM functionality is disabled')
         else:
             self.share_api.update_received(share_id, state)
 
@@ -84,7 +84,7 @@ class ShareAPIFacade:
             if self.config['enable_ocm']:
                 return self.ocm_share_api.remove(share_id)
             else:
-                raise OCMError('Cannot remove OCM share - OCM functionality is disabled')
+                raise OCMDisabledError('Cannot remove OCM share - OCM functionality is disabled')
         else:
             return self.share_api.remove(share_id)
 
