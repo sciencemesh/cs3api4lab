@@ -1,24 +1,18 @@
 import random
 import string
-
-from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
-from cs3api4lab.api.share_api_facade import ShareAPIFacade
-
-from cs3api4lab.api.cs3_file_api import Cs3FileApi
-from cs3api4lab.api.cs3_share_api import Cs3ShareApi
-from cs3api4lab.config.config_manager import Cs3ConfigManager
-from cs3api4lab.logic.storage_logic import StorageLogic
 from cs3api4lab.tests.extensions import *
+from traitlets.config import LoggingConfigurable
 
 
 class ShareTestBase:
     def setUp(self):
-        config = Cs3ConfigManager().get_config()
+        self.log = LoggingConfigurable().log
+        self.config = Cs3ConfigManager().get_config()
         self.file_api = Cs3FileApi(self.log)
         self.share_api = Cs3ShareApi(self.log)
         self.ocm_api = Cs3OcmShareApi(self.log)
         self.uni_api = ShareAPIFacade(self.log)
-        self.auth = ExtAuthenticator(config, self.log)
+        self.auth = ExtAuthenticator(self.config, self.log)
         self.storage_logic = StorageLogic(self.log)
 
         marie_ext_config = {
@@ -64,6 +58,8 @@ class ShareTestBase:
         self.richard_file_api = ExtCs3FileApi(self.log, richard_local_config)
         self.richard_share_api = ExtCs3ShareApi(self.log, richard_local_config)
         self.richard_ocm_share_api = ExtCs3OcmShareApi(self.log, richard_local_config)
+
+        self.content = "op98^*^8asdasMnb23Bo!ml;)Wk"
 
     def read_file_content(self, file_api, file_path):
         content = ''
@@ -114,6 +110,36 @@ class ShareTestBase:
                                                  self.receiver_role,
                                                  self.receiver_grantee_type)
 
+    def create_container_share(self, user, receiver_id, receiver_idp, container_path):
+        self.create_test_container(user, container_path)
+        if user == 'einstein':
+            return self.share_api.create(self.storage_id,
+                                         container_path,
+                                         receiver_id,
+                                         receiver_idp,
+                                         self.receiver_role,
+                                         self.receiver_grantee_type)
+        if user == 'marie':
+            return self.marie_share_api.create(self.storage_id,
+                                               container_path,
+                                               receiver_id,
+                                               receiver_idp,
+                                               self.receiver_role,
+                                               self.receiver_grantee_type)
+        if user == 'richard':
+            return self.richard_share_api.create(self.storage_id,
+                                                 container_path,
+                                                 receiver_id,
+                                                 receiver_idp,
+                                                 self.receiver_role,
+                                                 self.receiver_grantee_type)
+
+    def clear_locks_on_file(self, file, endpoint='/'):
+        metadata = self.storage_logic.get_metadata(file, endpoint)
+        for lock in list(metadata.keys()):
+            self.storage_logic.set_metadata({lock: "{}"}, file, endpoint)
+
+
     def remove_test_share(self, user, share_id):
         if user == 'einstein':
             self.share_api.remove(share_id)
@@ -133,16 +159,24 @@ class ShareTestBase:
     def create_test_file(self, user, file_path):
         if user == 'einstein':
             self.file_api.write_file(file_path,
-                                     "Lorem ipsum dolor sit amet...",
+                                     self.content,
                                      self.storage_id)
         if user == 'marie':
             self.marie_file_api.write_file(file_path,
-                                           "Lorem ipsum dolor sit amet...",
+                                           self.content,
                                            self.storage_id)
         if user == 'richard':
             self.richard_file_api.write_file(file_path,
-                                             "Lorem ipsum dolor sit amet...",
+                                             self.content,
                                              self.storage_id)
+
+    def create_test_container(self, user, container_path):
+        if user == 'einstein':
+            self.file_api.create_directory(container_path)
+        if user == 'marie':
+            self.marie_file_api.create_directory(container_path)
+        if user == 'richard':
+            self.richard_file_api.create_directory(container_path)
 
     def remove_test_file(self, user, file_path):
         if user == 'einstein':

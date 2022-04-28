@@ -5,7 +5,7 @@ from traitlets.config import LoggingConfigurable
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 
 
-class TestCs3ShareApi(TestCase, LoggingConfigurable):
+class TestCs3ShareApi(TestCase):
     api = None
     config = None
     share_id = None
@@ -22,6 +22,7 @@ class TestCs3ShareApi(TestCase, LoggingConfigurable):
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
 
     def setUp(self):
+        self.log = LoggingConfigurable().log
         self.config = Cs3ConfigManager.get_config()
         self.storage = Cs3FileApi(self.log)
         self.api = Cs3OcmShareApi(self.log)
