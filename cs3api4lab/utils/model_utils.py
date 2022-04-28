@@ -26,21 +26,24 @@ class ModelUtils:
         return model
 
     @staticmethod
+    def parse_date(timestamp):
+        try:
+            date = datetime.fromtimestamp(timestamp, tz=tz.UTC).strftime(ModelUtils.date_fmt)
+        except ValueError as e:
+            date = datetime.fromtimestamp(0, tz=tz.UTC).strftime(ModelUtils.date_fmt)
+        return date
+
+    @staticmethod
     def map_share_to_base_model(share, stat):
-
-        created = datetime.fromtimestamp(share.ctime.seconds, tz=tz.UTC).strftime(ModelUtils.date_fmt)
-        last_modified = datetime.fromtimestamp(share.mtime.seconds, tz=tz.UTC).strftime(ModelUtils.date_fmt)
-
         writable = False
         if hasattr(share.permissions.permissions,
                    'initiate_file_upload') and share.permissions.permissions.initiate_file_upload is True:
             writable = True
-
         model = {}
         model['name'] = stat['filepath'].rsplit('/', 1)[-1]
         model['path'] = stat['filepath']
-        model['last_modified'] = last_modified
-        model['created'] = created
+        model['last_modified'] = ModelUtils.parse_date(share.mtime.seconds)
+        model['created'] = ModelUtils.parse_date(share.ctime.seconds)
         model['content'] = None
         model['format'] = None
         model['writable'] = writable

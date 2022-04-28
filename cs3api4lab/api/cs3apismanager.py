@@ -1,15 +1,14 @@
 from base64 import decodebytes
-from datetime import datetime
 import nbformat
 import mimetypes
 from notebook.services.contents.manager import ContentsManager
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from tornado import web
-from notebook import _tz as tz
 from nbformat.v4 import new_notebook
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
+from cs3api4lab.utils.model_utils import ModelUtils
 
 
 class CS3APIsManager(ContentsManager):
@@ -348,21 +347,16 @@ class CS3APIsManager(ContentsManager):
         return model, cs3_model
 
     def _convert_container_to_base_model(self, path, cs3_container):
-
         size = None
         writable = False
-        created = datetime(1970, 1, 1, 0, 0, tzinfo=tz.UTC)
-        last_modified = datetime(1970, 1, 1, 0, 0, tzinfo=tz.UTC)
-
         #
         # Get data from container element
         #
         for cs3_model in cs3_container:
             if cs3_model.path == path:
                 size = cs3_model.size
-                created = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
-                last_modified = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC)
-
+                created = ModelUtils.parse_date(cs3_model.mtime.seconds)
+                last_modified = ModelUtils.parse_date(cs3_model.mtime.seconds)
                 if ShareUtils.map_permissions_to_role(cs3_model.permission_set) == "editor":
                     writable = True
 
