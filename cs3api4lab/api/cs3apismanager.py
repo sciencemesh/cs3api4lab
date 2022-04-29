@@ -10,7 +10,6 @@ from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.utils.model_utils import ModelUtils
 
-
 class CS3APIsManager(ContentsManager):
     cs3_config = None
     log = None
@@ -347,6 +346,8 @@ class CS3APIsManager(ContentsManager):
         return model, cs3_model
 
     def _convert_container_to_base_model(self, path, cs3_container):
+        created = ModelUtils.parse_date(0)
+        last_modified = ModelUtils.parse_date(0)
         size = None
         writable = False
         #
