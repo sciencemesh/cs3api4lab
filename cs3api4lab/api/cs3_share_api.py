@@ -61,10 +61,10 @@ class Cs3ShareApi:
             return self._map_given_share(create_response.share)
         elif create_response.status.code == cs3_code.CODE_INTERNAL:
             self.log.error("Share already exists for file: " + endpoint + file_path + " for " + idp + ":" + grantee)
-            raise ShareAlreadyExistsError("Share already exists for file: " + endpoint + file_path + " for " + idp + ":" + grantee)
+            raise ShareAlreadyExistsError("Share already exists for file: " + file_path)
         else:
             self.log.error("Error creating share: " + endpoint + file_path + " for " + idp + ":" + grantee)
-            raise ShareError("Error creating share: " + endpoint + file_path + " for " + idp + ":" + grantee)
+            raise ShareError("Error creating share: " + file_path)
 
     def list(self):
         list_response = self._list()
