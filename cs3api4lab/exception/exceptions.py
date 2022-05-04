@@ -32,6 +32,15 @@ class ResourceNotFoundError(Exception):
     def __str__(self):
         return self.__class__.__name__ + ": " + self.message
 
+
+class ProviderNotFoundError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+        return self.__class__.__name__ + ": " + self.message
+
 class LockNotFoundError(Exception):
     def __init__(self, message):
         self.message = message
