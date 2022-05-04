@@ -59,12 +59,14 @@ class Cs3ShareApi:
             self.log.info("Created share: " + endpoint + file_path + " for " + idp + ":" + grantee)
             self.log.info(create_response)
             return self._map_given_share(create_response.share)
-        elif create_response.status.code == cs3_code.CODE_INTERNAL:
-            self.log.error("Share already exists for file: " + endpoint + file_path + " for " + idp + ":" + grantee)
-            raise ShareAlreadyExistsError("Share already exists for file: " + file_path)
+        elif create_response.status.code == cs3_code.CODE_NOT_FOUND:
+            raise ResourceNotFoundError(f"resource {file_path} not found")
+        elif create_response.status.code == cs3_code.CODE_ALREADY_EXISTS:
+            raise ShareAlreadyExistsError("Error creating share: "
+                                          + endpoint + file_path
+                                          + " for " + idp + ":" + grantee)
         else:
-            self.log.error("Error creating share: " + endpoint + file_path + " for " + idp + ":" + grantee)
-            raise ShareError("Error creating share: " + file_path)
+            self._handle_error(create_response)
 
     def list(self):
         list_response = self._list()
@@ -90,9 +92,10 @@ class Cs3ShareApi:
         if remove_response.status.code == cs3_code.CODE_OK:
             self.log.info("Successfully removed share with ID: " + share_id)
             self.log.info(remove_response)
-            return
-        else:
+        elif remove_response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ShareNotFoundError("Error removing share with ID: " + share_id)
+        else:
+            self._handle_error(remove_response)
 
     def update(self, share_id, role):
         share_permissions = self._get_share_permissions(role)
@@ -106,10 +109,10 @@ class Cs3ShareApi:
         if update_response.status.code == cs3_code.CODE_OK:
             self.log.info("Successfully updated share: " + share_id + " with role: " + role)
             self.log.info(update_response)
-            return
-        if update_response.status.code == cs3_code.CODE_INTERNAL:
+        elif update_response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ShareNotFoundError("Error updating share: " + share_id)
-            # self._handle_error(update_response)
+        else:
+            self._handle_error(update_response)
 
     def list_received(self):
         self.log.info("Listing received shares")
@@ -197,7 +200,7 @@ class Cs3ShareApi:
             if share_id == share.share.id.opaque_id:
                 share_to_update = share
         if not share_to_update:
-            raise Exception("Received share not found")
+            raise ShareNotFoundError(f"Received share {share_id} not found")
 
         update_request = sharing.UpdateReceivedShareRequest(
             share=sharing_res.ReceivedShare(
@@ -228,9 +231,14 @@ class Cs3ShareApi:
 
     def _get_resource_info(self, endpoint, file_id):
         ref = FileUtils.get_reference(file_id, endpoint)
-        stat_info = self.cs3_api.Stat(request=storage_provider.StatRequest(ref=ref),
-                                      metadata=[('x-access-token', self.auth.authenticate())])
-        return stat_info.info
+        stat_response = self.cs3_api.Stat(request=storage_provider.StatRequest(ref=ref),
+                                          metadata=[('x-access-token', self.auth.authenticate())])
+        if stat_response.status.code == cs3_code.CODE_OK:
+            return stat_response.info
+        elif stat_response.status.code == cs3_code.CODE_NOT_FOUND:
+            raise ResourceNotFoundError("Resource not found")
+        else:
+            self._handle_error(stat_response)
 
     def _get_share_grant(self, grantee_type, share_permissions, idp, grantee):
         user_id = identity_res.UserId(idp=idp, opaque_id=grantee)
