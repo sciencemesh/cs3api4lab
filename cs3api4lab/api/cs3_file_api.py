@@ -14,6 +14,7 @@ import requests
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.v1beta1.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
+from cs3api4lab.exception.exceptions import ResourceNotFoundError
 
 from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.logic.storage_logic import StorageLogic
@@ -82,9 +83,11 @@ class Cs3FileApi:
                 'idp': stat_info.info.owner.idp,
                 'permissions': stat_info.info.permission_set
             }
-
-        self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_id, stat_info.status.message))
-        raise FileNotFoundError(stat_info.status.message + ", file " + file_id)
+        elif stat_info.status.code == cs3code.CODE_NOT_FOUND:
+            self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_id, stat_info.status.message))
+            raise FileNotFoundError(stat_info.status.message + ", file " + file_id)
+        else:
+            self._handle_error(stat_info)
 
     def read_file(self, file_path, endpoint=None):
         """
@@ -180,6 +183,9 @@ class Cs3FileApi:
         req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
         res = self.cs3_api.ListContainer(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 
+        if res.status.code == cs3code.CODE_NOT_FOUND:
+            raise ResourceNotFoundError(f"directory {path} not found")
+
         if res.status.code != cs3code.CODE_OK:
             self.log.warning('msg="Failed to read container" filepath="%s" reason="%s"' % (path, res.status.message))
             raise IOError(res.status.message)
@@ -210,6 +216,9 @@ class Cs3FileApi:
 
         req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
         res = self.cs3_api.Move(request=req, metadata=[('x-access-token', self.auth.authenticate())])
+        
+        if res.status.code != cs3code.CODE_NOT_FOUND:
+            raise ResourceNotFoundError(f"source {source_path} not found")
 
         if res.status.code != cs3code.CODE_OK:
             self.log.error('msg="Failed to move" source="%s" destination="%s" reason="%s"' % (
@@ -236,3 +245,8 @@ class Cs3FileApi:
         tend = time.time()
         self.log.debug(
             'msg="Invoked create container" filepath="%s" elapsedTimems="%.1f"' % (path, (tend - tstart) * 1000))
+
+    def _handle_error(self, response):
+        self.log.error(response)
+        raise Exception("Incorrect server response: " +
+                        response.status.message)
