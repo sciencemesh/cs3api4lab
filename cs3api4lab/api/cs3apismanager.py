@@ -260,13 +260,15 @@ class CS3APIsManager(ContentsManager):
     def _dir_model(self, path, content):
 
         cs3_container = self.file_api.read_directory(path, self.cs3_config['endpoint'])
-        model = self._convert_container_to_directory_model(path, cs3_container, content)
+        model = ModelUtils.convert_container_to_directory_model(path, cs3_container, content)
 
         return model
 
     def _file_model(self, path, content, format):
+        parent_path = self._get_parent_path(path)
+        cs3_container = self.file_api.read_directory(parent_path, self.cs3_config['endpoint'])
 
-        model, tmp_model = self._create_base_model_from_cs3_container(path)
+        model, tmp_model = ModelUtils.create_base_model_from_cs3_container(path, cs3_container)
         model['type'] = 'file'
         model['mimetype'] = mimetypes.guess_type(tmp_model.path)[0]
 
@@ -291,8 +293,10 @@ class CS3APIsManager(ContentsManager):
         return model
 
     def _notebook_model(self, path, content):
+        parent_path = self._get_parent_path(path)
+        cs3_container = self.file_api.read_directory(parent_path, self.cs3_config['endpoint'])
 
-        model, tmp_model = self._create_base_model_from_cs3_container(path)
+        model, tmp_model = ModelUtils.create_base_model_from_cs3_container(path, cs3_container)
         model['type'] = 'notebook'
 
         if content:
@@ -327,109 +331,6 @@ class CS3APIsManager(ContentsManager):
                 return False
 
         return False
-
-    def _create_base_model_from_cs3_container(self, path):
-
-        parent_path = self._get_parent_path(path)
-
-        cs3_container = self.file_api.read_directory(parent_path, self.cs3_config['endpoint'])
-
-        cs3_model = None
-        for cs3_tmp_model in cs3_container:
-            if cs3_tmp_model.type == self.TYPE_FILE and cs3_tmp_model.path == path:
-                cs3_model = cs3_tmp_model
-
-        if cs3_model is None:
-            raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
-
-        model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
-        return model, cs3_model
-
-    def _convert_container_to_base_model(self, path, cs3_container):
-        size = None
-        writable = False
-
-        created = ModelUtils.parse_date(0)
-        last_modified = ModelUtils.parse_date(0)
-
-        #
-        # Get data from container element
-        #
-        for cs3_model in cs3_container:
-            if cs3_model.path == path:
-                size = cs3_model.size
-                created = ModelUtils.parse_date(cs3_model.mtime.seconds)
-                last_modified = ModelUtils.parse_date(cs3_model.mtime.seconds)
-                if ShareUtils.map_permissions_to_role(cs3_model.permission_set) == "editor":
-                    writable = True
-
-        #
-        # Create the base model
-        #
-        model = {}
-        model['name'] = path.rsplit('/', 1)[-1]
-        model['path'] = path
-        model['last_modified'] = last_modified
-        model['created'] = created
-        model['content'] = None
-        model['format'] = None
-        model['mimetype'] = None
-        model['size'] = size
-        model['writable'] = writable
-        model['type'] = None
-
-        return model
-
-    def _convert_container_to_directory_model(self, path, cs3_container, content=True):
-
-        model = self._convert_container_to_base_model(path, cs3_container)
-        model['size'] = None
-        model['type'] = 'directory'
-
-        if content:
-            model['content'] = contents = []
-            model['format'] = 'json'
-
-            for cs3_model in cs3_container:
-                # ToDo: get data from cs3_model
-                if cs3_model.type == self.TYPE_DIRECTORY:
-                    sub_model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
-                    sub_model['size'] = None
-                    sub_model['type'] = 'directory'
-                    contents.append(sub_model)
-
-                elif cs3_model.type == self.TYPE_FILE:
-
-                    if type == 'notebook' or (type is None and path.endswith('.ipynb')):
-                        contents.append(
-                            self._convert_container_to_notebook_model(cs3_model, cs3_container)
-                        )
-                    else:
-                        contents.append(
-                            self._convert_container_to_file_model(cs3_model, cs3_container)
-                        )
-                else:
-
-                    self.log.error(u'Unexpected type: %s %s', cs3_model.path, cs3_model.type)
-                    raise web.HTTPError(500, u'Unexpected type: %s %s' % (cs3_model.path, cs3_model.type))
-
-        return model
-
-    def _convert_container_to_file_model(self, cs3_model, cs3_container):
-
-        model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
-        model['type'] = 'file'
-        model['mimetype'] = mimetypes.guess_type(cs3_model.path)[0]
-
-        return model
-
-    def _convert_container_to_notebook_model(self, cs3_model, cs3_container):
-
-        model = self._convert_container_to_base_model(cs3_model.path, cs3_container)
-        model['type'] = 'notebook'
-        model['mimetype'] = mimetypes.guess_type(cs3_model.path)[0]
-
-        return model
 
     def _save_file(self, path, content, format):
 
