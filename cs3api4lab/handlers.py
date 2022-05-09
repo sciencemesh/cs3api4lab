@@ -262,7 +262,7 @@ class RequestHandler(APIHandler):
             return 404
         if isinstance(err, (InvalidTypeError, KeyError, FileNotFoundError, ParamError)):
             return 400
-        if isinstance(err, OCMError):
+        if isinstance(err, OCMDisabledError):
             return 501
         if isinstance(err, _InactiveRpcError):
             return 503

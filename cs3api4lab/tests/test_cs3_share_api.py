@@ -1,6 +1,7 @@
 from cs3api4lab.tests.share_test_base import ShareTestBase
 from unittest import TestCase
 from traitlets.config import LoggingConfigurable
+from cs3api4lab.exception.exceptions import *
 
 
 class TestCs3ShareApi(ShareTestBase, TestCase):
@@ -31,6 +32,31 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
                 self.remove_test_share('einstein', self.share_id)
             if self.file_name:
                 self.remove_test_file('einstein', self.file_name)
+
+    def test_create_share_already_exists(self):
+        try:
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+
+            self.share_api.update_received(self.share_id, 'ACCEPTED')
+
+            with self.assertRaises(ShareAlreadyExistsError) as context:
+                self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            self.assertIn("Share already exists for file:", context.exception.args[0])
+        finally:
+            if self.share_id:
+                self.remove_test_share('richard', self.share_id)
+            if self.file_name:
+                self.remove_test_file('richard', self.file_name)
+
+    def test_create_share_file_doesnt_exist(self):
+        self.file_name = self.file_path + self.get_random_suffix()
+
+        with self.assertRaises(ShareError) as context:
+            self.richard_share_api.create(self.storage_id, self.file_name, self.einstein_id, self.einstein_idp,
+                                          self.receiver_role, self.receiver_grantee_type)
+        self.assertIn("Error creating share:", context.exception.args[0])
 
     def test_remove(self):
         try:
