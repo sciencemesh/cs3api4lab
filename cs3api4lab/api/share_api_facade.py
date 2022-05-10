@@ -1,5 +1,7 @@
-import cs3.ocm.provider.v1beta1.provider_api_pb2_grpc as ocm_provider_api_grpc
 import urllib.parse
+
+import cs3.ocm.provider.v1beta1.provider_api_pb2_grpc as ocm_provider_api_grpc
+import cs3.storage.provider.v1beta1.resources_pb2 as Resources
 
 from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
@@ -18,9 +20,6 @@ from cs3api4lab.exception.exceptions import OCMDisabledError
 
 
 class ShareAPIFacade:
-    TYPE_FILE = 1
-    TYPE_DIRECTORY = 2
-
     def __init__(self, log):
         self.log = log
         self.config = Cs3ConfigManager().get_config()
@@ -199,7 +198,7 @@ class ShareAPIFacade:
                                           share.resource_id.storage_id)  # todo remove this and use storage_logic
                 # stat = self.storage_logic.stat_info(urllib.parse.unquote(share.resource_id.opaque_id), share.resource_id.storage_id)
 
-                if stat['type'] == self.TYPE_FILE:
+                if stat['type'] == Resources.RESOURCE_TYPE_FILE:
                     if hasattr(share.permissions.permissions,
                                'initiate_file_download') and share.permissions.permissions.initiate_file_download is False:
                         continue

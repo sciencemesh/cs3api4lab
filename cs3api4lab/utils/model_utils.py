@@ -1,4 +1,5 @@
 import mimetypes
+import cs3.storage.provider.v1beta1.resources_pb2 as Resources
 
 from datetime import datetime
 from IPython.utils import tz
@@ -6,8 +7,6 @@ from cs3api4lab.utils.share_utils import ShareUtils
 
 class ModelUtils:
     date_fmt = '%Y-%m-%dT%H:%M:%SZ'
-    TYPE_FILE = 1
-    TYPE_DIRECTORY = 2
 
     @staticmethod
     def create_respond_model():
@@ -125,12 +124,12 @@ class ModelUtils:
             model['format'] = 'json'
 
             for cs3_model in cs3_container:
-                if cs3_model.type == ModelUtils.TYPE_DIRECTORY:
+                if cs3_model.type == Resources.RESOURCE_TYPE_CONTAINER:
                     sub_model = ModelUtils.convert_container_to_base_model(cs3_model.path, cs3_container)
                     sub_model['size'] = None
                     sub_model['type'] = 'directory'
                     contents.append(sub_model)
-                elif cs3_model.type == ModelUtils.TYPE_FILE:
+                elif cs3_model.type == Resources.RESOURCE_TYPE_FILE:
                     if type == 'notebook' or (type is None and path.endswith('.ipynb')):
                         contents.append(
                             ModelUtils.convert_container_to_notebook_model(cs3_model, cs3_container)
@@ -148,7 +147,7 @@ class ModelUtils:
     def create_base_model_from_cs3_container(path, cs3_container):
         cs3_model = None
         for cs3_tmp_model in cs3_container:
-            if cs3_tmp_model.type == ModelUtils.TYPE_FILE and cs3_tmp_model.path == path:
+            if cs3_tmp_model.type == Resources.RESOURCE_TYPE_FILE and cs3_tmp_model.path == path:
                 cs3_model = cs3_tmp_model
 
         if cs3_model is None:
