@@ -191,7 +191,6 @@ class CS3APIsManager(ContentsManager):
         old_path = self._normalize_path(old_path)
         new_path = self._normalize_path(new_path)
 
-        # Move the file
         try:
             self.file_api.move(old_path, new_path, self.cs3_config['endpoint'])
         except Exception as e:
