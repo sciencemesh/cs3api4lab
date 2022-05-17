@@ -349,6 +349,10 @@ class CS3APIsManager(ContentsManager):
     def _convert_container_to_base_model(self, path, cs3_container):
         size = None
         writable = False
+
+        created = ModelUtils.parse_date(0)
+        last_modified = ModelUtils.parse_date(0)
+
         #
         # Get data from container element
         #
