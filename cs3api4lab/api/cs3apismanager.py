@@ -1,6 +1,9 @@
-from base64 import decodebytes
 import nbformat
 import mimetypes
+
+import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
+
+from base64 import decodebytes
 from notebook.services.contents.manager import ContentsManager
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from tornado import web
@@ -14,10 +17,6 @@ from datetime import datetime
 class CS3APIsManager(ContentsManager):
     cs3_config = None
     log = None
-
-    # ToDo: Change to cs3 Type
-    TYPE_FILE = 1
-    TYPE_DIRECTORY = 2
 
     file_api = None
 
@@ -83,7 +82,7 @@ class CS3APIsManager(ContentsManager):
             raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
 
         for cs3_model in cs3_container:
-            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
+            if cs3_model.type == resource_types.RESOURCE_TYPE_FILE and cs3_model.path == path:
                 return True
 
         return False
@@ -325,9 +324,9 @@ class CS3APIsManager(ContentsManager):
 
         for cs3_model in cs3_container:
 
-            if cs3_model.type == self.TYPE_DIRECTORY and cs3_model.path == path:
+            if cs3_model.type == resource_types.RESOURCE_TYPE_CONTAINER and cs3_model.path == path:
                 return True
-            if cs3_model.type == self.TYPE_FILE and cs3_model.path == path:
+            if cs3_model.type == resource_types.RESOURCE_TYPE_FILE and cs3_model.path == path:
                 return False
 
         return False
