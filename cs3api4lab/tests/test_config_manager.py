@@ -24,7 +24,8 @@ class TestCS3ConfigManager(TestCase):
         'locks_expiration_time': 10,
         'tus_enabled': False,
         'enable_ocm': False,
-        "shared_folder": "MyShares"
+        "shared_folder": "MyShares",
+        "kernel_path": "/test/path"
     }
 
     def setUp(self):
