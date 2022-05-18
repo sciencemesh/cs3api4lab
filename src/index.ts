@@ -201,6 +201,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
       stateDB
     );
 
+    void stateDB.save('activeTab', 'fileBrowser');
     void stateDB.save('share', { shareType: 'filelist' });
     void stateDB.save('showHidden', false);
 
