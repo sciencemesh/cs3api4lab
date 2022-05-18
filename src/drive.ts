@@ -72,6 +72,7 @@ export class CS3Contents implements Contents.IDrive {
     options?: Contents.IFetchOptions
   ): Promise<Contents.IModel> {
     const activeTab: string = (await this._state.fetch('activeTab')) as string;
+
     if (activeTab === 'fileBrowser' || activeTab === undefined) {
       return await CS3ContainerFiles('filelist', this._state, path, options);
     } else {
