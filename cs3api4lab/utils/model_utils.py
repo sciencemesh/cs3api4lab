@@ -1,6 +1,7 @@
 import mimetypes
 import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
 
+from tornado import web
 from datetime import datetime
 from IPython.utils import tz
 from cs3api4lab.utils.share_utils import ShareUtils
@@ -31,7 +32,7 @@ class ModelUtils:
     def parse_date(timestamp):
         try:
             date = datetime.fromtimestamp(timestamp, tz=tz.UTC).strftime(ModelUtils.date_fmt)
-        except ValueError as e:
+        except ValueError:
             date = datetime.fromtimestamp(0, tz=tz.UTC).strftime(ModelUtils.date_fmt)
 
         return date
@@ -160,8 +161,8 @@ class ModelUtils:
     def get_info_from_container(cs3_container, path):
         size = None
         writable = False
-        created = datetime(1970, 1, 1, 0, 0, tzinfo=tz.UTC).strftime(ModelUtils.date_fmt)
-        last_modified = datetime(1970, 1, 1, 0, 0, tzinfo=tz.UTC).strftime(ModelUtils.date_fmt)
+        created = ModelUtils.parse_date(0)
+        last_modified = ModelUtils.parse_date(0)
 
         for cs3_model in cs3_container:
             if cs3_model.path == path:
