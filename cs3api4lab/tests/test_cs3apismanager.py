@@ -368,17 +368,15 @@ class TestCS3APIsManager(TestCase):
             self.file_api.stat(file_path, self.endpoint)
 
     def test_kernel_path_when_config_entry_provided(self):
-        self.assertIn('kernel_path', self.config)
-        self.assertEqual(self.config['kernel_path'], "/test/path")
+        self.config['kernel_path'] = "/test/path"
 
         path = self.contents_manager.get_kernel_path('')
 
         self.assertEqual(path, "/test/path")
 
     def test_kernel_path_when_config_entry_not_provided(self):
-        test_config = self.config
-        del test_config['kernel_path']
-        self.assertNotIn('kernel_path', test_config)
+        if 'kernel_path' in self.config:
+            del self.config['kernel_path']
 
         path = self.contents_manager.get_kernel_path('')
 
