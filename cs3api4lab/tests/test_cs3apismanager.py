@@ -6,7 +6,6 @@ from cs3api4lab.api.cs3apismanager import CS3APIsManager
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from traitlets.config import LoggingConfigurable
-from cs3api4lab.config.config_manager import Config
 
 
 class TestCS3APIsManager(TestCase):
@@ -238,7 +237,7 @@ class TestCS3APIsManager(TestCase):
 
             with self.assertRaises(web.HTTPError) as context:
                 self.contents_manager.rename_file(file_path, file_dest)
-            self.assertEquals('Error renaming file: /test_rename_file.txt file already exists', context.exception.log_message)
+            self.assertEqual('Error renaming file: /test_rename_file.txt file already exists', context.exception.log_message)
                 
         finally:
             self.file_api.remove(file_path, self.endpoint)
