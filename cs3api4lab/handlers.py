@@ -9,7 +9,6 @@ from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from notebook.utils import url_path_join
-from cs3api4lab.api.cs3_file_api import Cs3FileApi
 
 class ShareHandler(APIHandler):
     @property
