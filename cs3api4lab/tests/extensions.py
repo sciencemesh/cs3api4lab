@@ -23,22 +23,28 @@ import cs3.sharing.ocm.v1beta1.ocm_api_pb2_grpc as ocm_api_grpc
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 
 class ExtStorageLogic(StorageLogic):
-    def __init__(self, log, config, channel):
+    def __init__(self, log, config):
         #super().__init__(log)
         self.log = log
         self.config = config
         self.auth = ExtAuthenticator(config, log)
-        self.cs3_api = cs3gw_grpc.GatewayAPIStub(channel)
+        channel = grpc.insecure_channel(config['reva_host'])
+        auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
+        intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
+        self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
 
 class ExtLockManager(LockManager):
-    def __init__(self, log, config, channel):
+    def __init__(self, log, config):
         #super().__init__(log)
         self.config = config
         self.log = log
         self.auth = ExtAuthenticator(config, log)
-        self.cs3_api = cs3gw_grpc.GatewayAPIStub(channel)
+        channel = grpc.insecure_channel(config['reva_host'])
+        auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
+        intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
+        self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.user_api = ExtUserApi(log, config)
-        self.storage_logic = ExtStorageLogic(log, config, channel)
+        self.storage_logic = ExtStorageLogic(log, config)
         self.locks_expiration_time = config['locks_expiration_time']
 
 class ExtCs3ConfigManager(Cs3ConfigManager):
@@ -67,8 +73,8 @@ class ExtCs3FileApi(Cs3FileApi):
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
-        self.lock_manager = ExtLockManager(log, config, intercept_channel)
-        self.storage_logic = ExtStorageLogic(log, config, channel)
+        self.lock_manager = ExtLockManager(log, config)
+        self.storage_logic = ExtStorageLogic(log, config)
 
 
 class ExtCs3ShareApi(Cs3ShareApi):

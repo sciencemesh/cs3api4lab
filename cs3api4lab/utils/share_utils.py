@@ -102,3 +102,14 @@ class ShareUtils:
         if file_path.startswith('/home'):
             return ShareUtils.decode_file_path(file_path.replace('/home', '/reva/' + user))
         return ShareUtils.decode_file_path(file_path.replace('fileid-' + user, '/reva/' + user))
+
+    @staticmethod
+    def get_share_info(share):
+        return {
+            "opaque_id": share.id.opaque_id,
+            "grantee": {
+                "idp": share.grantee.user_id.idp,
+                "opaque_id": share.grantee.user_id.opaque_id,
+                "permissions": ShareUtils.map_permissions_to_role(share.permissions.permissions)
+            }
+        }

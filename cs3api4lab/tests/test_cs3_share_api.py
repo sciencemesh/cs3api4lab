@@ -1,7 +1,9 @@
+import os
+
 from cs3api4lab.tests.share_test_base import ShareTestBase
 from unittest import TestCase
 from cs3api4lab.exception.exceptions import *
-
+from cs3api4lab.utils.file_utils import FileUtils
 
 class TestCs3ShareApi(ShareTestBase, TestCase):
     einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
@@ -16,6 +18,31 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
     ocm_share_id = None
     ocm_file_name = None
     file_name = None
+
+    #todo this is a template test. Refactor all other tests using this as an example
+    def test_create_share(self):
+        '''creates a file and shares it with another user'''
+
+        #given
+        user = self.config['client_id']
+        share_id = None
+        file_name = FileUtils.join(self.config['home_dir'], "test_create_share.txt")
+        self.remove_share_and_file_by_path(user, file_name)
+        try:
+            self.create_test_file(user, file_name)
+
+            #when
+            created_share = self.create_share(user, self.richard_id, self.richard_idp, file_name)
+
+            #then
+            self.assertTrue(created_share, 'Error when creating share')
+            share_id = created_share['opaque_id']
+            share_list = self.share_api.list()
+            self.assertTrue(list(share for share in share_list.shares if share.id.opaque_id == created_share['opaque_id']),
+                            "Share not present")
+        finally:
+            self.clean_up_share(user, share_id)
+            self.clean_up_file(user, file_name)
 
     def test_create(self):
         try:

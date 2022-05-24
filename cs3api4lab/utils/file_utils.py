@@ -37,3 +37,11 @@ class FileUtils:
             content_len = len(content.decode('utf-8'))
         content_size = str(content_len)
         return content_size
+
+    @staticmethod
+    def join(path1, path2):
+        if path2[0] == '/':
+            path2 = path2[1:]
+        if path1[-1] == '/':
+            return path1 + path2
+        return path1 + '/' + path2

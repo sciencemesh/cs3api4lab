@@ -69,10 +69,6 @@ class Cs3ShareApi:
             self._handle_error(create_response)
 
     def list(self):
-        list_response = self._list()
-        return list_response
-
-    def _list(self):
         list_request = sharing.ListSharesRequest()
         list_response = self.cs3_api.ListShares(request=list_request,
                                                 metadata=[('x-access-token', self.auth.authenticate())])
@@ -82,6 +78,22 @@ class Cs3ShareApi:
             self.log.error("Error listing shares response for user: " + self.config['client_id'])
             self._handle_error(list_response)
         return list_response
+
+    def list_grantees_for_file(self, file_path):
+        """
+        :param file_path: path to the file
+        :return: list of grantees
+        """
+        share_list = self.list()
+
+        file_path = ShareUtils.purify_file_path(file_path, self.config['client_id'])
+        shares = []
+        for share in share_list.shares:
+            path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id'])
+            if file_path == path:
+                shares.append(ShareUtils.get_share_info(share))
+
+        return shares
 
     def remove(self, share_id):
         share_id_object = sharing_res.ShareId(opaque_id=share_id)

@@ -138,21 +138,10 @@ class ShareAPIFacade:
         for share in [*share_list.shares, *ocm_share_list["shares"]]:
             path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id'])
             if file_path == path:
-                shares.append(self._get_share_info(share))
+                shares.append(ShareUtils.get_share_info(share))
 
         response = {"file_path": file_path, "shares": shares}
         return response
-
-    @staticmethod
-    def _get_share_info(share):
-        return {
-            "opaque_id": share.id.opaque_id,
-            "grantee": {
-                "idp": share.grantee.user_id.idp,
-                "opaque_id": share.grantee.user_id.opaque_id,
-                "permissions": ShareUtils.map_permissions_to_role(share.permissions.permissions)
-            }
-        }
 
     def _token(self):
         return [('x-access-token', self.auth.authenticate())]

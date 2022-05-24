@@ -53,11 +53,13 @@ class ShareTestBase:
         self.marie_file_api = ExtCs3FileApi(self.log, marie_ext_config)
         self.marie_share_api = ExtCs3ShareApi(self.log, marie_ext_config)
         self.marie_ocm_share_api = ExtCs3OcmShareApi(self.log, marie_ext_config)
+        self.marie_storage_logic = ExtStorageLogic(self.log, marie_ext_config)
 
         self.richard_uni_api = ExtCs3ShareApiFacade(self.log, richard_local_config)
         self.richard_file_api = ExtCs3FileApi(self.log, richard_local_config)
         self.richard_share_api = ExtCs3ShareApi(self.log, richard_local_config)
         self.richard_ocm_share_api = ExtCs3OcmShareApi(self.log, richard_local_config)
+        self.richard_storage_logic = ExtStorageLogic(self.log, richard_local_config)
 
         self.content = "op98^*^8asdasMnb23Bo!ml;)Wk"
 
@@ -188,3 +190,37 @@ class ShareTestBase:
 
     def get_random_suffix(self):
         return '-' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+
+    def clean_up_file(self, user, file_name):
+        try:
+            self.remove_test_file(user, file_name)
+        except Exception as ex:
+            print(str(ex))
+
+    def clean_up_share(self, user, share_id):
+        try:
+            self.remove_test_share(user, share_id)
+        except Exception as ex:
+            print(str(ex))
+
+    def remove_share_and_file_by_path(self, user, file_path):
+        if user == 'einstein':
+            share_api = self.share_api
+            storage = self.storage_logic
+        if user == 'marie':
+            share_api = self.marie_share_api
+            storage = self.marie_storage_logic
+        if user == 'richard':
+            share_api = self.richard_share_api
+            storage = self.richard_storage_logic
+
+        stat = storage.stat(file_path, None)
+        if stat is None:
+            self.create_test_file(user, file_path)
+
+        shares = share_api.list_grantees_for_file(file_path) #todo this won't work on CERNBOX
+        if shares:
+            for share in shares:
+                share_api.remove(share['opaque_id'])
+
+        self.remove_test_file(user, file_path)
