@@ -11,21 +11,21 @@ from traitlets.config import LoggingConfigurable
 class TestCS3APIsManager(TestCase):
     user_id = None
     endpoint = None
-    storage = None
+    file_api = None
     contents_manager = None
 
     def setUp(self):
         self.log = LoggingConfigurable().log
-        config = Cs3ConfigManager.get_config()
-        self.user_id = config['client_id']
-        self.endpoint = config['endpoint']
-        self.storage = Cs3FileApi(self.log)
+        self.config = Cs3ConfigManager.get_config()
+        self.user_id = self.config['client_id']
+        self.endpoint = self.config['endpoint']
+        self.file_api = Cs3FileApi(self.log)
         self.contents_manager = CS3APIsManager(None, self.log)
 
     def test_get_text_file(self):
         file_id = "/test_get_text_file.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.storage.write_file(file_id, message, self.endpoint)
+        self.file_api.write_file(file_id, message, self.endpoint)
 
         model = self.contents_manager.get(file_id, True, None)
 
@@ -38,13 +38,13 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "file")
 
-        self.storage.remove(file_id, self.endpoint)
+        self.file_api.remove(file_id, self.endpoint)
 
     def test_get_text_file_with_share_path(self):
         file_id = "/test_get_text_file.txt"
         share_file_id = "/reva/einstein/test_get_text_file.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.storage.write_file(file_id, message, self.endpoint)
+        self.file_api.write_file(file_id, message, self.endpoint)
 
         model = self.contents_manager.get(share_file_id, True, None)
         self.assertEqual(model["name"], "test_get_text_file.txt")
@@ -56,7 +56,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "file")
 
-        self.storage.remove(file_id, self.endpoint)
+        self.file_api.remove(file_id, self.endpoint)
 
     def test_get_notebook_file(self):
         file_id = "/test_get_notebook_file.ipynb"
@@ -93,7 +93,7 @@ class TestCS3APIsManager(TestCase):
 					"nbformat_minor": 4\
 					}'
 
-        self.storage.write_file(file_id, buffer, self.endpoint)
+        self.file_api.write_file(file_id, buffer, self.endpoint)
 
         model = self.contents_manager.get(file_id, True, "notebook")
 
@@ -106,7 +106,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "notebook")
 
-        self.storage.remove(file_id, self.endpoint)
+        self.file_api.remove(file_id, self.endpoint)
 
     def test_save_text_model(self):
         file_id = "/test_save_text_model.txt"
@@ -127,7 +127,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "file")
 
-        self.storage.remove(file_id, self.endpoint)
+        self.file_api.remove(file_id, self.endpoint)
 
     def test_save_notebook_model(self):
         file_id = "/test_save_notebook_model.ipynb"
@@ -144,7 +144,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "notebook")
 
-        self.storage.remove(file_id, self.endpoint)
+        self.file_api.remove(file_id, self.endpoint)
 
     def _create_notebook_model(self):
         model = {
@@ -187,12 +187,12 @@ class TestCS3APIsManager(TestCase):
     def test_delete_file(self):
         file_path = "/test_delete_exits_file.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.storage.write_file(file_path, message, self.endpoint)
+        self.file_api.write_file(file_path, message, self.endpoint)
 
         self.contents_manager.delete_file(file_path)
 
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.endpoint)
+            self.file_api.stat(file_path, self.endpoint)
 
     def test_delete_non_exits_file(self):
         file_path = "/test_delete_non_exits_file.txt"
@@ -203,21 +203,21 @@ class TestCS3APIsManager(TestCase):
     def test_rename_file(self):
         file_path = "/test_rename_file.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.storage.write_file(file_path, message, self.endpoint)
+        self.file_api.write_file(file_path, message, self.endpoint)
 
         file_dest = "/test_after_rename_file.txt"
 
         self.contents_manager.rename_file(file_path, file_dest)
 
-        stat_info = self.storage.stat(file_dest, self.endpoint)
+        stat_info = self.file_api.stat(file_dest, self.endpoint)
         self.assertIsInstance(stat_info, dict)
 
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.endpoint)
+            self.file_api.stat(file_path, self.endpoint)
 
-        self.storage.remove(file_dest, self.endpoint)
+        self.file_api.remove(file_dest, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(file_dest, self.endpoint)
+            self.file_api.stat(file_dest, self.endpoint)
 
     def test_rename_file_non_exits_file(self):
         file_path = "/test_rename_file.txt"
@@ -232,16 +232,16 @@ class TestCS3APIsManager(TestCase):
             file_dest = "/test_after_rename_file.txt"
             message = "Lorem ipsum dolor sit amet..."
 
-            self.storage.write_file(file_path, message, self.endpoint)
-            self.storage.write_file(file_dest, message, self.endpoint)
+            self.file_api.write_file(file_path, message, self.endpoint)
+            self.file_api.write_file(file_dest, message, self.endpoint)
 
             with self.assertRaises(web.HTTPError) as context:
                 self.contents_manager.rename_file(file_path, file_dest)
-            self.assertEquals('Error renaming file: /test_rename_file.txt file already exists', context.exception.log_message)
+            self.assertEqual('Error renaming file: /test_rename_file.txt file already exists', context.exception.log_message)
                 
         finally:
-            self.storage.remove(file_path, self.endpoint)
-            self.storage.remove(file_dest, self.endpoint)
+            self.file_api.remove(file_path, self.endpoint)
+            self.file_api.remove(file_dest, self.endpoint)
 
     def test_new_file_model(self):
         file_path = "/test_new_file_model.txt"
@@ -263,7 +263,7 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["writable"], True)
         self.assertEqual(model["type"], "file")
 
-        self.storage.remove(file_path, self.endpoint)
+        self.file_api.remove(file_path, self.endpoint)
 
     def test_new_notebook_model(self):
         file_path = "/test_new_notebook_model.ipynb"
@@ -280,19 +280,19 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "notebook")
 
-        self.storage.remove(file_path, self.endpoint)
+        self.file_api.remove(file_path, self.endpoint)
 
     def test_file_exits(self):
         file_path = "/test_file_exits.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.storage.write_file(file_path, message, self.endpoint)
+        self.file_api.write_file(file_path, message, self.endpoint)
 
         file_exists = self.contents_manager.file_exists(file_path)
         self.assertTrue(file_exists)
 
-        self.storage.remove(file_path, self.endpoint)
+        self.file_api.remove(file_path, self.endpoint)
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.endpoint)
+            self.file_api.stat(file_path, self.endpoint)
 
         file_exists = self.contents_manager.file_exists(file_path)
         self.assertFalse(file_exists)
@@ -332,36 +332,51 @@ class TestCS3APIsManager(TestCase):
 
     def test_create_directory(self):
         file_path = "/test_create_directory"
-        self.storage.create_directory(file_path, self.endpoint)
+        self.file_api.create_directory(file_path, self.endpoint)
 
         self.contents_manager.delete_file(file_path)
 
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.endpoint)
+            self.file_api.stat(file_path, self.endpoint)
 
     def test_recreate_directory(self):
         file_path = "/test_recreate_directory"
-        self.storage.create_directory(file_path, self.endpoint)
+        self.file_api.create_directory(file_path, self.endpoint)
 
         with self.assertRaises(IOError):
-            self.storage.create_directory(file_path, self.endpoint)
+            self.file_api.create_directory(file_path, self.endpoint)
 
         self.contents_manager.delete_file(file_path)
 
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.endpoint)
+            self.file_api.stat(file_path, self.endpoint)
 
     def test_create_subdirectory(self):
         file_path = "/test_create_directory"
-        self.storage.create_directory(file_path, self.endpoint)
+        self.file_api.create_directory(file_path, self.endpoint)
 
         file_path2 = "/test_create_directory/test_subdir"
-        self.storage.create_directory(file_path2, self.endpoint)
+        self.file_api.create_directory(file_path2, self.endpoint)
 
         self.contents_manager.delete_file(file_path2)
         with self.assertRaises(IOError):
-            self.storage.stat(file_path2, self.endpoint)
+            self.file_api.stat(file_path2, self.endpoint)
 
         self.contents_manager.delete_file(file_path)
         with self.assertRaises(IOError):
-            self.storage.stat(file_path, self.endpoint)
+            self.file_api.stat(file_path, self.endpoint)
+
+    def test_kernel_path_when_config_entry_provided(self):
+        self.config['kernel_path'] = "/test/path"
+
+        path = self.contents_manager.get_kernel_path('')
+
+        self.assertEqual(path, "/test/path")
+
+    def test_kernel_path_when_config_entry_not_provided(self):
+        if 'kernel_path' in self.config:
+            del self.config['kernel_path']
+
+        path = self.contents_manager.get_kernel_path('')
+
+        self.assertFalse(path)

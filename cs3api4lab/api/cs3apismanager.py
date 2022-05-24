@@ -101,6 +101,14 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
+    def get_kernel_path(self, path, model=None):
+        """
+        Return the initial API path of a kernel associated with a given notebook.
+        """
+        if 'kernel_path' in self.cs3_config:
+            return self.cs3_config['kernel_path']
+        return ''
+
     def save(self, model, path):
         """
         Save a file or directory model to path.
