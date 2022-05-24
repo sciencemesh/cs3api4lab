@@ -201,6 +201,10 @@ class TestCs3FileApi(TestCase):
 
         dest_id = "/file_after_rename.txt"
 
+        try:
+            self.storage.remove(dest_id)
+        except: pass
+
         self.storage.write_file(src_id, buffer, self.endpoint)
         self.storage.move(src_id, dest_id, self.endpoint)
 
