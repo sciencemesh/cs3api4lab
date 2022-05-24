@@ -1,19 +1,20 @@
 {
   "cs3":{
-	"reva_host":"127.0.0.1:19000",
-	"auth_token_validity": "3600",
-	"endpoint": "/",
-	"home_dir": "/home",
-  	"chunk_size": "4194304",
-  	"secure_channel": false,
-  	"client_cert": "",
-  	"client_key": "",
-  	"ca_cert": "",
-	"authenticator_class": "cs3api4lab.auth.RevaPassword",
-	"client_id": "einstein",
-	"client_secret": "relativity",
-	"locks_expiration_time": 10,
-	"tus_enabled": false,
-  	"enable_ocm": false
-	}
+    "reva_host":"127.0.0.1:19000",
+    "auth_token_validity": "3600",
+    "endpoint": "/",
+    "home_dir": "/home",
+    "chunk_size": "4194304",
+    "secure_channel": false,
+    "client_cert": "",
+    "client_key": "",
+    "ca_cert": "",
+    "authenticator_class": "cs3api4lab.auth.RevaPassword",
+    "client_id": "einstein",
+    "client_secret": "relativity",
+    "locks_expiration_time": 10,
+    "tus_enabled": false,
+    "enable_ocm": false,
+    "shared_folder": "MyShares"
+  }
 }

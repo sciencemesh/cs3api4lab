@@ -7,8 +7,8 @@ from cs3api4lab.exception.exceptions import *
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
-from notebook.utils import url_path_join
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
+from notebook.utils import url_path_join
 
 class ShareHandler(APIHandler):
     @property
@@ -265,5 +265,4 @@ class RequestHandler(APIHandler):
             return 501
         if isinstance(err, _InactiveRpcError):
             return 503
-        else:
-            return 500
+        return 500

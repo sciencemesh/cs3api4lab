@@ -1,17 +1,16 @@
 import mimetypes
+import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
 
+from tornado import web
 from datetime import datetime
 from IPython.utils import tz
 from cs3api4lab.utils.share_utils import ShareUtils
 
 class ModelUtils:
     date_fmt = '%Y-%m-%dT%H:%M:%SZ'
-    TYPE_FILE = 1
-    TYPE_DIRECTORY = 2
 
     @staticmethod
     def create_respond_model():
-
         model = {}
         model['name'] = "/"
         model['path'] = "/"
@@ -26,14 +25,16 @@ class ModelUtils:
         model['format'] = 'json'
         model['owner'] = None
         model['opaque_id'] = None
+
         return model
 
     @staticmethod
     def parse_date(timestamp):
         try:
             date = datetime.fromtimestamp(timestamp, tz=tz.UTC).strftime(ModelUtils.date_fmt)
-        except ValueError as e:
+        except ValueError:
             date = datetime.fromtimestamp(0, tz=tz.UTC).strftime(ModelUtils.date_fmt)
+
         return date
 
     @staticmethod
@@ -69,36 +70,17 @@ class ModelUtils:
 
     @staticmethod
     def map_share_to_dir_model(share, stat, optional={}):
-
         model = ModelUtils.map_share_to_base_model(share, stat, optional)
         model['size'] = None
         model['type'] = 'directory'
         model['mimetype'] = None
+
         return model
 
-    # @TODO this code was copied from cs3apismanager - needs clean up
     @staticmethod
     def convert_container_to_base_model(path, cs3_container):
-        size = None
-        writable = False
-        created = datetime(1970, 1, 1, 0, 0, tzinfo=tz.UTC).strftime(ModelUtils.date_fmt)
-        last_modified = datetime(1970, 1, 1, 0, 0, tzinfo=tz.UTC).strftime(ModelUtils.date_fmt)
+        created, last_modified, size, writable = ModelUtils.get_info_from_container(cs3_container, path)
 
-        #
-        # Get data from container element
-        #
-        for cs3_model in cs3_container:
-            if cs3_model.path == path:
-                size = cs3_model.size
-                created = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC).strftime(ModelUtils.date_fmt)
-                last_modified = datetime.fromtimestamp(cs3_model.mtime.seconds, tz=tz.UTC).strftime(ModelUtils.date_fmt)
-
-                if ShareUtils.map_permissions_to_role(cs3_model.permission_set) == "editor":
-                    writable = True
-
-        #
-        # Create the base model
-        #
         model = {}
         model['name'] = path.rsplit('/', 1)[-1]
         model['path'] = path
@@ -143,12 +125,12 @@ class ModelUtils:
             model['format'] = 'json'
 
             for cs3_model in cs3_container:
-                if cs3_model.type == ModelUtils.TYPE_DIRECTORY:
+                if cs3_model.type == resource_types.RESOURCE_TYPE_CONTAINER:
                     sub_model = ModelUtils.convert_container_to_base_model(cs3_model.path, cs3_container)
                     sub_model['size'] = None
                     sub_model['type'] = 'directory'
                     contents.append(sub_model)
-                elif cs3_model.type == ModelUtils.TYPE_FILE:
+                elif cs3_model.type == resource_types.RESOURCE_TYPE_FILE:
                     if type == 'notebook' or (type is None and path.endswith('.ipynb')):
                         contents.append(
                             ModelUtils.convert_container_to_notebook_model(cs3_model, cs3_container)
@@ -157,5 +139,38 @@ class ModelUtils:
                         contents.append(
                             ModelUtils.convert_container_to_file_model(cs3_model, cs3_container)
                         )
+                else: #(TODO check why this wasnt here)
+                    raise web.HTTPError(500, u'Unexpected type: %s %s' % (cs3_model.path, cs3_model.type))
 
         return model
+
+    @staticmethod
+    def create_base_model_from_cs3_container(path, cs3_container):
+        cs3_model = None
+        for cs3_tmp_model in cs3_container:
+            if cs3_tmp_model.type == resource_types.RESOURCE_TYPE_FILE and cs3_tmp_model.path == path:
+                cs3_model = cs3_tmp_model
+
+        if cs3_model is None:
+            raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
+
+        model = ModelUtils.convert_container_to_base_model(cs3_model.path, cs3_container)
+        return model, cs3_model
+
+    @staticmethod
+    def get_info_from_container(cs3_container, path):
+        size = None
+        writable = False
+        created = ModelUtils.parse_date(0)
+        last_modified = ModelUtils.parse_date(0)
+
+        for cs3_model in cs3_container:
+            if cs3_model.path == path:
+                size = cs3_model.size
+                created = ModelUtils.parse_date(cs3_model.mtime.seconds)
+                last_modified = ModelUtils.parse_date(cs3_model.mtime.seconds)
+
+                if ShareUtils.map_permissions_to_role(cs3_model.permission_set) == "editor":
+                    writable = True
+
+        return created, last_modified, size, writable

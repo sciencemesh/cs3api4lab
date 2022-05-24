@@ -42,6 +42,7 @@ class Cs3FileApi:
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.storage_logic = StorageLogic(log)
+
         self.lock_manager = LockManager(log)
 
         return
