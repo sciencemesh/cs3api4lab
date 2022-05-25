@@ -218,7 +218,7 @@ class Cs3FileApi:
         req = cs3sp.MoveRequest(source=src_reference, destination=dest_reference)
         res = self.cs3_api.Move(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 
-        if res.status.code != cs3code.CODE_NOT_FOUND:
+        if res.status.code == cs3code.CODE_NOT_FOUND:
             raise ResourceNotFoundError(f"source {source_path} not found")
 
         if res.status.code != cs3code.CODE_OK:
