@@ -34,8 +34,6 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
             if self.file_name:
                 self.remove_test_file('einstein', self.file_name)
 
-    #todo unskip after https://github.com/cs3org/reva/issues/2847 is fixed
-    @skip
     def test_create_share_already_exists(self):
         try:
             self.file_name = self.file_path + self.get_random_suffix()
@@ -44,9 +42,12 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
 
             self.share_api.update_received(self.share_id, 'ACCEPTED')
 
-            with self.assertRaises(ShareAlreadyExistsError) as context:
+            with self.assertRaises(ShareError) as context:
                 self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
-            self.assertIn("Share already exists for file:", context.exception.args[0])
+            # todo change this after https://github.com/cs3org/reva/issues/2847 is fixed
+            # with self.assertRaises(ShareAlreadyExistsError) as context:
+            #     self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            # self.assertIn("Share already exists for file:", context.exception.args[0])
         finally:
             if self.share_id:
                 self.remove_test_share('richard', self.share_id)

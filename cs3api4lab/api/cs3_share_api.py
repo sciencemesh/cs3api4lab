@@ -61,6 +61,7 @@ class Cs3ShareApi:
         elif create_response.status.code == cs3_code.CODE_NOT_FOUND:
             self.log.error(f"Resource {file_path} not found")
             raise ResourceNotFoundError(f"Resource {file_path} not found")
+        #note the code below doesn't work currently https://github.com/cs3org/reva/issues/2847
         elif create_response.status.code == cs3_code.CODE_ALREADY_EXISTS:
             self.log.error("Share already exists: " + endpoint + file_path + " for " + idp + ":" + grantee)
             raise ShareAlreadyExistsError("Share already exists for file: " + file_path)
