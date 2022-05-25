@@ -1,5 +1,6 @@
 import nbformat
 import mimetypes
+import os
 
 import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
 
@@ -104,10 +105,29 @@ class CS3APIsManager(ContentsManager):
     def get_kernel_path(self, path, model=None):
         """
         Return the initial API path of a kernel associated with a given notebook.
+        Since the kernel only uses the access to the local storage (where we assume we 
+        fuse mount the remote storage), we need to translate the web (cs3api based) paths, 
+        to a local one.
+
+        WARNING: root_dir will be later added to kernel_path, so consider it when defining kernel_path
         """
-        if 'kernel_path' in self.cs3_config:
-            return self.cs3_config['kernel_path']
-        return ''
+        self.log.debug(f"Requesting the kernel path for {path}")
+
+        # FIXME delete this everywhere
+        if ":" in path:
+            path = path.split(":")[1]
+
+        kernel_path = self.cs3_config['kernel_path']
+        path = os.path.join(kernel_path, path)
+        
+        # Lets use the local filesystem instead of going via cs3apis
+        if os.path.isdir(path):
+            return path
+        if '/' in path:
+            parent_dir = path.rsplit('/', 1)[0]
+        else:
+            parent_dir = ''
+        return parent_dir
 
     def save(self, model, path):
         """
