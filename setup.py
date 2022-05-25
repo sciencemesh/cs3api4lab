@@ -58,7 +58,7 @@ setup_args = dict(
         "cs3apis==0.1.dev83",
         "grpcio",
         "grpcio-tools",
-        "PyJWT==1.7.1",
+        "PyJWT==2.4.0",
         "webdavclient3"
     ],
     zip_safe=False,
