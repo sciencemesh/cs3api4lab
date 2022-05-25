@@ -2,8 +2,6 @@ from cs3api4lab.tests.share_test_base import ShareTestBase
 from unittest import TestCase
 from cs3api4lab.exception.exceptions import *
 
-from unittest import skip
-
 
 class TestCs3ShareApi(ShareTestBase, TestCase):
     einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
