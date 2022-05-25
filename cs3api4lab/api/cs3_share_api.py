@@ -44,7 +44,6 @@ class Cs3ShareApi:
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = grpc_gateway.GatewayAPIStub(intercept_channel)
-        return
 
     def create(self, endpoint, file_path, grantee, idp, role, grantee_type):
         share_permissions = self._get_share_permissions(role)
@@ -60,11 +59,13 @@ class Cs3ShareApi:
             self.log.info(create_response)
             return self._map_given_share(create_response.share)
         elif create_response.status.code == cs3_code.CODE_NOT_FOUND:
-            raise ResourceNotFoundError(f"resource {file_path} not found")
-        elif create_response.status.code == cs3_code.CODE_ALREADY_EXISTS:
-            raise ShareAlreadyExistsError("Error creating share: "
-                                          + endpoint + file_path
-                                          + " for " + idp + ":" + grantee)
+            raise ResourceNotFoundError(f"Resource {file_path} not found")
+        elif create_response.status.code == cs3_code.CODE_INTERNAL:
+            self.log.error("Share already exists for file: " + endpoint + file_path + " for " + idp + ":" + grantee)
+            raise ShareAlreadyExistsError("Share already exists for file: " + file_path)
+        #todo replace with the code below after https://github.com/cs3org/reva/issues/2847 is fixed
+        # elif create_response.status.code == cs3_code.CODE_ALREADY_EXISTS:
+        #     raise ShareAlreadyExistsError("Share already exists for file: " + file_path)
         else:
             self._handle_error(create_response)
 

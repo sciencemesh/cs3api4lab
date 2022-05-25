@@ -1,6 +1,5 @@
 from cs3api4lab.tests.share_test_base import ShareTestBase
 from unittest import TestCase
-from traitlets.config import LoggingConfigurable
 from cs3api4lab.exception.exceptions import *
 
 
@@ -53,10 +52,10 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
     def test_create_share_file_doesnt_exist(self):
         self.file_name = self.file_path + self.get_random_suffix()
 
-        with self.assertRaises(ShareError) as context:
+        with self.assertRaises(ResourceNotFoundError) as context:
             self.richard_share_api.create(self.storage_id, self.file_name, self.einstein_id, self.einstein_idp,
                                           self.receiver_role, self.receiver_grantee_type)
-        self.assertIn("Error creating share:", context.exception.args[0])
+        self.assertIn("Resource not found", context.exception.args[0])
 
     def test_remove(self):
         try:
