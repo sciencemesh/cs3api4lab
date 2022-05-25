@@ -2,6 +2,8 @@ from cs3api4lab.tests.share_test_base import ShareTestBase
 from unittest import TestCase
 from cs3api4lab.exception.exceptions import *
 
+from unittest import skip
+
 
 class TestCs3ShareApi(ShareTestBase, TestCase):
     einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
@@ -32,6 +34,8 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
             if self.file_name:
                 self.remove_test_file('einstein', self.file_name)
 
+    #todo unskip after https://github.com/cs3org/reva/issues/2847 is fixed
+    @skip
     def test_create_share_already_exists(self):
         try:
             self.file_name = self.file_path + self.get_random_suffix()

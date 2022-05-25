@@ -59,13 +59,11 @@ class Cs3ShareApi:
             self.log.info(create_response)
             return self._map_given_share(create_response.share)
         elif create_response.status.code == cs3_code.CODE_NOT_FOUND:
+            self.log.error(f"Resource {file_path} not found")
             raise ResourceNotFoundError(f"Resource {file_path} not found")
-        elif create_response.status.code == cs3_code.CODE_INTERNAL:
-            self.log.error("Share already exists for file: " + endpoint + file_path + " for " + idp + ":" + grantee)
+        elif create_response.status.code == cs3_code.CODE_ALREADY_EXISTS:
+            self.log.error("Share already exists: " + endpoint + file_path + " for " + idp + ":" + grantee)
             raise ShareAlreadyExistsError("Share already exists for file: " + file_path)
-        #todo replace with the code below after https://github.com/cs3org/reva/issues/2847 is fixed
-        # elif create_response.status.code == cs3_code.CODE_ALREADY_EXISTS:
-        #     raise ShareAlreadyExistsError("Share already exists for file: " + file_path)
         else:
             self._handle_error(create_response)
 
@@ -282,4 +280,4 @@ class Cs3ShareApi:
 
     def _handle_error(self, response):
         self.log.error(response)
-        raise Exception("Incorrect server response: " + response.status.message)
+        raise ShareError("Incorrect server response: " + response.status.message)
