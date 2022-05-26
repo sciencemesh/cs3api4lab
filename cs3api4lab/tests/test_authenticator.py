@@ -16,7 +16,13 @@ class TestAuthenticator(TestCase):
 
     def setUp(self) -> None:
         Auth.clean()
+        Cs3ConfigManager.clean()
         self.log = LoggingConfigurable().log
+
+    @classmethod
+    def tearDownClass(cls):
+        Auth.clean()
+        Cs3ConfigManager.clean()
 
     def test_create(self):
         authenticator = Auth.get_authenticator(log=self.log)

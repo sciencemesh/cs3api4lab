@@ -38,8 +38,16 @@ class Config(LoggingConfigurable):
 
         self.config = self.config | config
 
-        # overwriting the values with env vars
-        env_vars = {env[4:].lower():os.environ[env] for env in os.environ if env.startswith("CS3_")}
+        # overwriting the values with env vars and parse boolean values
+        env_vars = {}
+        for env in os.environ:
+            if env.startswith("CS3_"):
+                if env[4:].lower() in ["secure_channel", "tus_enabled", "enable_ocm"]:
+                    value = os.environ[env] == "true"
+                else:
+                    value = os.environ[env]
+                env_vars[env[4:].lower()] = value
+
         self.config = self.config | env_vars
 
         if len(self.config["root_dir_list"]) > 0:
@@ -64,3 +72,7 @@ class Cs3ConfigManager:
         if not cls.__config_instance:
             cls.__config_instance = Config()
         return cls.__config_instance.config
+
+    @classmethod
+    def clean(cls):
+        cls.__config_instance = None

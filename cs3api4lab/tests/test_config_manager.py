@@ -3,6 +3,7 @@ from unittest import TestCase
 
 from cs3api4lab.config.config_manager import Config
 from traitlets.config import LoggingConfigurable
+from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 
 class TestCS3ConfigManager(TestCase):
@@ -26,6 +27,10 @@ class TestCS3ConfigManager(TestCase):
         'enable_ocm': False,
         "shared_folder": "MyShares"
     }
+
+    @classmethod
+    def tearDownClass(cls):
+        Cs3ConfigManager.clean()
 
     def setUp(self):
         self.log = LoggingConfigurable().log
