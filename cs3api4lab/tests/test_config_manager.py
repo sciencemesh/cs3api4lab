@@ -57,5 +57,10 @@ class TestCS3ConfigManager(TestCase):
 
         self.assertEqual(configManager.config['reva_host'], '1.2.3.4:5')
         self.assertTrue(configManager.config['secure_channel'])
+        self.assertTrue(isinstance(configManager.config['secure_channel'], bool))
+        self.assertFalse(configManager.config['tus_enabled'])
+        self.assertTrue(isinstance(configManager.config['tus_enabled'], bool))
+        self.assertFalse(configManager.config['enable_ocm'])
+        self.assertTrue(isinstance(configManager.config['enable_ocm'], bool))
         self.assertEqual(configManager.config['ca_cert'], 'abcdf12345')
         self.assertEqual(int(configManager.config['locks_expiration_time']), 123)
