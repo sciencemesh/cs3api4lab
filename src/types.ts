@@ -71,6 +71,7 @@ export type PendingSharesOptions = {
 export type PendingShareProp = {
   content: Contents.IModel & {
     owner: string;
+    opaque_id: string;
   };
   acceptShare: (pendingShare: any) => Promise<void>;
   declineShare: (pendingShare: any) => Promise<void>;
