@@ -11,9 +11,12 @@ import {
 import { findFileIcon, requestAPI } from './services';
 import { useEffect, useState } from 'react';
 import { Time } from '@jupyterlab/coreutils';
+import { Message } from '@lumino/messaging';
 
 export class Cs3PendingSharesWidget extends Widget {
   layout: PanelLayout;
+  private header: PendingSharesHeader;
+  private content: PendingSharesListWrapper;
 
   constructor(options: PendingSharesOptions) {
     super();
@@ -23,8 +26,26 @@ export class Cs3PendingSharesWidget extends Widget {
     this.title.closable = false;
 
     this.layout = new PanelLayout();
-    this.layout.addWidget(new PendingSharesHeader(options));
-    this.layout.addWidget(new PendingSharesListWrapper());
+
+    this.header = new PendingSharesHeader({
+      title: {
+        label: this.title.label
+      }
+    });
+
+    this.content = new PendingSharesListWrapper();
+  }
+
+  protected onAfterShow(msg: Message): void {
+    super.onAfterShow(msg);
+    this.layout.addWidget(this.header);
+    this.layout.addWidget(this.content);
+  }
+
+  protected onAfterHide(msg: Message): void {
+    super.onAfterHide(msg);
+    this.layout.removeWidget(this.header);
+    this.layout.removeWidget(this.content);
   }
 
   protected onResize(msg: Widget.ResizeMessage): void {
@@ -104,6 +125,7 @@ const PendingSharesContent = (): JSX.Element => {
               content={pendingShare}
               acceptShare={acceptShare}
               declineShare={declineShare}
+              key={pendingShare.opaque_id}
             />
           );
         })}

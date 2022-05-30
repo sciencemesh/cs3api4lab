@@ -259,6 +259,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     splitPanel.title.caption = 'Shares';
     splitPanel.title.label = 'Shares';
     splitPanel.title.icon = inspectorIcon;
+    splitPanel.hide();
 
     //
     // Pending shares
