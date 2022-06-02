@@ -1,9 +1,9 @@
-import os
+import posixpath
 
 from cs3api4lab.tests.share_test_base import ShareTestBase
 from unittest import TestCase
-from cs3api4lab.exception.exceptions import *
-from cs3api4lab.utils.file_utils import FileUtils
+from cs3api4lab.exception.exceptions import ShareError, ResourceNotFoundError
+
 
 class TestCs3ShareApi(ShareTestBase, TestCase):
     einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
@@ -23,7 +23,7 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
         #given
         user = self.config['client_id']
         share_id = None
-        file_name = FileUtils.join(self.config['home_dir'], "test_create_share.txt")
+        file_name = posixpath.join(self.config['home_dir'], "test_create_share.txt")
         self.remove_share_and_file_by_path(user, file_name)
         try:
             self.create_test_file(user, file_name)
@@ -64,7 +64,7 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
 
             self.share_api.update_received(self.share_id, 'ACCEPTED')
 
-            with self.assertRaises(ShareError) as context:
+            with self.assertRaises(ShareError):
                 self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
             # todo change this after https://github.com/cs3org/reva/issues/2847 is fixed
             # with self.assertRaises(ShareAlreadyExistsError) as context:
