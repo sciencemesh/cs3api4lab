@@ -13,6 +13,7 @@ import cs3.identity.user.v1beta1.resources_pb2 as identity_res
 import cs3.rpc.v1beta1.code_pb2 as cs3_code
 import grpc
 
+from tornado import escape
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
@@ -79,7 +80,7 @@ class Cs3ShareApi:
             self._handle_error(list_response)
         return list_response
 
-    def list_grantees_for_file(self, file_path):
+    def list_shares_for_filepath(self, file_path):
         """
         :param file_path: path to the file
         :return: list of grantees
@@ -90,7 +91,7 @@ class Cs3ShareApi:
         shares = []
         for share in share_list.shares:
             path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id'])
-            if file_path == path:
+            if file_path == escape.url_unescape(path):
                 shares.append(ShareUtils.get_share_info(share))
 
         return shares

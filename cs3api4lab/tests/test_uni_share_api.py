@@ -1,7 +1,6 @@
 from cs3api4lab.tests.share_test_base import ShareTestBase
 
 from unittest import TestCase
-from traitlets.config import LoggingConfigurable
 
 from unittest import skip
 
@@ -12,10 +11,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
     marie_idp = 'cesnet.cz'
     richard_id = '932b4540-8d16-481e-8ef4-588e4b6b151c'
     richard_idp = 'example.org'
-    receiver_role = 'editor'
-    receiver_grantee_type = 'user'
     file_path = '/home/test.txt'
-    storage_id = '123e4567-e89b-12d3-a456-426655440000'
     share_id = None
     ocm_share_id = None
     ocm_file_name = None

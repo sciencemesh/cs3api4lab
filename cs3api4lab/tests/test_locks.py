@@ -13,11 +13,8 @@ class TestLocks(ShareTestBase, TestCase):
     marie_idp = 'cesnet.cz'
     richard_id = '932b4540-8d16-481e-8ef4-588e4b6b151c'
     richard_idp = 'example.org'
-    receiver_role = 'viewer'
-    receiver_grantee_type = 'user'
     file_path = '/home/test_locks.txt'
     shared_file_path = '/reva/einstein/test_locks.txt'
-    storage_id = '123e4567-e89b-12d3-a456-426655440000'
     share_id = None
     conflict_name = None
     
