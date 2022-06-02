@@ -217,6 +217,7 @@ class ShareTestBase:
         stat = storage.stat(file_path, None)
         if stat is None:
             self.create_test_file(user, file_path)
+        #todo the code above won't be necessary after https://github.com/cs3org/reva/issues/2847 is fixed
 
         shares = share_api.list_grantees_for_file(file_path) #todo this won't work on CERNBOX
         if shares:
