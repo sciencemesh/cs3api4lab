@@ -5,6 +5,10 @@ from traitlets.config import LoggingConfigurable
 
 
 class ShareTestBase:
+    storage_id = '123e4567-e89b-12d3-a456-426655440000'
+    receiver_role = 'editor'
+    receiver_grantee_type = 'user'
+
     def setUp(self):
         self.log = LoggingConfigurable().log
         self.config = Cs3ConfigManager().get_config()
@@ -219,7 +223,7 @@ class ShareTestBase:
             self.create_test_file(user, file_path)
         #todo the code above won't be necessary after https://github.com/cs3org/reva/issues/2847 is fixed
 
-        shares = share_api.list_grantees_for_file(file_path) #todo this won't work on CERNBOX
+        shares = share_api.list_shares_for_filepath(file_path) #todo this won't work on CERNBOX
         if shares:
             for share in shares:
                 share_api.remove(share['opaque_id'])
