@@ -12,9 +12,11 @@ from cs3api4lab.api.cs3_user_api import Cs3UserApi
 
 from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
+from cs3api4lab.utils.file_utils import FileUtils
 
 from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.utils.model_utils import ModelUtils
+from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.logic.storage_logic import StorageLogic
 from cs3api4lab.exception.exceptions import OCMDisabledError
 
@@ -38,6 +40,7 @@ class ShareAPIFacade:
 
     def create(self, endpoint, file_path, opaque_id, idp, role=Role.EDITOR, grantee_type=Grantee.USER, reshare=True):
         """Creates a share or creates an OCM share if the user is not found in local domain"""
+        file_path = FileUtils.remove_drives_names(file_path)
         if self._is_ocm_user(opaque_id, idp):
             if self.config['enable_ocm']:
                 return self.ocm_share_api.create(opaque_id, idp, idp, endpoint, file_path, grantee_type, role, reshare)
@@ -133,6 +136,7 @@ class ShareAPIFacade:
         else:
             ocm_share_list = {"shares": []}
 
+        file_path = FileUtils.remove_drives_names(file_path)
         file_path = ShareUtils.purify_file_path(file_path, self.config['client_id'])
         shares = []
         for share in [*share_list.shares, *ocm_share_list["shares"]]:

@@ -405,9 +405,7 @@ export function addCommands(
   commands.addCommand(CommandIDs.createNewFile, {
     execute: () => {
       void commands.execute('docmanager:new-untitled', {
-        path: tracker.currentWidget?.model.path // Path definition was changed to get a correct path from registered widget
-          .toString()
-          .replace('cs3drive:', ''),
+        path: tracker.currentWidget?.model.path.toString(), // Path definition was changed to get a correct path from registered widget
         type: 'file',
         ext: 'txt'
       });
@@ -422,9 +420,7 @@ export function addCommands(
   commands.addCommand(CommandIDs.createNewMarkdownFile, {
     execute: () => {
       void commands.execute('docmanager:new-untitled', {
-        path: tracker.currentWidget?.model.path // Path definition was changed to get a correct path from registered widget
-          .toString()
-          .replace('cs3drive:', ''),
+        path: tracker.currentWidget?.model.path.toString(), // Path definition was changed to get a correct path from registered widget
         type: 'file',
         ext: 'md'
       });
