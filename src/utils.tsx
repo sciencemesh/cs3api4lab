@@ -3,8 +3,9 @@ import { Cs3TitleWidget } from './cs3panel';
 import { BoxLayout, BoxPanel } from '@lumino/widgets';
 import { ILabShell, JupyterFrontEnd } from '@jupyterlab/application';
 import { MainAreaWidget, ToolbarButton } from '@jupyterlab/apputils';
-import { addIcon } from '@jupyterlab/ui-components';
+import { addIcon, folderIcon } from '@jupyterlab/ui-components';
 import { Launcher } from '@jupyterlab/launcher';
+import { IStateDB } from '@jupyterlab/statedb';
 
 export function createShareBox(
   id: string,
@@ -28,6 +29,27 @@ export function createShareBox(
   BoxLayout.setStretch(fileWidget, 16);
 
   return boxPanel;
+}
+
+export function addHomeDirButton(
+  app: JupyterFrontEnd<JupyterFrontEnd.IShell>,
+  fileBrowser: FileBrowser,
+  labShell: ILabShell,
+  stateDB: IStateDB
+): void {
+  if (labShell) {
+    const homeDirButton = new ToolbarButton({
+      icon: folderIcon,
+      onClick: async (): Promise<any> => {
+        const homeDir = (await stateDB.fetch('homeDir')) as string;
+        if (homeDir) {
+          void fileBrowser.model.cd(homeDir);
+        }
+      },
+      tooltip: 'Go To Home Dir'
+    });
+    fileBrowser.toolbar.insertItem(4, 'home', homeDirButton);
+  }
 }
 
 export function addLaunchersButton(

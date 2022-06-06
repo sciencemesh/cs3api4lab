@@ -8,7 +8,8 @@ class Config(LoggingConfigurable):
     config = {
         "auth_token_validity": "3600",
         "endpoint": "/",
-        "home_dir": "/home",
+        "mount_dir": "/home",
+        "home_dir": "",
         "root_dir_list": "/home,/reva", # List of root dirs. Example: Exaple config "/home,/reva" for storage-references: https://developer.sciencemesh.io/docs/iop/deployment/kubernetes/providers/
         "chunk_size": "4194304",
         "secure_channel": True,

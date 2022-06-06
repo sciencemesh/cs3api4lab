@@ -78,7 +78,7 @@ class LockManager:
             self.storage_logic.stat(dir_path, endpoint)
             return dir_path
         except Exception:
-            return self.config['home_dir'] + '/'
+            return self.config['mount_dir'] + '/'
 
     def _get_conflict_filename(self, file_name):
         file_extension = file_name.split('.')[-1]

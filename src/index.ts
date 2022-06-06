@@ -32,7 +32,7 @@ import {
   Cs3TabWidget
 } from './cs3panel';
 import { Cs3PendingSharesWidget } from './pendingShares';
-import { addLaunchersButton, createShareBox } from './utils';
+import { addHomeDirButton, addLaunchersButton, createShareBox } from './utils';
 import { SplitPanel, Widget } from '@lumino/widgets';
 import {
   kernelIcon,
@@ -44,6 +44,7 @@ import { Contents } from '@jupyterlab/services';
 import { createLauncher, restoreBrowser, addCommands } from './browserCommands';
 import { IMainMenu } from '@jupyterlab/mainmenu';
 import { ITranslator } from '@jupyterlab/translation';
+import { requestAPI } from './services';
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -205,6 +206,13 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     void stateDB.save('activeTab', 'fileBrowser');
     void stateDB.save('share', { shareType: 'filelist' });
     void stateDB.save('showHidden', false);
+    requestAPI('/api/cs3/user/home_dir', {
+      method: 'get'
+    }).then(homeDir => {
+      if (homeDir !== '') {
+        void stateDB.save('homeDir', homeDir as string);
+      }
+    });
 
     //
     // Header
@@ -246,6 +254,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     cs3Panel.addBottom(cs3BottomWidget);
 
     addLaunchersButton(app, fileBrowser, labShell);
+    addHomeDirButton(app, fileBrowser, labShell, stateDB);
     restorer.add(fileBrowser, 'cs3_filebrowser');
 
     //
@@ -349,6 +358,7 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
 
     /**
      * Copied from packages/filebrowser-extension/src/index.ts:364
+     * cs3api4lab modification - try to redirect to user directory after restoration
      */
     void Promise.all([app.restored, fileBrowser.model.restored]).then(() => {
       function maybeCreate() {
@@ -360,6 +370,13 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
           void createLauncher(commands, fileBrowser);
         }
       }
+
+      // redirect to user directory
+      stateDB.fetch('homeDir').then(homeDir => {
+        if (homeDir) {
+          void fileBrowser.model.cd(homeDir as string);
+        }
+      });
 
       // When layout is modified, create a launcher if there are no open items.
       labShell.layoutModified.connect(() => {
