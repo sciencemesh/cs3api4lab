@@ -197,8 +197,8 @@ class Cs3FileApi:
 
         out = []
         for info in res.infos:
-            if self.config['home_dir'] != '/' and len(self.config['home_dir']) > 0 and info.path.startswith(self.config['home_dir']):
-                info.path = info.path.rsplit(self.config['home_dir'])[-1]
+            if self.config['mount_dir'] != '/' and len(self.config['mount_dir']) > 0 and info.path.startswith(self.config['mount_dir']):
+                info.path = info.path.rsplit(self.config['mount_dir'])[-1]
             out.append(info)
         return out
 
@@ -251,10 +251,16 @@ class Cs3FileApi:
         """
         List a shared folder - MyShares by default
         """
-        shared_folder_path = self.config['home_dir'] + '/' + self.config['shared_folder']
+        shared_folder_path = self.config['mount_dir'] + '/' + self.config['shared_folder']
         container = self.read_directory(shared_folder_path)
 
         return ModelUtils.convert_container_to_directory_model(shared_folder_path, container)
+
+    def get_home_dir(self):
+        if "home_dir" in self.config:
+            return self.config["home_dir"]
+        else:
+            return ""
 
     def _handle_error(self, response):
         self.log.error(response)

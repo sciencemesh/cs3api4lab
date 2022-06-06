@@ -24,8 +24,8 @@ class FileUtils:
 
         has_root_dir = file_id.startswith(config["root_dir_list"])
 
-        if len(config["home_dir"]) > 0 and not file_id.startswith(config["home_dir"]) and not has_root_dir:
-            file_id = config["home_dir"] + file_id
+        if len(config["mount_dir"]) > 0 and not file_id.startswith(config["mount_dir"]) and not has_root_dir:
+            file_id = config["mount_dir"] + file_id
 
         return file_id
 
