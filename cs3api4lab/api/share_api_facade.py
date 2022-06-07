@@ -12,7 +12,6 @@ from cs3api4lab.api.cs3_user_api import Cs3UserApi
 
 from cs3api4lab.api.cs3_share_api import Cs3ShareApi
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
-from cs3api4lab.utils.file_utils import FileUtils
 
 from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.utils.model_utils import ModelUtils
@@ -42,7 +41,7 @@ class ShareAPIFacade:
         """Creates a share or creates an OCM share if the user is not found in local domain"""
         file_path = FileUtils.remove_drives_names(file_path)
         if self._is_ocm_user(opaque_id, idp):
-            if self.config['enable_ocm']:
+            if self.config.enable_ocm:
                 return self.ocm_share_api.create(opaque_id, idp, idp, endpoint, file_path, grantee_type, role, reshare)
             else:
                 raise OCMDisabledError('Cannot create OCM share - OCM functionality is disabled')
@@ -62,7 +61,7 @@ class ShareAPIFacade:
         if 'role' in kwargs:
             self.share_api.update(kwargs['share_id'], kwargs['role'])
         else:
-            if not self.config['enable_ocm']:
+            if not self.config.enable_ocm:
                 raise OCMDisabledError('Cannot update OCM share - OCM functionality is disabled')
             else:
                 self.ocm_share_api.update(kwargs['share_id'], kwargs['field'], kwargs['value'])
@@ -73,7 +72,7 @@ class ShareAPIFacade:
            :param state: accepted/rejected/pending/invalid
         """
         if self.is_ocm_received_share(share_id):
-            if self.config['enable_ocm']:
+            if self.config.enable_ocm:
                 result = self.ocm_share_api.update_received(share_id, 'state', state)
             else:
                 raise OCMDisabledError('Cannot update received OCM share - OCM functionality is disabled')
@@ -87,7 +86,7 @@ class ShareAPIFacade:
     def remove(self, share_id):
         """Removes a share with given id """
         if self.is_ocm_share(share_id):
-            if self.config['enable_ocm']:
+            if self.config.enable_ocm:
                 return self.ocm_share_api.remove(share_id)
             else:
                 raise OCMDisabledError('Cannot remove OCM share - OCM functionality is disabled')
@@ -100,7 +99,7 @@ class ShareAPIFacade:
         :rtype: dict
         """
         share_list = self.share_api.list()
-        if self.config['enable_ocm']:
+        if self.config.enable_ocm:
             ocm_share_list = self.ocm_share_api.list()
         else:
             ocm_share_list = None
@@ -113,7 +112,7 @@ class ShareAPIFacade:
         """
 
         share_list = self.share_api.list_received()
-        if self.config['enable_ocm']:
+        if self.config.enable_ocm:
             ocm_share_list = self.ocm_share_api.list_received()
         else:
             ocm_share_list = None
@@ -131,16 +130,16 @@ class ShareAPIFacade:
         """
         share_list = self.share_api.list()
 
-        if self.config['enable_ocm']:
+        if self.config.enable_ocm:
             ocm_share_list = self.ocm_share_api.list()
         else:
             ocm_share_list = {"shares": []}
 
         file_path = FileUtils.remove_drives_names(file_path)
-        file_path = ShareUtils.purify_file_path(file_path, self.config['client_id'])
+        file_path = ShareUtils.purify_file_path(file_path, self.config.client_id)
         shares = []
         for share in [*share_list.shares, *ocm_share_list["shares"]]:
-            path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id'])
+            path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config.client_id)
             if file_path == path:
                 shares.append(ShareUtils.get_share_info(share))
 

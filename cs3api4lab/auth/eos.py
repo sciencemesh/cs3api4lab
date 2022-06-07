@@ -8,16 +8,16 @@ class Eos(Oauth):
 
     def _refresh_token_from_file_or_config(self):
 
-        if "eos_file" in self.config and self.config['eos_file'] != "":
+        if self.config.eos_file:
 
             try:
-                with open(self.config['eos_file'], "r") as file:
+                with open(self.config.eos_file, "r") as file:
                     eos_token = file.read()
             except IOError as e:
-                raise IOError(f"Error opening token file {self.config['eos_file']} exception: {e}")
+                raise IOError(f"Error opening token file {self.config.eos_file} exception: {e}")
 
-        elif "eos_token" in self.config and self.config['eos_token'] != "":
-            eos_token = self.config['eos_token']
+        elif self.config.eos_token:
+            eos_token = self.config.eos_token
         else:
             raise AttributeError("Config hasn't EOS token or token file.")
 

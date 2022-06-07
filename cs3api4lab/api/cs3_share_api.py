@@ -74,9 +74,9 @@ class Cs3ShareApi:
         list_response = self.cs3_api.ListShares(request=list_request,
                                                 metadata=[('x-access-token', self.auth.authenticate())])
         if self._is_code_ok(list_response):
-            self.log.debug(f"List shares response for user {self.config['client_id']}:\n{list_response}")
+            self.log.debug(f"List shares response for user {self.config.client_id}:\n{list_response}")
         else:
-            self.log.error("Error listing shares response for user: " + self.config['client_id'])
+            self.log.error("Error listing shares response for user: " + self.config.client_id)
             self._handle_error(list_response)
         return list_response
 
@@ -87,10 +87,10 @@ class Cs3ShareApi:
         """
         share_list = self.list()
 
-        file_path = ShareUtils.purify_file_path(file_path, self.config['client_id'])
+        file_path = ShareUtils.purify_file_path(file_path, self.config.client_id)
         shares = []
         for share in share_list.shares:
-            path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id'])
+            path = ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config.client_id)
             if file_path == escape.url_unescape(path):
                 shares.append(ShareUtils.get_share_info(share))
 
@@ -134,10 +134,10 @@ class Cs3ShareApi:
                                                         metadata=[('x-access-token', self.auth.authenticate())])
 
         if self._is_code_ok(list_response):
-            self.log.debug(f"Retrieved received shares for user {self.config['client_id']}:\n{list_response}")
+            self.log.debug(f"Retrieved received shares for user {self.config.client_id}:\n{list_response}")
             return list_response
         else:
-            self.log.error("Error retrieving received shares for user: " + self.config['client_id'])
+            self.log.error("Error retrieving received shares for user: " + self.config.client_id)
             self._handle_error(list_response)
 
     def _map_received_shares(self, list_res):
@@ -173,7 +173,7 @@ class Cs3ShareApi:
             "opaque_id": share.id.opaque_id,
             "id": {
                 "storage_id": share.resource_id.storage_id,
-                "opaque_id": ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config['client_id']),
+                "opaque_id": ShareUtils.purify_file_path(share.resource_id.opaque_id, self.config.client_id),
             },
             "permissions": self._resolve_share_permissions(share),
             "grantee": {

@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 from pathlib import Path
 from unittest import TestCase, skip
+from collections import namedtuple
 
 import jwt
 from tornado import web
@@ -31,7 +32,7 @@ class TestAuthenticator(TestCase):
     def test_create_wrong_class(self):
         config_manager = Cs3ConfigManager()
         config = config_manager.get_config()
-        config['authenticator_class'] = 'cs3api4lab.auth.reva_password.TestPassword'
+        config.authenticator_class = 'cs3api4lab.auth.reva_password.TestPassword'
 
         with self.assertRaises(AttributeError):
             authenticator = Auth.get_authenticator(log=self.log)
@@ -78,8 +79,10 @@ class TestAuthenticator(TestCase):
         token_config = {
             'authenticator_class': 'cs3api4lab.auth.Eos',
             'client_id': 'einstein',
+            'eos_file': '',
             'eos_token': "oauth2:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJyZXZhIiwiZXhwIjoxNjAyMTQ1NjU0LCJpYXQiOjE2MDIwNTkyNTQsImlzcyI6ImNlcm5ib3guY2Vybi5jaCIsInVzZXIiOnsiaWQiOnsiaWRwIjoiY2VybmJveC5jZXJuLmNoIiwib3BhcXVlX2lkIjoiNGM1MTBhZGEtYzg2Yi00ODE1LTg4MjAtNDJjZGY4MmMzZDUxIn0sInVzZXJuYW1lIjoiZWluc3RlaW4iLCJtYWlsIjoiZWluc3RlaW5AY2Vybi5jaCIsImRpc3BsYXlfbmFtZSI6IkFsYmVydCBFaW5zdGVpbiIsImdyb3VwcyI6WyJzYWlsaW5nLWxvdmVycyIsInZpb2xpbi1oYXRlcnMiLCJwaHlzaWNzLWxvdmVycyJdfX0.g58Ll4MtpzvrZ5K8IqiMtUgy8gZgAfUDzl2r0e2vukc:<OAUTH_INSPECTION_ENDPOINT>"
         }
+        token_config = namedtuple('TokenConfig', token_config)(**token_config)
 
         with self.assertRaises(web.HTTPError):
             token_authenticator = Auth.get_authenticator(token_config, log=self.log)
@@ -92,6 +95,7 @@ class TestAuthenticator(TestCase):
             'client_id': 'einstein',
             'eos_file': path
         }
+        token_config = namedtuple('TokenConfig', token_config)(**token_config)
 
         with self.assertRaises(web.HTTPError):
             token_authenticator = Auth.get_authenticator(token_config, log=self.log)
@@ -103,6 +107,7 @@ class TestAuthenticator(TestCase):
             'authenticator_class': 'cs3api4lab.auth.Eos',
             'eos_file': path
         }
+        token_config = namedtuple('TokenConfig', token_config)(**token_config)
 
         with self.assertRaises(IOError):
             token_authenticator = Auth.get_authenticator(token_config, log=self.log)
@@ -112,8 +117,10 @@ class TestAuthenticator(TestCase):
         token_config = {
             'authenticator_class': 'cs3api4lab.auth.Oauth',
             'client_id': 'einstein',
+            'oauth_file': '',
             'oauth_token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJyZXZhIiwiZXhwIjoxNjAyMTQ1NjU0LCJpYXQiOjE2MDIwNTkyNTQsImlzcyI6ImNlcm5ib3guY2Vybi5jaCIsInVzZXIiOnsiaWQiOnsiaWRwIjoiY2VybmJveC5jZXJuLmNoIiwib3BhcXVlX2lkIjoiNGM1MTBhZGEtYzg2Yi00ODE1LTg4MjAtNDJjZGY4MmMzZDUxIn0sInVzZXJuYW1lIjoiZWluc3RlaW4iLCJtYWlsIjoiZWluc3RlaW5AY2Vybi5jaCIsImRpc3BsYXlfbmFtZSI6IkFsYmVydCBFaW5zdGVpbiIsImdyb3VwcyI6WyJzYWlsaW5nLWxvdmVycyIsInZpb2xpbi1oYXRlcnMiLCJwaHlzaWNzLWxvdmVycyJdfX0.g58Ll4MtpzvrZ5K8IqiMtUgy8gZgAfUDzl2r0e2vukc"
         }
+        token_config = namedtuple('TokenConfig', token_config)(**token_config)
 
         with self.assertRaises(web.HTTPError):
             token_authenticator = Auth.get_authenticator(token_config, log=self.log)
