@@ -41,13 +41,13 @@ class Authenticator:
 
     def raise_401_error(self):
         if self.log is not None:
-            self.log.error('msg="Failed to authenticate" user="%s"' % self.config['client_id'])
+            self.log.error('msg="Failed to authenticate" user="%s"' % self.config.client_id)
         raise web.HTTPError(401, u'Failed to authenticate user', reason="unauthenticated")
 
     def _auth_in_iop(self, client_secret_or_token, login_type="basic"):
 
         auth_req = cs3gw.AuthenticateRequest(type=login_type,
-                                             client_id=self.config['client_id'],
+                                             client_id=self.config.client_id,
                                              client_secret=client_secret_or_token)
         auth_res = self.cs3_stub.Authenticate(auth_req)
 
@@ -77,10 +77,10 @@ class Auth:
                 config = Cs3ConfigManager().get_config()
 
             if log is not None:
-                log.info(f"Authenticate with method {config['authenticator_class']}")
+                log.info(f"Authenticate with method {config.authenticator_class}")
 
-            class_name = config['authenticator_class'].split('.')[-1]
-            module_name = config['authenticator_class'].split(class_name)[0]
+            class_name = config.authenticator_class.split('.')[-1]
+            module_name = config.authenticator_class.split(class_name)[0]
             module_name = module_name.rstrip('.')
 
             if class_name == "Authenticator":

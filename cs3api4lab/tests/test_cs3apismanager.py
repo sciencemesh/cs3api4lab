@@ -17,8 +17,8 @@ class TestCS3APIsManager(TestCase):
     def setUp(self):
         self.log = LoggingConfigurable().log
         self.config = Cs3ConfigManager.get_config()
-        self.user_id = self.config['client_id']
-        self.endpoint = self.config['endpoint']
+        self.user_id = self.config.client_id
+        self.endpoint = self.config.endpoint
         self.file_api = Cs3FileApi(self.log)
         self.contents_manager = CS3APIsManager(None, self.log)
 
@@ -378,7 +378,7 @@ class TestCS3APIsManager(TestCase):
             self.file_api.stat(file_path, self.endpoint)
 
     def test_kernel_path_when_config_entry_provided(self):
-        self.config['kernel_path'] = "/test/path"
+        self.config.kernel_path = "/test/path"
 
         path = self.contents_manager.get_kernel_path('')
 

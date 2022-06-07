@@ -117,8 +117,8 @@ class Cs3FileApi:
         else:
             self.log.info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (
                 file_path, (time_end - time_start) * 1000))
-            for i in range(0, len(file_get.content), int(self.config['chunk_size'])):
-                yield file_get.content[i:i + int(self.config['chunk_size'])]
+            for i in range(0, len(file_get.content), self.config.chunk_size):
+                yield file_get.content[i:i + self.config.chunk_size]
 
     def write_file(self, file_path, content, endpoint=None):
         """
@@ -197,8 +197,8 @@ class Cs3FileApi:
 
         out = []
         for info in res.infos:
-            if self.config['mount_dir'] != '/' and len(self.config['mount_dir']) > 0 and info.path.startswith(self.config['mount_dir']):
-                info.path = info.path.rsplit(self.config['mount_dir'])[-1]
+            if self.config.mount_dir != '/' and len(self.config.mount_dir) > 0 and info.path.startswith(self.config.mount_dir):
+                info.path = info.path.rsplit(self.config.mount_dir)[-1]
             out.append(info)
         return out
 
@@ -251,14 +251,14 @@ class Cs3FileApi:
         """
         List a shared folder - MyShares by default
         """
-        shared_folder_path = self.config['mount_dir'] + '/' + self.config['shared_folder']
+        shared_folder_path = self.config.mount_dir + '/' + self.config.shared_folder
         container = self.read_directory(shared_folder_path)
 
         return ModelUtils.convert_container_to_directory_model(shared_folder_path, container)
 
     def get_home_dir(self):
         if "home_dir" in self.config:
-            return self.config["home_dir"]
+            return self.config.home_dir
         else:
             return ""
 

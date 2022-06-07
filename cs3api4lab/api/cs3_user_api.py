@@ -51,7 +51,7 @@ class Cs3UserApi:
         response = self.api.FindUsers(user_api.FindUsersRequest(filter=query, skip_fetching_user_groups=True),
                                       metadata=[('x-access-token', self.auth.authenticate())])
         ocm_users = []
-        if self.config['enable_ocm']:
+        if self.config.enable_ocm:
             ocm_response = self.invite_api.FindAcceptedUsers(ia.FindAcceptedUsersRequest(filter=query),
                                                              metadata=[('x-access-token', self.auth.authenticate())])
             for user in ocm_response.accepted_users:
