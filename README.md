@@ -91,8 +91,6 @@ By default, the `jlpm run build` command generates the source maps for this exte
 jupyter lab build --minimize=False
 ```
 
-
-
 ### Development uninstall
 
 ```bash
@@ -174,20 +172,7 @@ to:
 * Linux:
  ```HOME_FOLDER/.jupyter/```
 
-Config file fields:
-- revahost - address and port on which the Reva server is listening
-- auth_token_validity - the lifetime of the authenticating token
-- endpoint - endpoint for Reva storage provider
-- mount_dir - root directory of the filesystem
-- home_dir - home directory of the user
-- chunk_size - size of the downloaded fragment from Reva
-- secure_channel - secure channel flag
-- client_cert - public key file path (PEM-encoded)
-- client_key - private key file path
-- ca_cert - certificate authority file path
-- client_id - client login to authenticate in Reva
-- client_secret - client password to authenticate in Reva
-- root_dir_list - list of root dirs, for example https://developer.sciencemesh.io/docs/iop/deployment/kubernetes/providers/ root dirs are "/home,/reva"
+Check out the available config variables see config_manager.py for reference.
 
 #### Examples of different authentication methods:
 
@@ -263,25 +248,7 @@ Build docker image:
 ```bash
 docker build -t cs3api4lab .
 ```
-Available environmental variables:
-```
-- CS3_REVA_HOST - address and port on which the Reva server is listening [required]
-- CS3_CLIENT_ID - client login to authenticate in Reva [required]
-- CS3_CLIENT_SECRET - client password to authenticate in Reva [required in case of basic login]
-- CS3_AUTH_TOKEN_VALIDITY - the lifetime of the authenticating token
-- CS3_ENDPOINT - endpoint for Reva storage provider
-- CS3_MOUNT_DIR - root directory of the filesystem
-- CS3_HOME_DIR - home directory of the user
-- CS3_CHUNK_SIZE - size of the downloaded fragment from Reva
-- CS3_SECURE_CHANNEL - secure channel flag
-- CS3_CLIENT_CERT - public key file path (PEM-encoded)
-- CS3_CLIENT_KEY - private key file path
-- CS3_CA_CERT - certificate authority file path
-- CS3_LOGIN_TYPE - Reva login type
-- CS3_AUTHENTICATOR_CLASS - class of the authentication provider
-- CS3_ROOT_DIR_LIST - list of root containers
-```
-Run docker image providing necessary variables:
+To run docker image providing necessary config environmental variables to the container use the names with capital spelling and CS3_ prefix, i.e:
 ```bash
 docker run -p 8888:8888 -e CS3_CLIENT_ID=einstein -e CS3_CLIENT_SECRET=relativity -e CS3_REVA_HOST=localhost:19000 cs3api4lab
 ```

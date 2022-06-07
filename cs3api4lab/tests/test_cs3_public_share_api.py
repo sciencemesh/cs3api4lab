@@ -119,7 +119,7 @@ class TestCs3PublicShareApi(TestCase):
 
     def _create_public_share(self):
         self._create_test_file()
-        return self.api.create_public_share(self.config['endpoint'],
+        return self.api.create_public_share(self.config.endpoint,
                                             self.file_path,
                                             'pass',
                                             '31-12-2030',
@@ -131,9 +131,9 @@ class TestCs3PublicShareApi(TestCase):
 
     def _remove_test_file(self):
         self.storage.remove(self.file_path,
-                            self.config['endpoint'])
+                            self.config.endpoint)
 
     def _create_test_file(self):
         self.storage.write_file(self.file_path,
                                 "Lorem ipsum dolor sit amet...",
-                                self.config['endpoint'])
+                                self.config.endpoint)
