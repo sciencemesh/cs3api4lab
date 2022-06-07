@@ -57,7 +57,7 @@ class Authenticator:
         return auth_res.token
 
     def _check_token(self, token):
-        decode = jwt.decode(jwt=token, verify=False)
+        decode = jwt.decode(jwt=token, algorithms=["HS256"], options={"verify_signature": False})
         now = datetime.timestamp(datetime.now())
         if decode['exp'] is not None and now > decode['exp']:
             return False
