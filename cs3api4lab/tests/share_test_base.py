@@ -2,7 +2,7 @@ import random
 import string
 from cs3api4lab.tests.extensions import *
 from traitlets.config import LoggingConfigurable
-
+from collections import namedtuple
 
 class ShareTestBase:
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
@@ -21,10 +21,10 @@ class ShareTestBase:
 
         marie_ext_config = {
             "reva_host": "127.0.0.1:29000",
-            "auth_token_validity": "3600",
+            "auth_token_validity": 3600,
             "endpoint": "/",
             "home_dir": "/home",
-            "chunk_size": "4194304",
+            "chunk_size": 4194304,
             "secure_channel": False,
             "client_cert": "",
             "client_key": "",
@@ -36,12 +36,14 @@ class ShareTestBase:
 	        "tus_enabled": True,
   	        "enable_ocm": False
             }
+        marie_ext_config = namedtuple('MarieConfig', marie_ext_config)(**marie_ext_config)
+
         richard_local_config = {
             "reva_host": "127.0.0.1:19000",
-            "auth_token_validity": "3600",
+            "auth_token_validity": 3600,
             "endpoint": "/",
             "home_dir": "/home",
-            "chunk_size": "4194304",
+            "chunk_size": 4194304,
             "secure_channel": False,
             "client_cert": "",
             "client_key": "",
@@ -53,6 +55,8 @@ class ShareTestBase:
 	        "tus_enabled": True,
   	        "enable_ocm": False
         }
+        richard_local_config = namedtuple('richardConfig', richard_local_config)(**richard_local_config)
+        
         self.marie_uni_api = ExtCs3ShareApiFacade(self.log, marie_ext_config)
         self.marie_file_api = ExtCs3FileApi(self.log, marie_ext_config)
         self.marie_share_api = ExtCs3ShareApi(self.log, marie_ext_config)

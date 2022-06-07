@@ -77,7 +77,7 @@ class CS3APIsManager(ContentsManager):
         parent_path = self._get_parent_path(path)
         path = self._normalize_path(path)
         try:
-            cs3_container = self.file_api.read_directory(parent_path, self.cs3_config['endpoint'])
+            cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
         except Exception as ex:
             self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
             raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
@@ -117,7 +117,7 @@ class CS3APIsManager(ContentsManager):
         if ":" in path:
             path = path.split(":")[1]
 
-        kernel_path = self.cs3_config['kernel_path']
+        kernel_path = self.cs3_config.kernel_path
         path = os.path.join(kernel_path, path)
         
         # Lets use the local filesystem instead of going via cs3apis
@@ -196,7 +196,7 @@ class CS3APIsManager(ContentsManager):
         """Delete the file or directory at path."""
         path = self._normalize_path(path)
         try:
-            self.file_api.remove(path, self.cs3_config['endpoint'])
+            self.file_api.remove(path, self.cs3_config.endpoint)
 
         except FileNotFoundError as e:
             self.log.error(u'File not found error: %s %s', path, e, exc_info=True)
@@ -219,7 +219,7 @@ class CS3APIsManager(ContentsManager):
         new_path = self._normalize_path(new_path)
 
         try:
-            self.file_api.move(old_path, new_path, self.cs3_config['endpoint'])
+            self.file_api.move(old_path, new_path, self.cs3_config.endpoint)
         except Exception as e:
             self.log.error(u'Error renaming file: %s %s', old_path, e)
             raise web.HTTPError(500, u'Error renaming file: %s %s' % (old_path, e))
@@ -279,21 +279,21 @@ class CS3APIsManager(ContentsManager):
     def _read_file(self, path):
 
         content = ''
-        for chunk in self.file_api.read_file(path, self.cs3_config['endpoint']):
+        for chunk in self.file_api.read_file(path, self.cs3_config.endpoint):
             content += chunk.decode('utf-8')
 
         return content
 
     def _dir_model(self, path, content):
 
-        cs3_container = self.file_api.read_directory(path, self.cs3_config['endpoint'])
+        cs3_container = self.file_api.read_directory(path, self.cs3_config.endpoint)
         model = ModelUtils.convert_container_to_directory_model(path, cs3_container, content)
 
         return model
 
     def _file_model(self, path, content, format):
         parent_path = self._get_parent_path(path)
-        cs3_container = self.file_api.read_directory(parent_path, self.cs3_config['endpoint'])
+        cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
 
         model, tmp_model = ModelUtils.create_base_model_from_cs3_container(path, cs3_container)
         model['type'] = 'file'
@@ -321,7 +321,7 @@ class CS3APIsManager(ContentsManager):
 
     def _notebook_model(self, path, content):
         parent_path = self._get_parent_path(path)
-        cs3_container = self.file_api.read_directory(parent_path, self.cs3_config['endpoint'])
+        cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
 
         model, tmp_model = ModelUtils.create_base_model_from_cs3_container(path, cs3_container)
         model['type'] = 'notebook'
@@ -345,7 +345,7 @@ class CS3APIsManager(ContentsManager):
         path = self._normalize_path(path)
 
         try:
-            cs3_container = self.file_api.read_directory(parent_path, self.cs3_config['endpoint'])
+            cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
         except Exception as ex:
             self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
             raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
@@ -371,7 +371,7 @@ class CS3APIsManager(ContentsManager):
                 b64_bytes = content.encode('ascii')
                 bcontent = decodebytes(b64_bytes)
 
-            self.file_api.write_file(path, bcontent, self.cs3_config['endpoint'])
+            self.file_api.write_file(path, bcontent, self.cs3_config.endpoint)
 
         except Exception as e:
             self.log.error(u'Error saving: %s %s', path, e)
@@ -381,7 +381,7 @@ class CS3APIsManager(ContentsManager):
 
         nb_content = nbformat.writes(nb)
         try:
-            self.file_api.write_file(path, nb_content, self.cs3_config['endpoint'])
+            self.file_api.write_file(path, nb_content, self.cs3_config.endpoint)
 
         except Exception as e:
             self.log.error(u'Error saving: %s %s', path, e)
@@ -398,7 +398,7 @@ class CS3APIsManager(ContentsManager):
         if self.file_exists(path):
             raise web.HTTPError(400, u'Not a directory %s' % path)
 
-        self.file_api.create_directory(path, self.cs3_config['endpoint'])
+        self.file_api.create_directory(path, self.cs3_config.endpoint)
 
     def _check_write_permissions(self, path):
 

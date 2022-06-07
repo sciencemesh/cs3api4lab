@@ -20,12 +20,12 @@ class FileUtils:
 
     @staticmethod
     def _check_and_transform_file_path(file_id): 
-        config = Cs3ConfigManager.get_config() #note: can cause problems in tests because of the config, it should be passed as an argument
+        config = Cs3ConfigManager().get_config() #note: can cause problems in tests because of the config, it should be passed as an argument
 
-        has_root_dir = file_id.startswith(config["root_dir_list"])
+        has_root_dir = file_id.startswith(config.root_dir_list)
 
-        if len(config["home_dir"]) > 0 and not file_id.startswith(config["home_dir"]) and not has_root_dir:
-            file_id = config["home_dir"] + file_id
+        if len(config.home_dir) > 0 and not file_id.startswith(config.home_dir) and not has_root_dir:
+            file_id = config.home_dir + file_id
 
         return file_id
 

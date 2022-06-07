@@ -21,9 +21,9 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
         '''creates a file and shares it with another user'''
 
         #given
-        user = self.config['client_id']
+        user = self.config.client_id
         share_id = None
-        file_name = posixpath.join(self.config['home_dir'], "test_create_share.txt")
+        file_name = posixpath.join(self.config.home_dir, "test_create_share.txt")
         self.remove_share_and_file_by_path(user, file_name)
         try:
             self.create_test_file(user, file_name)
@@ -149,7 +149,7 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
 
             self.clear_locks_on_file(received_file_path)
             content = ''
-            for chunk in self.file_api.read_file(received_file_path, self.config['endpoint']):
+            for chunk in self.file_api.read_file(received_file_path, self.config.endpoint):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content)
         finally:
@@ -172,7 +172,7 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
             self.clear_locks_on_file(received_file_path)
             self.file_api.write_file(received_file_path, self.content + self.content)
             content = ''
-            for chunk in self.file_api.read_file(received_file_path, self.config['endpoint']):
+            for chunk in self.file_api.read_file(received_file_path, self.config.endpoint):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content + self.content)
         finally:
@@ -196,14 +196,14 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
 
             self.clear_locks_on_file(received_container_path + file_name)
             content = ''
-            for chunk in self.file_api.read_file(received_container_path + file_name, self.config['endpoint']):
+            for chunk in self.file_api.read_file(received_container_path + file_name, self.config.endpoint):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content)
 
             self.file_api.write_file(received_container_path + file_name, self.content + self.content)
             self.clear_locks_on_file(received_container_path + file_name)
             content = ''
-            for chunk in self.richard_file_api.read_file(self.container_name + file_name, self.config['endpoint']):
+            for chunk in self.richard_file_api.read_file(self.container_name + file_name, self.config.endpoint):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content + self.content)
 
@@ -229,7 +229,7 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
 
             self.clear_locks_on_file(received_container_path + inner_container + file_name)
             content = ''
-            for chunk in self.richard_file_api.read_file(self.container_name + inner_container + file_name, self.config['endpoint']):
+            for chunk in self.richard_file_api.read_file(self.container_name + inner_container + file_name, self.config.endpoint):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content)
 

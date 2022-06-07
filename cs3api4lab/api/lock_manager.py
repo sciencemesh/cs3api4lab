@@ -30,7 +30,7 @@ class LockManager:
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.user_api = Cs3UserApi(log)
         self.storage_logic = StorageLogic(log)
-        self.locks_expiration_time = int(self.config['locks_expiration_time'])
+        self.locks_expiration_time = self.config.locks_expiration_time
 
     def generate_lock_entry(self):
         user = self._get_current_user()
@@ -78,7 +78,7 @@ class LockManager:
             self.storage_logic.stat(dir_path, endpoint)
             return dir_path
         except Exception:
-            return self.config['home_dir'] + '/'
+            return self.config.home_dir + '/'
 
     def _get_conflict_filename(self, file_name):
         file_extension = file_name.split('.')[-1]

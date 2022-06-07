@@ -1,6 +1,5 @@
 import sys
 import grpc
-import distutils.util as utils
 from traitlets.config import LoggingConfigurable
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 
@@ -11,35 +10,31 @@ class Channel(LoggingConfigurable):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         config = Cs3ConfigManager.get_config()
-        if type(config['secure_channel']) == bool:
-            secure_channel = config['secure_channel']
-        else:
-            secure_channel = utils.strtobool(config['secure_channel'])
-        if secure_channel:
+        if config.secure_channel:
             try:
 
                 cert = None
                 key = None
                 ca_cert = None
 
-                if config['client_cert'] is not None and len(config['client_cert']) > 0:
-                    cert = open(config['client_cert'], 'rb').read()
+                if config.client_cert is not None and len(config.client_cert) > 0:
+                    cert = open(config.client_cert, 'rb').read()
 
-                if config['client_cert'] is not None and len(config['client_key']) > 0:
-                    key = open(config['client_key'], 'rb').read()
+                if config.client_cert is not None and len(config.client_key) > 0:
+                    key = open(config.client_key, 'rb').read()
 
-                if config['client_cert'] is not None and len(config['ca_cert']) > 0:
-                    ca_cert = open(config['ca_cert'], 'rb').read()
+                if config.client_cert is not None and len(config.ca_cert) > 0:
+                    ca_cert = open(config.ca_cert, 'rb').read()
 
                 credentials = grpc.ssl_channel_credentials(root_certificates=ca_cert, private_key=key, certificate_chain=cert)
-                channel = grpc.secure_channel(config['reva_host'], credentials)
+                channel = grpc.secure_channel(config.reva_host, credentials)
 
             except:
                 ex = sys.exc_info()[0]
                 self.log.error('msg="Error create secure channel" reason="%s"' % ex)
                 raise IOError(ex)
         else:
-            channel = grpc.insecure_channel(config['reva_host'])
+            channel = grpc.insecure_channel(config.reva_host)
         self.channel = channel
 
 
