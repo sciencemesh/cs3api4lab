@@ -43,7 +43,7 @@ class TestAuthenticator(TestCase):
         tokens = token.split('.')
         self.assertEqual(len(tokens), 3)
 
-        decode = jwt.decode(jwt=token, verify=False)
+        decode = jwt.decode(jwt=token, algorithms=["HS256"], options={"verify_signature": False})
         self.assertEqual(decode['aud'], 'reva')
         self.assertIsNotNone(decode['exp'])
         self.assertIsNotNone(decode['iat'])
