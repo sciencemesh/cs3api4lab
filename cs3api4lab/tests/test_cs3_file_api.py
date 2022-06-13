@@ -224,7 +224,7 @@ class TestCs3FileApi(TestCase):
             
             with self.assertRaises(IOError) as context:
                 self.storage.move(source_path, destination_path, self.endpoint)
-            self.assertEquals("file already exists", context.exception.args[0])
+            self.assertEqual("file already exists", context.exception.args[0])
         finally:
             self.storage.remove(destination_path, self.endpoint)
 

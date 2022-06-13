@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  revad:
+    image: cs3org/revad
+    container_name: revad
+    ports:
+      - "19000-19001:19000-19001"
+      - "29000-29001:29000-29001"
+    volumes:
+      - ${GITHUB_WORKSPACE}/reva/examples/two-server-setup/:/etc/revad
+    working_dir: /etc/revad
+    entrypoint: sh
+    command: -c "/usr/bin/revad -c gateway-1.toml & /usr/bin/revad -c gateway-2.toml & /usr/bin/revad -c storage-home-1.toml & /usr/bin/revad -c storage-home-2.toml & /usr/bin/revad -c storage-reva-1.toml & /usr/bin/revad -c storage-reva-2.toml"
+    
