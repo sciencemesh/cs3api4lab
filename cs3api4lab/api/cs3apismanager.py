@@ -1,6 +1,7 @@
 import nbformat
 import mimetypes
 import os
+import posixpath
 
 import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
 
@@ -118,7 +119,7 @@ class CS3APIsManager(ContentsManager):
             path = path.split(":")[1]
 
         kernel_path = self.cs3_config['kernel_path']
-        path = os.path.join(kernel_path, path)
+        path = posixpath.join(kernel_path, path)
         
         # Lets use the local filesystem instead of going via cs3apis
         if os.path.isdir(path):

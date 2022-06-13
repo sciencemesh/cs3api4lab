@@ -371,7 +371,7 @@ class TestCS3APIsManager(TestCase):
 
         path = self.contents_manager.get_kernel_path('')
 
-        self.assertEqual(path, "/test")
+        self.assertEqual(path, "/test/path")
 
     def test_kernel_path_when_config_entry_default(self):
         path = self.contents_manager.get_kernel_path('')

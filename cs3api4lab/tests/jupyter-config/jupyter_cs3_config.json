@@ -1,6 +1,6 @@
 {
   "cs3":{
-    "reva_host":"127.0.0.1:19000",
+    "reva_host": "127.0.0.1:19000",
     "auth_token_validity": "3600",
     "endpoint": "/",
     "home_dir": "/home",
