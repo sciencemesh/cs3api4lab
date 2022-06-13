@@ -4,6 +4,7 @@ import os
 import posixpath
 
 import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
+import cs3.rpc.v1beta1.code_pb2 as cs3code
 
 from base64 import decodebytes
 from jupyter_server.services.contents.manager import ContentsManager
@@ -16,6 +17,8 @@ from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.utils.model_utils import ModelUtils
 from cs3api4lab.utils.asyncify import asyncify
+from cs3api4lab.api.storage_api import StorageApi
+
 
 class CS3APIsManager(ContentsManager):
     cs3_config = None
@@ -28,6 +31,7 @@ class CS3APIsManager(ContentsManager):
         self.log = log
         self.file_api = Cs3FileApi(self.log)
         self.share_api = ShareAPIFacade(log)
+        self.storage_api = StorageApi(log)
 
     # _is_dir is already async, so no need to asyncify this
     def dir_exists(self, path):
@@ -349,23 +353,9 @@ class CS3APIsManager(ContentsManager):
         if path == '/' or path == '' or path is None:
             return True
 
-        parent_path = self._get_parent_path(path)
-        path = FileUtils.normalize_path(path)
-
-        try:
-            cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
-        except Exception as ex:
-            self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
-            raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
-
-        for cs3_model in cs3_container:
-
-            if cs3_model.type == resource_types.RESOURCE_TYPE_CONTAINER and cs3_model.path == path:
-                return True
-            if cs3_model.type == resource_types.RESOURCE_TYPE_FILE and cs3_model.path == path:
-                return False
-
-        return False
+        path = FileUtils.remove_drives_names(path)
+        stat = self.storage_api.stat(path)
+        return stat.status.code == cs3code.CODE_OK and stat.info.type == resource_types.RESOURCE_TYPE_CONTAINER
 
     @asyncify
     def _save_file(self, path, content, format):
@@ -415,7 +405,7 @@ class CS3APIsManager(ContentsManager):
     def _check_write_permissions(self, path):
 
         parent = self._get_parent_path(path)
-        stat = self.file_api.stat(parent)
+        stat = self.file_api.stat_info(parent)
         if not ShareUtils.map_permissions_to_role(stat['permissions']) == 'editor':
             raise web.HTTPError(403, u'The path %s is not writable' % parent)
         # check if the path is a received share with editor permissions

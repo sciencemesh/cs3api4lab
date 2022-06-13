@@ -17,7 +17,7 @@ import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 from cs3api4lab.exception.exceptions import ResourceNotFoundError
 
 from cs3api4lab.utils.file_utils import FileUtils
-from cs3api4lab.logic.storage_logic import StorageLogic
+from cs3api4lab.api.storage_api import StorageApi
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.auth.channel_connector import ChannelConnector
@@ -41,7 +41,7 @@ class Cs3FileApi:
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
-        self.storage_logic = StorageLogic(log)
+        self.storage_api = StorageApi(log)
 
         self.lock_manager = LockManager(log)
 
@@ -57,53 +57,54 @@ class Cs3FileApi:
             "path": response.path
         }
 
-    def stat(self, file_id, endpoint=None):
+    def stat_info(self, file_path, endpoint='/'):
         """
         Stat a file and returns (size, mtime) as well as other extended info using the given userid as access token.
         Note that endpoint here means the storage id. Note that fileid can be either a path (which MUST begin with /)
         or an id (which MUST NOT start with a /).
         """
         time_start = time.time()
-        ref = FileUtils.get_reference(file_id, endpoint)
-        stat_info = self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
-                                      metadata=[('x-access-token', self.auth.authenticate())])
-        time_end = time.time()
-        self.log.info('msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (file_id, (time_end - time_start) * 1000))
-
-        if stat_info.status.code == cs3code.CODE_OK:
-            self.log.debug('msg="Stat result" data="%s"' % stat_info)
+        stat = self.storage_api.stat(file_path, endpoint)
+        if stat.status.code == cs3code.CODE_OK:
+            time_end = time.time()
+            self.log.info('msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (file_path, (time_end - time_start) * 1000))
             return {
-                'inode': {'storage_id': stat_info.info.id.storage_id,
-                          'opaque_id': stat_info.info.id.opaque_id},
-                'filepath': stat_info.info.path,
-                'userid': stat_info.info.owner.opaque_id,
-                'size': stat_info.info.size,
-                'mtime': stat_info.info.mtime.seconds,
-                'type': stat_info.info.type,
-                'mime_type': stat_info.info.mime_type,
-                'idp': stat_info.info.owner.idp,
-                'permissions': stat_info.info.permission_set
+                'inode': {'storage_id': stat.info.id.storage_id,
+                          'opaque_id': stat.info.id.opaque_id},
+                'filepath': stat.info.path,
+                'userid': stat.info.owner.opaque_id,
+                'size': stat.info.size,
+                'mtime': stat.info.mtime.seconds,
+                'type': stat.info.type,
+                'mime_type': stat.info.mime_type,
+                'idp': stat.info.owner.idp,
+                'permissions': stat.info.permission_set
             }
-        elif stat_info.status.code == cs3code.CODE_NOT_FOUND:
-            self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_id, stat_info.status.message))
-            raise FileNotFoundError(stat_info.status.message + ", file " + file_id)
+        elif stat.status.code == cs3code.CODE_NOT_FOUND:
+            self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_path, stat.status.message))
+            raise FileNotFoundError(stat.status.message + ", file " + file_path)
         else:
-            self._handle_error(stat_info)
-
+            self._handle_error(stat)
+        
     def read_file(self, file_path, endpoint=None):
         """
         Read a file using the given userid as access token.
         """
         time_start = time.time()
-        
-        if self.storage_logic.stat(file_path, endpoint) is not None:
-            self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
 
-        init_file_download = self.storage_logic.init_file_download(file_path, endpoint)
+        stat = self.storage_api.stat(file_path, endpoint)
+        if stat.status.code == cs3code.CODE_OK:
+            self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
+        else:
+            msg = "%s: %s" % (stat.status.code, stat.status.message)
+            self.log.error('msg="Error when stating file for read" reason="%s"' % msg)
+            raise IOError(msg)
+
+        init_file_download = self.storage_api.init_file_download(file_path, endpoint)
 
         file_get = None
         try:
-            file_get = self.storage_logic.download_content(init_file_download)
+            file_get = self.storage_api.download_content(init_file_download)
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when downloading file from Reva" reason="%s"' % e)
             raise IOError(e)
@@ -129,14 +130,16 @@ class Cs3FileApi:
 
         time_start = time.time()
 
-        if self.storage_logic.stat(file_path, endpoint):
+        stat = self.storage_api.stat(file_path, endpoint)
+        # fixme - this might cause overwriting/locking issues due to unexpected error codes
+        if stat.status.code == cs3code.CODE_OK:
             self.lock_manager.handle_locks(file_path, endpoint)
 
         content_size = FileUtils.calculate_content_size(content)
-        init_file_upload = self.storage_logic.init_file_upload(file_path, endpoint, content_size)
+        init_file_upload = self.storage_api.init_file_upload(file_path, endpoint, content_size)
 
         try:
-            upload_response = self.storage_logic.upload_content(file_path, content, content_size, init_file_upload)
+            upload_response = self.storage_api.upload_content(file_path, content, content_size, init_file_upload)
 
             self.lock_manager.handle_locks(file_path, endpoint)
         except requests.exceptions.RequestException as e:
@@ -210,7 +213,9 @@ class Cs3FileApi:
         src_reference = FileUtils.get_reference(source_path, endpoint)
         dest_reference = FileUtils.get_reference(destination_path, endpoint)
 
-        if self.storage_logic.stat(destination_path, endpoint):
+        # fixme - this might cause overwriting issues due to unexpected error codes
+        stat = self.storage_api.stat(destination_path, endpoint)
+        if stat.status.code == cs3code.CODE_OK:
             self.log.error('msg="Failed to move" source="%s" destination="%s" reason="%s"' % (
                 source_path, destination_path, "file already exists"))
             raise IOError("file already exists")

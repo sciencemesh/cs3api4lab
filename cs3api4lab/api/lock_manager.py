@@ -10,9 +10,10 @@ import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.auth.channel_connector import ChannelConnector
-from cs3api4lab.logic.storage_logic import StorageLogic
+from cs3api4lab.api.storage_api import StorageApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from cs3api4lab.config.config_manager import Cs3ConfigManager
+import cs3.rpc.v1beta1.code_pb2 as cs3code
 
 
 class LockManager:
@@ -29,7 +30,7 @@ class LockManager:
 
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.user_api = Cs3UserApi(log)
-        self.storage_logic = StorageLogic(log)
+        self.storage_api = StorageApi(log)
         self.locks_expiration_time = self.config.locks_expiration_time
 
     def generate_lock_entry(self):
@@ -47,7 +48,7 @@ class LockManager:
         return 'lock_' + user.username + '_' + user.id.idp + '_' + user.id.opaque_id
 
     def _lock_file(self, file_path, endpoint):
-        self.storage_logic.set_metadata(self.generate_lock_entry(), file_path, endpoint)
+        self.storage_api.set_metadata(self.generate_lock_entry(), file_path, endpoint)
 
     def is_lock_mine(self, lock):
         user = self._get_current_user()
@@ -74,10 +75,10 @@ class LockManager:
         return file_path
 
     def _resolve_directory(self, dir_path, endpoint):#right now its possible to write in somone else's directory without it being shared
-        try:
-            self.storage_logic.stat(dir_path, endpoint)
+        stat = self.storage_api.stat(dir_path, endpoint)
+        if stat.status.code == cs3code.CODE_OK:
             return dir_path
-        except Exception:
+        else:
             return self.config.mount_dir + '/'
 
     def _get_conflict_filename(self, file_name):
@@ -107,7 +108,7 @@ class LockManager:
         return self.user.user
 
     def _get_lock(self, file_path, endpoint):
-        metadata = self.storage_logic.get_metadata(file_path, endpoint)
+        metadata = self.storage_api.get_metadata(file_path, endpoint)
         if not metadata:
             return
         return json.loads(urllib.parse.unquote(list(metadata.values())[0]))

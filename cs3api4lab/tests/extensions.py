@@ -14,7 +14,7 @@ from cs3api4lab.auth import RevaPassword
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.auth import check_auth_interceptor
-from cs3api4lab.logic.storage_logic import StorageLogic
+from cs3api4lab.api.storage_api import StorageApi
 
 import cs3.ocm.provider.v1beta1.provider_api_pb2_grpc as ocm_provider_api_grpc
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
@@ -22,7 +22,8 @@ import cs3.identity.user.v1beta1.user_api_pb2_grpc as user_api_grpc
 import cs3.sharing.ocm.v1beta1.ocm_api_pb2_grpc as ocm_api_grpc
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 
-class ExtStorageLogic(StorageLogic):
+
+class ExtStorageApi(StorageApi):
     def __init__(self, log, config):
         #super().__init__(log)
         self.log = log
@@ -44,7 +45,7 @@ class ExtLockManager(LockManager):
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.user_api = ExtUserApi(log, config)
-        self.storage_logic = ExtStorageLogic(log, config)
+        self.storage_api = ExtStorageApi(log, config)
         self.locks_expiration_time = config.locks_expiration_time
 
 class ExtCs3ConfigManager(Cs3ConfigManager):
@@ -74,7 +75,7 @@ class ExtCs3FileApi(Cs3FileApi):
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.lock_manager = ExtLockManager(log, config)
-        self.storage_logic = ExtStorageLogic(log, config)
+        self.storage_api = ExtStorageApi(log, config)
 
 
 class ExtCs3ShareApi(Cs3ShareApi):
