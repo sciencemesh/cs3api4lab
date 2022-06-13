@@ -220,7 +220,7 @@ class TestCS3APIsManager(TestCase):
             self.file_api.write_file(file_path, message, self.endpoint)
             self.contents_manager.delete_file(file_path)
             with self.assertRaises(IOError):
-                self.file_api.stat(file_path, self.endpoint)
+                self.file_api.stat_info(file_path, self.endpoint)
         finally:
             try:
                 self.contents_manager.delete_file(file_path)
@@ -238,10 +238,10 @@ class TestCS3APIsManager(TestCase):
         try:
             self.file_api.write_file(file_path, message, self.endpoint)
             self.contents_manager.rename_file(file_path, file_dest)
-            stat_info = self.file_api.stat(file_dest, self.endpoint)
+            stat_info = self.file_api.stat_info(file_dest, self.endpoint)
             self.assertIsInstance(stat_info, dict)
             with self.assertRaises(IOError):
-                self.file_api.stat(file_path, self.endpoint)
+                self.file_api.stat_info(file_path, self.endpoint)
         finally:
             try:
                 self.file_api.remove(file_dest, self.endpoint)
@@ -325,7 +325,7 @@ class TestCS3APIsManager(TestCase):
 
         self.file_api.remove(file_path, self.endpoint)
         with self.assertRaises(IOError):
-            self.file_api.stat(file_path, self.endpoint)
+            self.file_api.stat_info(file_path, self.endpoint)
 
         file_exists = self.contents_manager.file_exists(file_path)
         self.assertFalse(file_exists)
@@ -370,7 +370,7 @@ class TestCS3APIsManager(TestCase):
         self.contents_manager.delete_file(file_path)
 
         with self.assertRaises(IOError):
-            self.file_api.stat(file_path, self.endpoint)
+            self.file_api.stat_info(file_path, self.endpoint)
 
     def test_recreate_directory(self):
         file_path = "/test_recreate_directory"
@@ -380,7 +380,7 @@ class TestCS3APIsManager(TestCase):
                 self.file_api.create_directory(file_path, self.endpoint)
             self.contents_manager.delete_file(file_path)
             with self.assertRaises(IOError):
-                self.file_api.stat(file_path, self.endpoint)
+                self.file_api.stat_info(file_path, self.endpoint)
         except:
             self.contents_manager.delete_file(file_path)
 
@@ -394,11 +394,11 @@ class TestCS3APIsManager(TestCase):
 
             self.contents_manager.delete_file(file_path2)
             with self.assertRaises(IOError):
-                self.file_api.stat(file_path2, self.endpoint)
+                self.file_api.stat_info(file_path2, self.endpoint)
 
             self.contents_manager.delete_file(file_path)
             with self.assertRaises(IOError):
-                self.file_api.stat(file_path, self.endpoint)
+                self.file_api.stat_info(file_path, self.endpoint)
         finally:
             try:
                 self.contents_manager.delete(file_path)

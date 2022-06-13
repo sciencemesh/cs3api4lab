@@ -2,6 +2,7 @@ import random
 import string
 from cs3api4lab.tests.extensions import *
 from traitlets.config import LoggingConfigurable
+import cs3.rpc.v1beta1.code_pb2 as cs3code
 from collections import namedtuple
 
 class ShareTestBase:
@@ -17,7 +18,7 @@ class ShareTestBase:
         self.ocm_api = Cs3OcmShareApi(self.log)
         self.uni_api = ShareAPIFacade(self.log)
         self.auth = ExtAuthenticator(self.config, self.log)
-        self.storage_logic = StorageLogic(self.log)
+        self.storage_api = StorageApi(self.log)
 
         marie_ext_config = {
             "reva_host": "127.0.0.1:29000",
@@ -63,13 +64,13 @@ class ShareTestBase:
         self.marie_file_api = ExtCs3FileApi(self.log, marie_ext_config)
         self.marie_share_api = ExtCs3ShareApi(self.log, marie_ext_config)
         self.marie_ocm_share_api = ExtCs3OcmShareApi(self.log, marie_ext_config)
-        self.marie_storage_logic = ExtStorageLogic(self.log, marie_ext_config)
+        self.marie_storage_api = ExtStorageApi(self.log, marie_ext_config)
 
         self.richard_uni_api = ExtCs3ShareApiFacade(self.log, richard_local_config)
         self.richard_file_api = ExtCs3FileApi(self.log, richard_local_config)
         self.richard_share_api = ExtCs3ShareApi(self.log, richard_local_config)
         self.richard_ocm_share_api = ExtCs3OcmShareApi(self.log, richard_local_config)
-        self.richard_storage_logic = ExtStorageLogic(self.log, richard_local_config)
+        self.richard_storage_api = ExtStorageApi(self.log, richard_local_config)
 
         self.content = "op98^*^8asdasMnb23Bo!ml;)Wk"
 
@@ -147,9 +148,9 @@ class ShareTestBase:
                                                  self.receiver_grantee_type)
 
     def clear_locks_on_file(self, file, endpoint='/'):
-        metadata = self.storage_logic.get_metadata(file, endpoint)
+        metadata = self.storage_api.get_metadata(file, endpoint)
         for lock in list(metadata.keys()):
-            self.storage_logic.set_metadata({lock: "{}"}, file, endpoint)
+            self.storage_api.set_metadata({lock: "{}"}, file, endpoint)
 
 
     def remove_test_share(self, user, share_id):
@@ -216,16 +217,16 @@ class ShareTestBase:
     def remove_share_and_file_by_path(self, user, file_path):
         if user == 'einstein':
             share_api = self.share_api
-            storage = self.storage_logic
+            storage = self.storage_api
         if user == 'marie':
             share_api = self.marie_share_api
-            storage = self.marie_storage_logic
+            storage = self.marie_storage_api
         if user == 'richard':
             share_api = self.richard_share_api
-            storage = self.richard_storage_logic
+            storage = self.richard_storage_api
 
-        stat = storage.stat(file_path, '/')
-        if stat is None:
+        stat = storage.stat(file_path)
+        if stat.status.code == cs3code.CODE_NOT_FOUND or stat.status.code == cs3code.CODE_INTERNAL:
             self.create_test_file(user, file_path)
         #todo the code above won't be necessary after https://github.com/cs3org/reva/issues/2847 is fixed
 

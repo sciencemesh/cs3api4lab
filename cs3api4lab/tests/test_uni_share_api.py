@@ -147,7 +147,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
 
             self.uni_api.update_received(self.share_id, 'ACCEPTED')
             received_file_path = '/home/MyShares/' + self.file_name.split('/')[-1]
-            file_stat = self.file_api.stat(received_file_path, self.storage_id)
+            file_stat = self.file_api.stat_info(received_file_path, self.storage_id)
 
             self.assertEqual(file_stat['filepath'], received_file_path, 'Share not updated')
         finally:

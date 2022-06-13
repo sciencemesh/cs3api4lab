@@ -16,7 +16,7 @@ from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.utils.model_utils import ModelUtils
 from cs3api4lab.utils.file_utils import FileUtils
-from cs3api4lab.logic.storage_logic import StorageLogic
+from cs3api4lab.api.storage_api import StorageApi
 from cs3api4lab.exception.exceptions import OCMDisabledError
 
 
@@ -34,7 +34,7 @@ class ShareAPIFacade:
         self.share_api = Cs3ShareApi(log)
         self.ocm_share_api = Cs3OcmShareApi(log)
 
-        self.storage_logic = StorageLogic(log)
+        self.storage_api = StorageApi(log)
         return
 
     def create(self, endpoint, file_path, opaque_id, idp, role=Role.EDITOR, grantee_type=Grantee.USER, reshare=True):
@@ -79,8 +79,8 @@ class ShareAPIFacade:
         else:
             result = self.share_api.update_received(share_id, state)
 
-        stat = self.file_api.stat(urllib.parse.unquote(result.share.resource_id.opaque_id),
-                                  result.share.resource_id.storage_id)  # todo remove this and use storage_logic
+        stat = self.file_api.stat_info(urllib.parse.unquote(result.share.resource_id.opaque_id),
+                                       result.share.resource_id.storage_id)  # todo remove this and use storage_logic
         return ModelUtils.map_share_to_base_model(result.share, stat)
 
     def remove(self, share_id):
@@ -191,8 +191,8 @@ class ShareAPIFacade:
                 share = share.share
             try:
                 user = self.user_api.get_user_info(share.owner.idp, share.owner.opaque_id)
-                stat = self.file_api.stat(urllib.parse.unquote(share.resource_id.opaque_id),
-                                          share.resource_id.storage_id)  # todo remove this and use storage_logic
+                stat = self.file_api.stat_info(urllib.parse.unquote(share.resource_id.opaque_id),
+                                               share.resource_id.storage_id)  # todo remove this and use storage_logic
                 # stat = self.storage_logic.stat_info(urllib.parse.unquote(share.resource_id.opaque_id), share.resource_id.storage_id)
 
                 if stat['type'] == Resources.RESOURCE_TYPE_FILE:
