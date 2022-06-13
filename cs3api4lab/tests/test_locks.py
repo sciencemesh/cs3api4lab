@@ -33,9 +33,9 @@ class TestLocks(ShareTestBase, TestCase):
             self.assertIn("lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51", file_info.arbitrary_metadata.metadata)
             
             lock = json.loads(urllib.parse.unquote(file_info.arbitrary_metadata.metadata["lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51"]))
-            self.assertEquals(lock['username'], 'einstein')
-            self.assertEquals(lock['idp'], 'cernbox.cern.ch')
-            self.assertEquals(lock['opaque_id'], '4c510ada-c86b-4815-8820-42cdf82c3d51')
+            self.assertEqual(lock['username'], 'einstein')
+            self.assertEqual(lock['idp'], 'cernbox.cern.ch')
+            self.assertEqual(lock['opaque_id'], '4c510ada-c86b-4815-8820-42cdf82c3d51')
 
         finally:
             if self.share_id:
@@ -59,9 +59,9 @@ class TestLocks(ShareTestBase, TestCase):
             self.assertIn("lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51", file_info.arbitrary_metadata.metadata)
             
             lock = json.loads(urllib.parse.unquote(file_info.arbitrary_metadata.metadata["lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51"]))
-            self.assertEquals(lock['username'], 'einstein')
-            self.assertEquals(lock['idp'], 'cernbox.cern.ch')
-            self.assertEquals(lock['opaque_id'], '4c510ada-c86b-4815-8820-42cdf82c3d51')
+            self.assertEqual(lock['username'], 'einstein')
+            self.assertEqual(lock['idp'], 'cernbox.cern.ch')
+            self.assertEqual(lock['opaque_id'], '4c510ada-c86b-4815-8820-42cdf82c3d51')
 
         finally:
             if self.share_id:

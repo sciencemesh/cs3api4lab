@@ -27,7 +27,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/.cache/pip
-        key: pip-3.9-${{ hashFiles('package.json') }}
+        key: pip-3.9-${{ hashFiles('setup.py') }}
         restore-keys: |
           pip-3.9-
           pip-
