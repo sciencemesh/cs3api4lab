@@ -2,15 +2,11 @@ FROM jupyter/base-notebook:lab-3.2.9
 
 USER root
 
-COPY . /opt/cs3/
+COPY dist /opt/cs3/
 
 # This image contains a newer version of jupyterlab, so our extension will downgrade it
-# On the other hand, we have newer dependencies (i.e node), making it easier to install
 RUN cd /opt/cs3 && \
-    pip install --no-cache-dir . && \
-    npm cache clean --force && \
-    jupyter lab clean && \
-    rm -rf "/home/${NB_USER}/.cache/yarn" && \
+    pip install --no-cache-dir cs3api4lab*.tar.gz && \
     cd / && \
     rm -rf /opt/cs3 && \
     fix-permissions "/home/${NB_USER}"
