@@ -1,0 +1,43 @@
+name: Build and publish
+
+on:
+  push:
+    tags:
+       - '*/v*'
+  
+jobs:
+  build:
+    uses: ./.github/workflows/workflow-build-python-package.yml
+    with:
+      create_dist: true
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+      - uses: actions/download-artifact@v3
+        with:
+          name: cs3api4lab-dist
+          path: dist
+      - name: Install dependencies 
+        run: |
+          pip install twine
+      - name: Publish distribution to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          twine upload --repository pypi dist/*
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false

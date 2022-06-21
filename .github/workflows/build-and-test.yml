@@ -1,0 +1,124 @@
+# Runs the python tests, by creating a demo REVA instance
+
+name: Build and test extension
+
+# TODO use a service instead of docker-compose
+#   it requires github to allow overloading the "command" part of `docker create`
+
+on:
+  push:
+    branches: 
+      - master
+    tags-ignore:
+       - '*/v*'
+  pull_request:
+    branches: 
+      - '*'
+
+jobs:
+
+  get-test-files:
+    runs-on: ubuntu-latest
+    outputs:
+      tests: ${{ steps.test-files.outputs.tests }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generate Matrix
+        id: test-files
+        run: |
+          cd cs3api4lab/tests/
+          echo "::set-output name=tests::$(ls test_*.py | jq -R -s -c 'split("\n")[:-1]')"
+
+  build:
+    uses: ./.github/workflows/workflow-build-python-package.yml
+    with:
+      create_dist: true
+
+  test_isolated:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+          cache: 'pip'
+          cache-dependency-path: '**/setup.py'
+      - uses: actions/download-artifact@v3
+        with:
+          name: cs3api4lab-dist
+      - name: Install and Test
+        run: |
+          set -eux
+          # Remove NodeJS, twice to take care of system and locally installed node versions.
+          sudo rm -rf $(which node)
+          sudo rm -rf $(which node)
+          pip install cs3api4lab*.tar.gz
+          jupyter labextension list 2>&1 | grep -ie "cs3api4lab.*OK"
+          # python -m jupyterlab.browser_check --no-chrome-test
+          
+  test_python:
+    needs:
+      - get-test-files
+      - build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        test-files: ${{ fromJson(needs.get-test-files.outputs.tests) }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: tests
+      - name: Checkout Reva
+        uses: actions/checkout@v3
+        with:
+          repository: cs3org/reva
+          path: reva
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+          cache: 'pip'
+          cache-dependency-path: 'tests/setup.py'
+      - uses: actions/download-artifact@v3
+        with:
+          name: cs3api4lab-dist
+          path: dist
+      - name: Install extension
+        # Pip install the already built package
+        # to avoid building it for each test 
+        # (we only need the dependencies either way)
+        run: |
+          pip install dist/cs3api4lab*.tar.gz
+      - name: Setup Reva config
+        run: |
+          mv reva/examples/two-server-setup/groups.demo.json reva/examples/two-server-setup/groups.json 
+      - name: Run Reva
+        run: docker-compose -f tests/.github/workflows/CI/revad-compose.yml up -d
+      - name: Add to hosts
+        run: |
+          ID=$(docker ps -qf "name=revad")
+          sudo -- sh -c "echo '127.0.0.1 $ID' >> /etc/hosts"
+      - name: Setup config
+        # The extension needs to have the package.json indisde a labextension folder
+        # If we built the extension in here, it would've been there
+        # But since we installed the already build extension just for it's dependencies,
+        # we have to manually copy the file
+        run: |
+          mv tests/cs3api4lab/tests/jupyter-config .
+          cat jupyter-config/jupyter_cs3_config.json
+          mkdir tests/cs3api4lab/labextension
+          cp tests/package.json tests/cs3api4lab/labextension/
+      - name: Check Reva
+        run: |
+          sleep 3
+          if docker logs revad 2>&1 | grep error; then docker restart revad; fi
+      - name: Run tests
+        run:  python -m unittest tests/cs3api4lab/tests/${{ matrix.test-files }}
+      - name: Reva logs
+        if: success() || failure()
+        run: |
+          docker ps --no-trunc
+          docker logs revad
