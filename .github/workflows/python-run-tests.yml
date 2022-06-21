@@ -47,21 +47,18 @@ jobs:
         python-version: '3.9'
         architecture: 'x64'
 
-    - name: Cache venv
-      id: cache-venv
+    - name: Cache pip
+      id: cache-pip
       uses: actions/cache@v3
       with:
-        path: ./.venv/
-        key: venv-${{ hashFiles('setup.py') }}
+        path: ~/.cache/pip
+        key: pip-3.9-${{ hashFiles('setup.py') }}
         restore-keys: |
-          venv-
-
-    - name: Create venv
-      if: steps.cache-venv.outputs.cache-hit != 'true'
-      run: python -m venv ./.venv
+          pip-3.9-
+          pip-
 
     - name: Install dependencies
-      run: . ./.venv/bin/activate && python -m pip install -e .
+      run: python -m pip install -e .
 
     - name: Setup config
       run: |
@@ -70,7 +67,7 @@ jobs:
         cat jupyter-config/jupyter_cs3_config.json
 
     - name: Run tests
-      run: . ./.venv/bin/activate && python -m unittest cs3api4lab/tests/${{ matrix.test-files }}
+      run: python -m unittest cs3api4lab/tests/${{ matrix.test-files }}
 
     - name: Reva logs
       if: success() || failure()

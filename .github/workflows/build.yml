@@ -23,8 +23,9 @@ jobs:
         architecture: 'x64'
     
     
-    - name: Setup pip cache
-      uses: actions/cache@v2
+    - name: Cache pip
+      id: cache-pip
+      uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: pip-3.9-${{ hashFiles('setup.py') }}
