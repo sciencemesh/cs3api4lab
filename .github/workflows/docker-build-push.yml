@@ -20,14 +20,14 @@ jobs:
     - name: Running on the default branch.
       if: steps.branch-name.outputs.is_default == 'true'
       run: |
-        docker login -u ${{ secrets.DOCKER_LOGIN }} --password=${{ secrets.DOCKER_PASSWORD }}
+        echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
         docker build . --file Dockerfile --tag cs3mesh/cs3apis4lab:latest
         docker push cs3mesh/cs3apis4lab:latest
 
     - name: Running on a pull request branch.
       if: steps.branch-name.outputs.is_default == 'false'
       run: |
-        docker login -u ${{ secrets.DOCKER_LOGIN }} --password=${{ secrets.DOCKER_PASSWORD }}
+        echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
         docker build . --file Dockerfile --tag cs3mesh/cs3apis4lab:${{ steps.branch-name.outputs.current_branch }}
         docker push cs3mesh/cs3apis4lab:${{ steps.branch-name.outputs.current_branch }}
 
