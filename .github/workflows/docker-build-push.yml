@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "master" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "*" ]
 
 jobs:
 
@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: actions/checkout@v3
     - name: Get branch name
       id: branch-name
       uses: tj-actions/branch-names@v5.2
-
     - name: Running on the default branch.
       if: steps.branch-name.outputs.is_default == 'true'
       run: |
