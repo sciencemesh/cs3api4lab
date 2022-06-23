@@ -178,6 +178,8 @@ Config file fields:
 - revahost - address and port on which the Reva server is listening
 - auth_token_validity - the lifetime of the authenticating token
 - endpoint - endpoint for Reva storage provider
+- mount_dir - root directory of the filesystem
+- home_dir - home directory of the user
 - chunk_size - size of the downloaded fragment from Reva
 - secure_channel - secure channel flag
 - client_cert - public key file path (PEM-encoded)
@@ -268,6 +270,7 @@ Available environmental variables:
 - CS3_CLIENT_SECRET - client password to authenticate in Reva [required in case of basic login]
 - CS3_AUTH_TOKEN_VALIDITY - the lifetime of the authenticating token
 - CS3_ENDPOINT - endpoint for Reva storage provider
+- CS3_MOUNT_DIR - root directory of the filesystem
 - CS3_HOME_DIR - home directory of the user
 - CS3_CHUNK_SIZE - size of the downloaded fragment from Reva
 - CS3_SECURE_CHANNEL - secure channel flag

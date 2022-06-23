@@ -81,7 +81,7 @@ class TestCs3OcmShareApi(TestCase):
             print("Error remove file:", e)
 
     def _create_test_share(self, receiver_id='f7fbf8c8-139b-4376-b307-cf0a8c2d0d9c', receiver_idp='cesnet.cz'):
-        file_path = self.config['home_dir'] + self.file_path
+        file_path = self.config['mount_dir'] + self.file_path
         return self.api.create(receiver_id,
                                receiver_idp,
                                receiver_idp,

@@ -40,6 +40,17 @@ class TestCS3APIsManager(TestCase):
 
         self.file_api.remove(file_id, self.endpoint)
 
+    def test_get_file_with_drive_name(self):
+        file_path = "cs3drive:test_get_text_file.txt"
+        file_id = "/test_get_text_file.txt"
+        message = "Lorem ipsum dolor sit amet..."
+        self.file_api.write_file(file_id, message, self.endpoint)
+
+        model = self.contents_manager.get(file_path, True, None)
+        self.assertEqual(model["name"], "test_get_text_file.txt")
+
+        self.file_api.remove(file_id, self.endpoint)
+
     def test_get_text_file_with_share_path(self):
         file_id = "/test_get_text_file.txt"
         share_file_id = "/reva/einstein/test_get_text_file.txt"

@@ -9,7 +9,7 @@ class FileUtils:
 
         if len(file_id) > 0 and file_id[0] == '/':
             # assume this is a filepath
-            file_id = FileUtils._check_and_transform_file_path(file_id)
+            file_id = FileUtils.check_and_transform_file_path(file_id)
             file = storage_provider.Reference(path=file_id)
             return file
 
@@ -19,13 +19,13 @@ class FileUtils:
         return storage_provider.Reference(resource_id=storage_provider.ResourceId(storage_id=endpoint, opaque_id=file_id))
 
     @staticmethod
-    def _check_and_transform_file_path(file_id): 
+    def check_and_transform_file_path(file_id):
         config = Cs3ConfigManager.get_config() #note: can cause problems in tests because of the config, it should be passed as an argument
 
         has_root_dir = file_id.startswith(config["root_dir_list"])
 
-        if len(config["home_dir"]) > 0 and not file_id.startswith(config["home_dir"]) and not has_root_dir:
-            file_id = config["home_dir"] + file_id
+        if len(config["mount_dir"]) > 0 and not file_id.startswith(config["mount_dir"]) and not has_root_dir:
+            file_id = config["mount_dir"] + file_id
 
         return file_id
 
@@ -37,3 +37,18 @@ class FileUtils:
             content_len = len(content.decode('utf-8'))
         content_size = str(content_len)
         return content_size
+
+    @staticmethod
+    def normalize_path(path):
+        if len(path) > 0 and path[0] != '/':
+            path = '/' + path
+        elif path == '' or path is None:
+            path = '/'
+        return path
+
+    @staticmethod
+    def remove_drives_names(path):
+        for drive in ["cs3drive:", "cs3driveShareWithMe:", "cs3driveShareByMe:"]:
+            if path.startswith(drive):
+                path = path.replace(drive, "/")
+        return FileUtils.normalize_path(path)

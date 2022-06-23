@@ -259,6 +259,26 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
             if self.file_name:
                 self.remove_test_file('einstein', self.file_name)
 
+    def test_get_grantees_for_file_with_drive_name(self):
+        try:
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+
+            file_path = "cs3drive:" + self.file_name[1:]
+            grantees = self.uni_api.list_grantees_for_file(file_path)
+            self.assertTrue(grantees['shares'], "Grantees not found")
+
+        finally:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            if self.ocm_share_id:
+                self.remove_test_ocm_share('einstein', self.ocm_share_id)
+            if self.ocm_file_name:
+                self.remove_test_file('einstein', self.ocm_file_name)
+            if self.file_name:
+                self.remove_test_file('einstein', self.file_name)
+
     @skip
     def test_get_grantees_for_file_ocm(self):
         try:

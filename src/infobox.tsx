@@ -211,12 +211,7 @@ const Shares = (props: ShareProps): JSX.Element => {
 
   useEffect(() => {
     const getGrantees = async (): Promise<any> => {
-      const resource = props.fileInfo.path
-        .replace('cs3driveShareByMe:', '')
-        .replace('cs3drive:', '')
-        .replace('cs3driveShareWithMe:', '');
-
-      requestAPI<any>('/api/cs3/shares/file?file_path=' + resource, {
+      requestAPI<any>(`/api/cs3/shares/file?file_path=${props.fileInfo.path}`, {
         method: 'GET'
       }).then(async granteesRequest => {
         if (!granteesRequest.shares) {
@@ -354,7 +349,7 @@ const ShareForm: React.FC<ShareFormProps> = (
 
   const [formValues, setFormState] = useState({
     endpoint: '/',
-    file_path: '/' + shareProps.fileInfo.path.replace('cs3drive:', ''),
+    file_path: '/' + shareProps.fileInfo.path,
     grantee: '',
     idp: '',
     role: 'viewer',
