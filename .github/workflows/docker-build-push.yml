@@ -1,0 +1,33 @@
+name: Docker build and push
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Get branch name
+      id: branch-name
+      uses: tj-actions/branch-names@v5.2
+
+    - name: Running on the default branch.
+      if: steps.branch-name.outputs.is_default == 'true'
+      run: |
+        echo "Running on default: ${{ steps.branch-name.outputs.current_branch }}"
+      # Outputs: "Running on default: main".
+
+    - name: Running on a pull request branch.
+      if: steps.branch-name.outputs.is_default == 'false'
+      run: |
+        echo "Running on pr: ${{ steps.branch-name.outputs.current_branch }}"
+
+#     - uses: actions/checkout@v3
+#     - name: Build the Docker image
+#       run: docker build . --file Dockerfile --tag cs3mesh/cs3apis4lab:$(date +%s)
