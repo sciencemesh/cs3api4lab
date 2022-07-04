@@ -5,6 +5,7 @@ from tornado import web
 from datetime import datetime
 from IPython.utils import tz
 from cs3api4lab.utils.share_utils import ShareUtils
+from cs3api4lab.utils.file_utils import FileUtils
 
 class ModelUtils:
     date_fmt = '%Y-%m-%dT%H:%M:%SZ'
@@ -174,3 +175,21 @@ class ModelUtils:
                     writable = True
 
         return created, last_modified, size, writable
+
+    @staticmethod
+    def get_prefix_for_drive(drive, config):
+        if "cs3driveShareWithMe" in drive:
+            prefix = FileUtils.get_my_shares_path_prefix(config)
+        elif "cs3driveShareByMe" in drive:
+            prefix = FileUtils.get_share_path_prefix(config)
+        elif "cs3drive" in drive:
+            prefix = ""
+        return prefix
+
+    @staticmethod
+    def hide_shares_paths(model, prefix):
+        if model and model['content']:
+            for i in range(len(model['content'])):
+                path = model['content'][i]['path']
+                model['content'][i]['path'] = path.replace(prefix, '')
+        return model

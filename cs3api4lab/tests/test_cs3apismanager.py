@@ -52,13 +52,15 @@ class TestCS3APIsManager(TestCase):
         self.file_api.remove(file_id, self.endpoint)
 
     def test_get_file_with_drive_name(self):
-        file_path = "cs3drive:test_get_text_file.txt"
+        drive = "cs3driveShareByMe"
+        file_path = "test_get_text_file.txt"
         file_id = "/test_get_text_file.txt"
         message = "Lorem ipsum dolor sit amet..."
         self.file_api.write_file(file_id, message, self.endpoint)
 
-        model = self.contents_manager.get(file_path, True, None)
+        model = self.contents_manager.get(drive + file_path, True, None)
         self.assertEqual(model["name"], "test_get_text_file.txt")
+        self.assertEqual(model["path"], "/reva/einstein/test_get_text_file.txt")
 
         self.file_api.remove(file_id, self.endpoint)
 
@@ -227,6 +229,16 @@ class TestCS3APIsManager(TestCase):
         with self.assertRaises(IOError):
             self.file_api.stat(file_path, self.endpoint)
 
+    def test_delete_file_with_drive_name(self):
+        drive = "cs3driveShareByMe"
+        file_path = "test_delete_exits_file.txt"
+        file_id = "/test_delete_exits_file.txt"
+        message = "Lorem ipsum dolor sit amet..."
+        self.file_api.write_file(file_id, message, self.endpoint)
+        self.assertTrue(self.file_api.stat(file_id, self.endpoint))
+
+        self.contents_manager.delete(drive + file_path)
+
     def test_delete_non_exits_file(self):
         file_path = "/test_delete_non_exits_file.txt"
 
@@ -297,6 +309,28 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(model["type"], "file")
 
         self.file_api.remove(file_path, self.endpoint)
+
+    def test_new_file_model_with_drive(self):
+        file_path = "/cs3drivetest_new_file_model.txt"
+        model = {
+            "type": "file",
+            "format": "text",
+            "content": "Test content",
+        }
+
+        self.contents_manager.new(model, file_path)
+
+        model = self.contents_manager.get(file_path, True, None)
+        self.assertEqual(model["name"], "test_new_file_model.txt")
+        self.assertEqual(model["path"], "/test_new_file_model.txt")
+        self.assertEqual(model["content"], "Test content")
+        self.assertEqual(model["format"], "text")
+        self.assertEqual(model["mimetype"], "text/plain")
+        self.assertEqual(model["size"], 12)
+        self.assertEqual(model["writable"], True)
+        self.assertEqual(model["type"], "file")
+
+        self.file_api.remove("/test_new_file_model.txt", self.endpoint)
 
     def test_new_notebook_model(self):
         file_path = "/test_new_notebook_model.ipynb"

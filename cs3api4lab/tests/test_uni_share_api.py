@@ -26,6 +26,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
             contains = False
             for share in share_list['content']:
                 if self.file_name.split('/')[-1] in share['path']:
+                    self.assertTrue("/" + self.file_name.split('/')[-1] == share['path'], "Shares path contains full path")
                     contains = True
             self.assertTrue(contains, "Share not present")
         finally:
@@ -86,6 +87,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
 
             list_of_shared_files = []
             for item in shared_folder['content']:
+                self.assertFalse(self.config.shared_folder in item['path'], "Share path contains shared folder")
                 list_of_shared_files.append(item['name'])
 
             self.assertIn(shared_file, list_of_shared_files)

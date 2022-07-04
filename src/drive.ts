@@ -74,7 +74,13 @@ export class CS3Contents implements Contents.IDrive {
     const activeTab: string = (await this._state.fetch('activeTab')) as string;
 
     if (activeTab === 'fileBrowser' || activeTab === undefined) {
-      return await CS3ContainerFiles('filelist', this._state, path, options);
+      return await CS3ContainerFiles(
+        'filelist',
+        this._state,
+        path,
+        options,
+        this.name
+      );
     } else {
       return Promise.resolve({} as Contents.IModel);
     }
@@ -112,17 +118,20 @@ export class CS3Contents implements Contents.IDrive {
   newUntitled(
     options: Contents.ICreateOptions | undefined
   ): Promise<Contents.IModel> {
+    if (options) {
+      options.path = this.name + options.path;
+    }
     return this._docManager.services.contents.newUntitled(options);
   }
 
   delete(localPath: string): Promise<void> {
-    return this._docManager.services.contents.delete(localPath);
+    return this._docManager.services.contents.delete(this.name + localPath);
   }
 
   rename(oldLocalPath: string, newLocalPath: string): Promise<Contents.IModel> {
     return this._docManager.services.contents.rename(
-      oldLocalPath,
-      newLocalPath
+      this.name + oldLocalPath,
+      this.name + newLocalPath
     );
   }
 
@@ -130,11 +139,17 @@ export class CS3Contents implements Contents.IDrive {
     localPath: string,
     options?: Partial<Contents.IModel>
   ): Promise<Contents.IModel> {
-    return this._docManager.services.contents.save(localPath, options);
+    return this._docManager.services.contents.save(
+      this.name + localPath,
+      options
+    );
   }
 
   copy(localPath: string, toLocalDir: string): Promise<Contents.IModel> {
-    return this._docManager.services.contents.copy(localPath, toLocalDir);
+    return this._docManager.services.contents.copy(
+      this.name + localPath,
+      this.name + toLocalDir
+    );
   }
 
   createCheckpoint(localPath: string): Promise<Contents.ICheckpointModel> {
@@ -171,7 +186,13 @@ export class CS3ContentsShareByMe extends CS3Contents {
   ): Promise<Contents.IModel> {
     const activeTab: string = (await this._state.fetch('activeTab')) as string;
     if (activeTab === 'sharesPanel') {
-      return await CS3ContainerFiles('by_me', this._state, path, options);
+      return await CS3ContainerFiles(
+        'by_me',
+        this._state,
+        path,
+        options,
+        this.name
+      );
     } else {
       return Promise.resolve({} as Contents.IModel);
     }
@@ -189,7 +210,13 @@ export class CS3ContentsShareWithMe extends CS3Contents {
   ): Promise<Contents.IModel> {
     const activeTab: string = (await this._state.fetch('activeTab')) as string;
     if (activeTab === 'sharesPanel') {
-      return await CS3ContainerFiles('with_me', this._state, path, options);
+      return await CS3ContainerFiles(
+        'with_me',
+        this._state,
+        path,
+        options,
+        this.name
+      );
     } else {
       return Promise.resolve({} as Contents.IModel);
     }
@@ -200,7 +227,8 @@ export async function CS3ContainerFiles(
   readType: string,
   stateDB: IStateDB,
   path: string | null = null,
-  options: Contents.IFetchOptions = {}
+  options: Contents.IFetchOptions = {},
+  driveName: string
 ): Promise<any> {
   const share = await stateDB.fetch('share');
   const showHidden: boolean = (await stateDB.fetch('showHidden')) as boolean;
@@ -212,7 +240,7 @@ export async function CS3ContainerFiles(
   }
 
   if (path !== '') {
-    return await getFileList(path, options, showHidden, stateDB);
+    return await getFileList(path, options, showHidden, stateDB, driveName);
   }
 
   switch (shareType) {
@@ -222,7 +250,7 @@ export async function CS3ContainerFiles(
       return await getSharedWithMe();
     case 'filelist':
     default:
-      return await getFileList(path, options, showHidden, stateDB);
+      return await getFileList(path, options, showHidden, stateDB, driveName);
   }
 }
 
@@ -230,7 +258,8 @@ async function getFileList(
   path: string | null,
   options: Contents.IFetchOptions,
   showHidden: boolean,
-  stateDB: IStateDB
+  stateDB: IStateDB,
+  driveName: string
 ): Promise<any> {
   const { type, format, content } = options;
 
@@ -241,6 +270,9 @@ async function getFileList(
   }
   if (format && type !== 'notebook') {
     url += '&format=' + format;
+  }
+  if (['cs3driveShareWithMe', 'cs3driveShareByMe'].includes(driveName)) {
+    path = driveName + path;
   }
   const result: Contents.IModel = await requestAPI(
     '/api/contents/' + path + '' + url,

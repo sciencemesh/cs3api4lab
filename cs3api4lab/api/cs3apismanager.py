@@ -43,7 +43,8 @@ class CS3APIsManager(ContentsManager):
         exists : bool
             Whether the path does indeed exist.
         """
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.handle_drive(path, self.cs3_config)[0]
+        path = FileUtils.normalize_path(path)
         return self._is_dir(path)
 
     @asyncify
@@ -59,7 +60,7 @@ class CS3APIsManager(ContentsManager):
         hidden : bool
             Whether the path is hidden.
         """
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.handle_drive(path, self.cs3_config)[0]
         parts = path.split('/')
         if any(part.startswith('.') for part in parts):
             return True
@@ -79,7 +80,8 @@ class CS3APIsManager(ContentsManager):
         exists : bool
             Whether the file exists.
         """
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.handle_drive(path, self.cs3_config)[0]
+        path = FileUtils.normalize_path(path)
         parent_path = self._get_parent_path(path)
         try:
             cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
@@ -96,9 +98,13 @@ class CS3APIsManager(ContentsManager):
     # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
-        path = FileUtils.remove_drives_names(path)
+        path, drive = FileUtils.handle_drive(path, self.cs3_config)
+        path = FileUtils.normalize_path(path)
         if type in (None, 'directory') and self._is_dir(path):
             model = self._dir_model(path, content=content)
+            if drive:
+                prefix = ModelUtils.get_prefix_for_drive(drive, self.cs3_config)
+                model = ModelUtils.hide_shares_paths(model, prefix)
         elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
             model = self._notebook_model(path, content=content)
         else:
@@ -144,7 +150,9 @@ class CS3APIsManager(ContentsManager):
         should call self.run_pre_save_hook(model=model, path=path) prior to
         writing any data.
         """
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.handle_drive(path, self.cs3_config)[0]
+        path = FileUtils.normalize_path(path)
+
         self._check_write_permissions(path)
 
         if 'type' not in model:
@@ -203,7 +211,7 @@ class CS3APIsManager(ContentsManager):
     @asyncify
     def delete_file(self, path):
         """Delete the file or directory at path."""
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.normalize_path(path)
         try:
             self.file_api.remove(path, self.cs3_config.endpoint)
 
@@ -225,8 +233,8 @@ class CS3APIsManager(ContentsManager):
         #
         # ToDo: Implements validate file like: notebook/services/contents/filemanager.py:587 using Reva API
         #
-        old_path = FileUtils.remove_drives_names(old_path)
-        new_path = FileUtils.remove_drives_names(new_path)
+        old_path = FileUtils.normalize_path(old_path)
+        new_path = FileUtils.normalize_path(new_path)
 
         try:
             self.file_api.move(old_path, new_path, self.cs3_config.endpoint)
@@ -236,9 +244,9 @@ class CS3APIsManager(ContentsManager):
 
     # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
     def new(self, model=None, path=''):
-
+        path = FileUtils.handle_drive(path, self.cs3_config)[0]
         path = path.strip('/')
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.normalize_path(path)
         self._check_write_permissions(path)
 
         if model is None:
@@ -428,6 +436,7 @@ class CS3APIsManager(ContentsManager):
     #
     @asyncify
     def delete(self, path):
+        path = FileUtils.handle_drive(path, self.cs3_config)[0]
         path = path.strip('/')
         if not path:
             raise web.HTTPError(400, "Can't delete root")
@@ -435,6 +444,8 @@ class CS3APIsManager(ContentsManager):
 
     @asyncify
     def rename(self, old_path, new_path):
+        old_path = FileUtils.handle_drive(old_path, self.cs3_config)[0]
+        new_path = FileUtils.handle_drive(new_path, self.cs3_config)[0]
         self.rename_file(old_path, new_path)
 
     def create_checkpoint(self, path):

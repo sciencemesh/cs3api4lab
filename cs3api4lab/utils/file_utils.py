@@ -47,9 +47,57 @@ class FileUtils:
         return path
 
     @staticmethod
+    def get_my_shares_path_prefix(config):
+        if config.mount_dir == "/":
+            return config.home_dir + "/" + config.shared_folder
+        else:
+            return "/" + config.shared_folder
+
+    @staticmethod
+    def get_share_path_prefix(config):
+        if config.mount_dir == "/" and config.home_dir != "/":
+            return config.home_dir
+        else:
+            return '/reva/' + config.client_id
+
+    @staticmethod
     def remove_drives_names(path):
         for drive in ["cs3drive:", "cs3driveShareWithMe:", "cs3driveShareByMe:", "/cs3drive:", "/cs3driveShareWithMe:", "/cs3driveShareByMe:"]:
             if path.startswith(drive):
                 path = path.replace(drive, "/")
                 break
         return FileUtils.normalize_path(path)
+
+    @staticmethod
+    def handle_drive(path, config):
+        drive = FileUtils.get_drive(path)
+        if drive:
+            path = FileUtils.replace_drive_with_directory(path, drive, config)
+        return path, drive
+
+    @staticmethod
+    def get_drive(path):
+        has_root = path.startswith("/")
+        for drive in ["cs3driveShareWithMe", "cs3driveShareByMe", "cs3driveShareWithMe:", "cs3driveShareByMe:"]:
+            if has_root:
+                drive = "/" + drive
+            if path.startswith(drive):
+                return drive
+        if path.startswith("/cs3drive") or path.startswith("cs3drive"):
+            return "/cs3drive" if has_root else "cs3drive"
+        return None
+
+    @staticmethod
+    def replace_drive_with_directory(path, drive, config):
+        path = path.replace(":", "")
+        if "cs3driveShareWithMe" in drive:
+            prefix = FileUtils.get_my_shares_path_prefix(config)
+            path = path.replace(drive, prefix + "/")
+        if "cs3driveShareByMe" in drive:
+            prefix = FileUtils.get_share_path_prefix(config)
+            path = path.replace(drive, "/")
+            path = prefix + path
+        else:
+            path = path.replace(drive, "")
+
+        return path

@@ -103,7 +103,9 @@ class ShareAPIFacade:
             ocm_share_list = self.ocm_share_api.list()
         else:
             ocm_share_list = None
-        return self.map_shares(share_list, ocm_share_list)
+        mapped_shares = self.map_shares(share_list, ocm_share_list)
+        mapped_shares = ModelUtils.hide_shares_paths(mapped_shares, FileUtils.get_share_path_prefix(self.config))
+        return mapped_shares
 
     def list_received(self, status=None):
         """
@@ -128,6 +130,8 @@ class ShareAPIFacade:
         :param file_path: path to the file
         :return: list of grantees
         """
+        file_path = FileUtils.handle_drive(file_path, self.config)[0]
+        file_path = FileUtils.normalize_path(file_path)
         share_list = self.share_api.list()
 
         if self.config.enable_ocm:

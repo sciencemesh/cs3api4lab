@@ -254,7 +254,9 @@ class Cs3FileApi:
         shared_folder_path = self.config.mount_dir + '/' + self.config.shared_folder
         container = self.read_directory(shared_folder_path)
 
-        return ModelUtils.convert_container_to_directory_model(shared_folder_path, container)
+        model = ModelUtils.convert_container_to_directory_model(shared_folder_path, container)
+        model = ModelUtils.hide_shares_paths(model, FileUtils.get_my_shares_path_prefix(self.config))
+        return model
 
     def get_home_dir(self):
         return self.config.home_dir if self.config.home_dir else ""
