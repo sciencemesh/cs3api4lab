@@ -1,6 +1,6 @@
 import os
 from jupyter_core.paths import jupyter_config_path
-from notebook.services.config import ConfigManager
+from jupyter_server.services.config import ConfigManager
 from traitlets.config import LoggingConfigurable
 
 
