@@ -5,7 +5,7 @@ import os
 import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
 
 from base64 import decodebytes
-from notebook.services.contents.manager import ContentsManager
+from jupyter_server.services.contents.manager import ContentsManager
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from tornado import web
 from nbformat.v4 import new_notebook

@@ -23,7 +23,7 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
         #given
         user = self.config['client_id']
         share_id = None
-        file_name = posixpath.join(self.config['home_dir'], "test_create_share.txt")
+        file_name = posixpath.join(self.config['mount_dir'], "test_create_share.txt")
         self.remove_share_and_file_by_path(user, file_name)
         try:
             self.create_test_file(user, file_name)
