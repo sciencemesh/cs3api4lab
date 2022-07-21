@@ -45,7 +45,7 @@ class StorageLogic:
     def stat(self, file_path, endpoint):
         ref = FileUtils.get_reference(file_path, endpoint)
         stat = self._stat_internal(ref)
-        if stat and stat.status.code is not cs3code.CODE_NOT_FOUND:
+        if stat and stat.status.code is not cs3code.CODE_NOT_FOUND and stat.status.code is not cs3code.CODE_INTERNAL:
             return stat.info
         return None
     
