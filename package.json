@@ -64,7 +64,7 @@
     "@lumino/widgets": "^1.16.1",
     "@lumino/messaging": "^1.10.1",
     "jupyterlab_toastify": "~4.2.1",
-    "moment": "~2.29.2",
+    "moment": "~2.29.4",
     "react-dropdown-select": "~4.8.2",
     "ts-debounce": "^4.0.0"
   },
