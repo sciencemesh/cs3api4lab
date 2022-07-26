@@ -249,12 +249,13 @@ class RequestHandler(APIHandler):
 
     @staticmethod
     def handle_error(self, err):
+        status = RequestHandler.get_response_code(err)
         response = {
-            'error_type': err.__class__.__name__,
-            'message': err.message if hasattr(err, 'message') else str(err)
+            'error_message': '%s: %s' % (str(status), err.message if hasattr(err, 'message') else str(err))
         }
-        self.set_status(RequestHandler.get_response_code(err))
-        self.finish(json.dumps(str(response)))
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(status)
+        self.finish(json.dumps(response))
 
     @staticmethod
     def handle_response(self, response, success_code):
