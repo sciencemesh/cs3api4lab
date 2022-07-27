@@ -45,7 +45,7 @@ class StorageLogic:
     def stat(self, file_path, endpoint):
         ref = FileUtils.get_reference(file_path, endpoint)
         stat = self._stat_internal(ref)
-        if stat and stat.status.code is not cs3code.CODE_NOT_FOUND:
+        if stat and stat.status.code is not cs3code.CODE_NOT_FOUND and stat.status.code is not cs3code.CODE_INTERNAL:
             return stat.info
         return None
     
@@ -93,7 +93,7 @@ class StorageLogic:
 
     def upload_content(self, file_path, content, content_size, init_file_upload_response):
         protocol = [p for p in init_file_upload_response.protocols if p.protocol == "simple"][0]
-        if self.config['tus_enabled']:
+        if self.config.tus_enabled:
             headers = {
                 'Tus-Resumable': '1.0.0',
                 'File-Path': file_path,

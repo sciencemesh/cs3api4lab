@@ -12,8 +12,8 @@ class TestCs3FileApi(TestCase):
     def setUp(self):
         self.log = LoggingConfigurable().log
         config = Cs3ConfigManager.get_config()
-        self.client_id = config['client_id']
-        self.endpoint = config['endpoint']
+        self.client_id = config.client_id
+        self.endpoint = config.endpoint
         self.storage = Cs3FileApi(self.log)
 
     def test_stat(self):
@@ -224,7 +224,7 @@ class TestCs3FileApi(TestCase):
             
             with self.assertRaises(IOError) as context:
                 self.storage.move(source_path, destination_path, self.endpoint)
-            self.assertEquals("file already exists", context.exception.args[0])
+            self.assertEqual("file already exists", context.exception.args[0])
         finally:
             self.storage.remove(destination_path, self.endpoint)
 

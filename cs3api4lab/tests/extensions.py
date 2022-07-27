@@ -28,7 +28,7 @@ class ExtStorageLogic(StorageLogic):
         self.log = log
         self.config = config
         self.auth = ExtAuthenticator(config, log)
-        channel = grpc.insecure_channel(config['reva_host'])
+        channel = grpc.insecure_channel(config.reva_host)
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
@@ -39,13 +39,13 @@ class ExtLockManager(LockManager):
         self.config = config
         self.log = log
         self.auth = ExtAuthenticator(config, log)
-        channel = grpc.insecure_channel(config['reva_host'])
+        channel = grpc.insecure_channel(config.reva_host)
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.user_api = ExtUserApi(log, config)
         self.storage_logic = ExtStorageLogic(log, config)
-        self.locks_expiration_time = config['locks_expiration_time']
+        self.locks_expiration_time = config.locks_expiration_time
 
 class ExtCs3ConfigManager(Cs3ConfigManager):
     def __init__(self, config, log):
@@ -59,7 +59,7 @@ class ExtAuthenticator(RevaPassword):
         super().__init__(config, log)
         self.config = config
         self.log = log
-        channel = grpc.insecure_channel(config['reva_host'])
+        channel = grpc.insecure_channel(config.reva_host)
         self.cs3_stub = cs3gw_grpc.GatewayAPIStub(channel)
 
 
@@ -69,7 +69,7 @@ class ExtCs3FileApi(Cs3FileApi):
         self.log = log
         self.config = config
         self.auth = ExtAuthenticator(config, log)
-        channel = grpc.insecure_channel(config['reva_host'])
+        channel = grpc.insecure_channel(config.reva_host)
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
@@ -112,11 +112,11 @@ class ExtCs3OcmShareApi(Cs3OcmShareApi):
         # super().__init__(config, log)
         self.log = log
         self.config = config
-        channel = grpc.insecure_channel(config['reva_host'])
+        channel = grpc.insecure_channel(config.reva_host)
         self.auth = ExtAuthenticator(config, log)
         self.auth.cs3_stub = cs3gw_grpc.GatewayAPIStub(channel)
         self.file_api = Cs3FileApi(log)
-        channel = grpc.insecure_channel(config['reva_host'])
+        channel = grpc.insecure_channel(config.reva_host)
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = grpc_gateway.GatewayAPIStub(intercept_channel)
