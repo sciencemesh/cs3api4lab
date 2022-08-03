@@ -48,7 +48,8 @@ class FileUtils:
 
     @staticmethod
     def remove_drives_names(path):
-        for drive in ["cs3drive:", "cs3driveShareWithMe:", "cs3driveShareByMe:"]:
+        for drive in ["cs3drive:", "cs3driveShareWithMe:", "cs3driveShareByMe:", "/cs3drive:", "/cs3driveShareWithMe:", "/cs3driveShareByMe:"]:
             if path.startswith(drive):
                 path = path.replace(drive, "/")
+                break
         return FileUtils.normalize_path(path)
