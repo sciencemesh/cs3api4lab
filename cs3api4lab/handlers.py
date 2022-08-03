@@ -1,4 +1,6 @@
 import json
+import time
+import asyncio
 
 from jupyter_server.base.handlers import APIHandler
 from tornado import gen, web
@@ -8,7 +10,9 @@ from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
+from cs3api4lab.api.test_api import TestApi
 from jupyter_server.utils import url_path_join
+
 
 class ShareHandler(APIHandler):
     @property
@@ -59,6 +63,7 @@ class ListSharesHandler(APIHandler):
     @gen.coroutine
     def get(self):
         RequestHandler.handle_request(self, self.share_api.list_shares, 200)
+        # yield AsyncRequestHandler.async_handle_request(self, self.share_api.list_shares, 200)
 
 
 class ListReceivedSharesHandler(APIHandler):
@@ -70,6 +75,7 @@ class ListReceivedSharesHandler(APIHandler):
     @gen.coroutine
     def get(self):
         status = self.get_query_argument('status', default=None)
+
         RequestHandler.handle_request(self, self.share_api.list_received, 200, status)
 
     @web.authenticated
@@ -110,6 +116,35 @@ class HomeDirHandler(APIHandler):
     @gen.coroutine
     def get(self):
         RequestHandler.handle_request(self, self.file_api.get_home_dir, 200)
+
+class TestBlockingHandler(APIHandler):
+    @property
+    def test_api(self):
+        return TestApi(self.log)
+
+    @web.authenticated
+    @gen.coroutine
+    def get(self):
+        RequestHandler.handle_request(self, self.test_api.test, 200)
+
+class TestAsyncHandler(APIHandler):
+    @property
+    def test_api(self):
+        return TestApi(self.log)
+
+    @web.authenticated
+    @gen.coroutine
+    def get(self):
+
+        # response = yield self.test_api.test2()
+        #
+        # self.set_header('Content-Type', 'application/json')
+        # self.set_status(200)
+        # if response is None:
+        #     self.finish()
+        # else:
+        #     self.finish(json.dumps(response))
+        yield AsyncRequestHandler.handle_request(self, self.test_api.test, 200)
 
 class PublicSharesHandler(APIHandler):
     @property
@@ -188,7 +223,7 @@ class UserInfoHandler(APIHandler):
     def get(self):
         idp = self.get_query_argument('idp')
         opaque_id = self.get_query_argument('opaque_id')
-        RequestHandler.handle_request(self, self.user_api.get_user_info, 200, idp, opaque_id)
+        yield AsyncRequestHandler.handle_request(self, self.user_api.get_user_info, 200, idp, opaque_id)
 
 class UserInfoClaimHandler(APIHandler):
     @property
@@ -200,7 +235,7 @@ class UserInfoClaimHandler(APIHandler):
     def get(self):
         claim = self.get_query_argument('claim')
         value = self.get_query_argument('value')
-        RequestHandler.handle_request(self, self.user_api.get_user_info_by_claim, 200, claim, value)
+        yield AsyncRequestHandler.handle_request(self, self.user_api.get_user_info_by_claim, 200, claim, value)
 
 class UserQueryHandler(APIHandler):
     @property
@@ -211,7 +246,7 @@ class UserQueryHandler(APIHandler):
     @gen.coroutine
     def get(self):
         query = self.get_query_argument('query')
-        RequestHandler.handle_request(self, self.user_api.find_users_by_query, 200, query)
+        yield AsyncRequestHandler.handle_request(self, self.user_api.find_users_by_query, 200, query)
 
 def setup_handlers(web_app, url_path):
     handlers = [
@@ -226,14 +261,15 @@ def setup_handlers(web_app, url_path):
         (r"/api/cs3/user", UserInfoHandler),
         (r"/api/cs3/user/claim", UserInfoClaimHandler),
         (r"/api/cs3/user/query", UserQueryHandler),
-        (r"/api/cs3/user/home_dir", HomeDirHandler)
+        (r"/api/cs3/user/home_dir", HomeDirHandler),
+        (r"/api/cs3/test_blocking", TestBlockingHandler),
+        (r"/api/cs3/test_async", TestAsyncHandler)
     ]
 
     for handler in handlers:
         pattern = url_path_join(web_app.settings['base_url'], handler[0])
         new_handler = tuple([pattern] + list(handler[1:]))
         web_app.add_handlers('.*$', [new_handler])
-
 
 class RequestHandler(APIHandler):
 
@@ -256,6 +292,74 @@ class RequestHandler(APIHandler):
         self.set_header('Content-Type', 'application/json')
         self.set_status(status)
         self.finish(json.dumps(response))
+
+    @staticmethod
+    def handle_response(self, response, success_code):
+        self.set_header('Content-Type', 'application/json')
+        self.set_status(success_code)
+        if response is None:
+            self.finish()
+        else:
+            self.finish(json.dumps(response))
+
+    @staticmethod
+    def get_response_code(err):
+        if isinstance(err, ShareAlreadyExistsError):
+            return 409
+        if isinstance(err, (ShareNotFoundError, LockNotFoundError)):
+            return 404
+        if isinstance(err, (InvalidTypeError, KeyError, FileNotFoundError, ParamError)):
+            return 400
+        if isinstance(err, OCMDisabledError):
+            return 501
+        if isinstance(err, _InactiveRpcError):
+            return 503
+        return 500
+
+class AsyncRequestHandler(APIHandler):
+    # def wrap(func):
+    #     @wraps(func)
+    #     async def run(*args, loop=None, executor=None, **kwargs):
+    #         if loop is None:
+    #             loop = asyncio.get_event_loop()
+    #         pfunc = partial(func, *args, **kwargs)
+    #         return await loop.run_in_executor(executor, pfunc)
+    #
+    #     return run
+    #
+    # @wrap
+    # @staticmethod
+    # def wrapped(func, *args):
+    #     return func(*args)
+
+    @staticmethod
+    async def handle_request(self, api_function, success_code, *args):
+        try:
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, api_function, *args)
+
+        except Exception as err:
+            self.log.error(err)
+            AsyncRequestHandler.handle_error(self, err)
+        else:
+            AsyncRequestHandler.handle_response(self, response, success_code)
+
+
+    # @staticmethod
+    # async def wrap_async(func, *args):
+    #     loop = asyncio.get_event_loop()
+    #     resp = await loop.run_in_executor(None, func, *args)
+    #     return resp
+
+
+    @staticmethod
+    def handle_error(self, err):
+        response = {
+            'error_type': err.__class__.__name__,
+            'message': err.message if hasattr(err, 'message') else str(err)
+        }
+        self.set_status(RequestHandler.get_response_code(err))
+        self.finish(json.dumps(str(response)))
 
     @staticmethod
     def handle_response(self, response, success_code):
