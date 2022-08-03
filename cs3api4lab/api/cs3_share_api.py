@@ -16,7 +16,6 @@ import grpc
 from tornado import escape
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
-from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.common.strings import *
 from cs3api4lab.config.config_manager import Cs3ConfigManager
@@ -32,14 +31,11 @@ class Cs3ShareApi:
     log = None
     auth = None
     config = {}
-    file_api = None
 
     def __init__(self, log):
         self.log = log
         self.config = Cs3ConfigManager().get_config()
         self.auth = Auth.get_authenticator(config=self.config, log=self.log)
-
-        self.file_api = Cs3FileApi(log)
 
         channel = ChannelConnector().get_channel()
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
