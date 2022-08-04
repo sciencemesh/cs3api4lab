@@ -24,7 +24,7 @@ class ShareHandler(APIHandler):
     def post(self):
         request = self.get_json_body()
         try:
-            RequestHandler.handle_request(self,
+            yield AsyncRequestHandler.handle_request(self,
                                           self.share_api.create,
                                           201,
                                           request['endpoint'],
@@ -34,24 +34,24 @@ class ShareHandler(APIHandler):
                                           request['role'],
                                           request['grantee_type'])
         except KeyError as err:
-            RequestHandler.handle_error(self, ParamError(err))
+            AsyncRequestHandler.handle_error(self, ParamError(err))
 
     @web.authenticated
     @gen.coroutine
     def delete(self):
         share_id = self.get_query_argument('share_id')
-        RequestHandler.handle_request(self, self.share_api.remove, 204, share_id)
+        yield AsyncRequestHandler.handle_request(self, self.share_api.remove, 204, share_id)
 
     def put(self):
         request = self.get_json_body()
         try:
-            RequestHandler.handle_request(self,
+            yield AsyncRequestHandler.handle_request(self,
                                           self.share_api.update_share,
                                           204,
                                           request['share_id'],
                                           request['role'])
         except KeyError as err:
-            RequestHandler.handle_error(self, ParamError(err))
+            AsyncRequestHandler.handle_error(self, ParamError(err))
 
 
 class ListSharesHandler(APIHandler):
@@ -62,7 +62,7 @@ class ListSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        RequestHandler.handle_request(self, self.share_api.list_shares, 200)
+        yield AsyncRequestHandler.handle_request(self, self.share_api.list_shares, 200)
         # yield AsyncRequestHandler.async_handle_request(self, self.share_api.list_shares, 200)
 
 
@@ -76,13 +76,13 @@ class ListReceivedSharesHandler(APIHandler):
     def get(self):
         status = self.get_query_argument('status', default=None)
 
-        RequestHandler.handle_request(self, self.share_api.list_received, 200, status)
+        yield AsyncRequestHandler.handle_request(self, self.share_api.list_received, 200, status)
 
     @web.authenticated
     @gen.coroutine
     def put(self):
         body = self.get_json_body()
-        RequestHandler.handle_request(self, self.share_api.update_received, 200, body["share_id"], body["state"])
+        yield AsyncRequestHandler.handle_request(self, self.share_api.update_received, 200, body["share_id"], body["state"])
 
 
 class ListSharesForFile(APIHandler):
@@ -94,7 +94,7 @@ class ListSharesForFile(APIHandler):
     @gen.coroutine
     def get(self):
         file_path = self.get_query_argument('file_path')
-        RequestHandler.handle_request(self, self.share_api.list_grantees_for_file, 200, file_path)
+        yield AsyncRequestHandler.handle_request(self, self.share_api.list_grantees_for_file, 200, file_path)
 
 class SharedFolder(APIHandler):
     @property
@@ -104,7 +104,7 @@ class SharedFolder(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        RequestHandler.handle_request(self, self.file_api.list_shared_folder, 200)
+        yield AsyncRequestHandler.handle_request(self, self.file_api.list_shared_folder, 200)
 
 
 class HomeDirHandler(APIHandler):
@@ -115,7 +115,7 @@ class HomeDirHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        RequestHandler.handle_request(self, self.file_api.get_home_dir, 200)
+        yield AsyncRequestHandler.handle_request(self, self.file_api.get_home_dir, 200)
 
 class TestBlockingHandler(APIHandler):
     @property
@@ -125,7 +125,7 @@ class TestBlockingHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        RequestHandler.handle_request(self, self.test_api.test, 200)
+        yield AsyncRequestHandler.handle_request(self, self.test_api.test, 200)
 
 class TestAsyncHandler(APIHandler):
     @property
@@ -156,13 +156,13 @@ class PublicSharesHandler(APIHandler):
     def get(self):
         token = self.get_query_argument('token', default=None)
         opaque_id = self.get_query_argument('opaque_id')
-        RequestHandler.handle_request(self, self.public_share_api.get_public_share, 200, opaque_id, token)
+        yield AsyncRequestHandler.handle_request(self, self.public_share_api.get_public_share, 200, opaque_id, token)
 
     @web.authenticated
     @gen.coroutine
     def post(self):
         request = self.get_json_body()
-        RequestHandler.handle_request(self,
+        yield AsyncRequestHandler.handle_request(self,
                                       self.public_share_api.create_public_share,
                                       201,
                                       request['endpoint'],
@@ -175,13 +175,13 @@ class PublicSharesHandler(APIHandler):
     @gen.coroutine
     def delete(self):
         opaque_id = self.get_query_argument('opaque_id')
-        RequestHandler.handle_request(self, self.public_share_api.remove_public_share, 204, opaque_id)
+        yield AsyncRequestHandler.handle_request(self, self.public_share_api.remove_public_share, 204, opaque_id)
 
     @web.authenticated
     @gen.coroutine
     def put(self):
         request = self.get_json_body()
-        RequestHandler.handle_request(self, self.public_share_api.update_public_share,
+        yield AsyncRequestHandler.handle_request(self, self.public_share_api.update_public_share,
                                       204,
                                       request['opaque_id'],
                                       request['token'],
@@ -199,7 +199,7 @@ class GetPublicShareByTokenHandler(APIHandler):
     def get(self):
         token = self.get_query_argument('token')
         password = self.get_query_argument('password', default='')
-        RequestHandler.handle_request(self, self.public_share_api.get_public_share_by_token, 200, token, password)
+        yield AsyncRequestHandler.handle_request(self, self.public_share_api.get_public_share_by_token, 200, token, password)
 
 
 class ListPublicSharesHandler(APIHandler):
@@ -210,7 +210,7 @@ class ListPublicSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        RequestHandler.handle_request(self, self.public_share_api.list_public_shares, 200)
+        yield AsyncRequestHandler.handle_request(self, self.public_share_api.list_public_shares, 200)
 
 
 class UserInfoHandler(APIHandler):
