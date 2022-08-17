@@ -282,7 +282,7 @@ class Cs3ShareApi:
         if stat_response.status.code == cs3_code.CODE_OK:
             return stat_response.info
         elif stat_response.status.code == cs3_code.CODE_NOT_FOUND:
-            raise ResourceNotFoundError("Resource not found")
+            raise ResourceNotFoundError(f"Resource {file_id} not found")
         else:
             self._handle_error(stat_response)
 

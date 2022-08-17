@@ -3,6 +3,7 @@ from unittest import TestCase
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from traitlets.config import LoggingConfigurable
+from cs3api4lab.exception.exceptions import ResourceNotFoundError
 
 
 class TestCs3FileApi(TestCase):
@@ -29,8 +30,9 @@ class TestCs3FileApi(TestCase):
             self.storage.remove(file_id, self.endpoint)
 
     def test_stat_no_file(self):
-        with self.assertRaises(IOError, msg='No such file or directory'):
+        with self.assertRaises(FileNotFoundError) as cm:
             self.storage.stat_info('/hopefullynotexisting', self.endpoint)
+        self.assertEqual(cm.exception.args[0], 'path not found when statting, file /hopefullynotexisting')
 
     def test_read_file(self):
 
@@ -129,6 +131,11 @@ class TestCs3FileApi(TestCase):
         self.assertIsNotNone(read_directory[0])
         self.assertIsNotNone(read_directory[0].path)
 
+    def test_read_directory_no_dir(self):
+        with self.assertRaises(ResourceNotFoundError) as cm:
+            self.storage.read_directory('/no_such_dir', self.endpoint)
+        self.assertEqual(cm.exception.args[0], 'directory /no_such_dir not found')
+
     def test_move_file(self):
         src_id = "/file_to_rename.txt"
         buffer = b"ebe5tresbsrdthbrdhvdtr"
@@ -150,6 +157,14 @@ class TestCs3FileApi(TestCase):
             try:
                 self.storage.remove(dest_id, self.endpoint)
             except: pass
+
+    def test_move_no_file(self):
+        src_id = "/no_such_file.txt"
+        dest_id = "/file_after_rename.txt"
+
+        with self.assertRaises(IOError) as cm:
+            self.storage.move(src_id, dest_id)
+        self.assertTrue('error moving: path:"/no_such_file.txt"' in cm.exception.args[0])
 
     def test_move_file_already_exists(self):
         try:

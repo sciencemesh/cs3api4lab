@@ -1,9 +1,8 @@
 import posixpath
 
 from cs3api4lab.tests.share_test_base import ShareTestBase
-from unittest import TestCase
-
-from cs3api4lab.exception.exceptions import ShareNotFoundError, ShareError, ResourceNotFoundError
+from unittest import TestCase, skip
+from cs3api4lab.exception.exceptions import ShareNotFoundError, ResourceNotFoundError, ShareError
 
 
 class TestCs3ShareApi(ShareTestBase, TestCase):
@@ -42,6 +41,21 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
             self.clean_up_share(user, share_id)
             self.clean_up_file(user, file_name)
 
+    def test_create_share_no_file(self):
+        '''tries to share a non-existing file'''
+        #given
+        file_name = posixpath.join(self.config.mount_dir, "no_such_file.txt")
+        #when
+        with self.assertRaises(ResourceNotFoundError) as cm:
+            self.share_api.create(self.storage_id,
+                                  file_name,
+                                  'receiver_id',
+                                  'receiver_idp',
+                                  self.receiver_role,
+                                  self.receiver_grantee_type)
+        #then
+        self.assertEqual(cm.exception.args[0], 'Resource /home/no_such_file.txt not found')
+
     def test_create(self):
         try:
             self.file_name = self.file_path + "_test_create"
@@ -65,8 +79,10 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
 
             self.share_api.update_received(self.share_id, 'ACCEPTED')
 
-            with self.assertRaises(ShareError):
+            with self.assertRaises(ShareError) as cm:
                 self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            self.assertEqual(cm.exception.args[0], 'Incorrect server response: error creating share')
+
             # todo change this after https://github.com/cs3org/reva/issues/2847 is fixed
             # with self.assertRaises(ShareAlreadyExistsError) as context:
             #     self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
@@ -83,7 +99,7 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
         with self.assertRaises(ResourceNotFoundError) as context:
             self.richard_share_api.create(self.storage_id, self.file_name, self.einstein_id, self.einstein_idp,
                                           self.receiver_role, self.receiver_grantee_type)
-        self.assertIn("Resource not found", context.exception.args[0])
+        self.assertIn(f"Resource {self.file_name} not found", context.exception.args[0])
 
     def test_get_share(self):
         """
@@ -151,6 +167,13 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
         finally:
             self.remove_test_file('einstein', self.file_name)
 
+    @skip('https://github.com/cs3org/reva/issues/2847')
+    def test_remove_no_share(self):
+        with self.assertRaises(ShareNotFoundError) as cm:
+            self.share_api.remove("no_such_id")
+        self.assertEqual(cm.exception.args[0], 'path not found when statting, file /hopefullynotexisting')
+
+
     def test_list_received(self):
         try:
             self.file_name = self.file_path + "_test_list_received"
@@ -181,6 +204,11 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
                 self.remove_test_share('richard', self.share_id)
             if self.file_name:
                 self.remove_test_file('richard', self.file_name)
+
+    def test_update_received_no_share(self):
+        with self.assertRaises(ShareNotFoundError) as cm:
+            self.share_api.update_received("no_such_id")
+        self.assertEqual(cm.exception.args[0], 'Received share no_such_id not found')
 
     def test_read_share(self):
         try:
