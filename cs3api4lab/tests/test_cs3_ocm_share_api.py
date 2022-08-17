@@ -3,6 +3,7 @@ from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from traitlets.config import LoggingConfigurable
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
+from cs3api4lab.exception.exceptions import ResourceNotFoundError, ShareAlreadyExistsError, ShareNotFoundError
 
 class TestCs3OCMShareApi(TestCase):
     api = None
@@ -35,6 +36,34 @@ class TestCs3OCMShareApi(TestCase):
         finally:
             self._clear_shares()
 
+    def test_create_ocm_share_no_file(self):
+        with self.assertRaises(ResourceNotFoundError) as cm:
+            self.api.create(self.receiver_id,
+                            self.receiver_idp,
+                            self.receiver_idp,
+                            self.config.endpoint,
+                            '/no_such_file',
+                            self.receiver_grantee_type,
+                            self.receiver_role, True)
+        self.assertEqual('Resource  /no_such_file  not found', cm.exception.args[0])
+
+    @skip('https://github.com/cs3org/reva/issues/2847')
+    def test_create_ocm_share_already_exists(self):
+        try:
+            created_share = self._create_share()
+            self.share_id = created_share['id']
+            with self.assertRaises(ShareAlreadyExistsError) as cm:
+                self.api.create(self.receiver_id,
+                                self.receiver_idp,
+                                self.receiver_idp,
+                                self.config.endpoint,
+                                self.file_path,
+                                self.receiver_grantee_type,
+                                self.receiver_role, True)
+            self.assertEqual('Resource /no_such_file not found', cm.exception.args[0])
+        finally:
+            self._clear_shares()
+
     def test_update_ocm_share_permissions(self):
         created_share = self._create_share()
         self.share_id = created_share['id']
@@ -44,6 +73,12 @@ class TestCs3OCMShareApi(TestCase):
             self.assertEqual(share['permissions'], 'editor', 'Change permission for ocm share failed')
         finally:
             self._clear_shares()
+
+    @skip('https://github.com/cs3org/reva/issues/2847')
+    def test_update_ocm_share_no_share(self):
+        with self.assertRaises(ShareNotFoundError) as cm:
+            self.api.update('no_such_id', 'permissions', ['editor', True])
+            self.assertEqual('Resource /no_such_file not found', cm.exception.args[0])
 
     def test_ocm_share_remove(self):
         created_share = self._create_share()
