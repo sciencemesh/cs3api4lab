@@ -49,12 +49,18 @@ export async function requestAPI<T>(
   try {
     response = await ServerConnection.makeRequest(requestUrl, init, settings);
   } catch (error) {
+    // console logging for troubleshooting
+    console.error(JSON.stringify(error));
     throw new ServerConnection.NetworkError(error);
   }
 
   const data = await response.json();
 
   if (!response.ok) {
+    if (data['error_message']) {
+      // console logging for troubleshooting
+      console.error(JSON.stringify(data['error_message']));
+    }
     throw new ServerConnection.ResponseError(response, data.message);
   }
 
