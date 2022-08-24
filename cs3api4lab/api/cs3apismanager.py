@@ -1,3 +1,6 @@
+import time
+import asyncio
+
 import nbformat
 import mimetypes
 import os
@@ -16,6 +19,7 @@ from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.utils.model_utils import ModelUtils
 
+from functools import wraps, partial
 
 class CS3APIsManager(ContentsManager):
     cs3_config = None
@@ -29,6 +33,28 @@ class CS3APIsManager(ContentsManager):
         self.file_api = Cs3FileApi(self.log)
         self.share_api = ShareAPIFacade(log)
 
+    def asyncify(func):
+        @wraps(func)
+        def run(*args, **kwargs):
+            def get_or_create_eventloop():
+                try:
+                    return asyncio.get_event_loop()
+                except RuntimeError as ex:
+                    if "There is no current event loop in thread" in str(ex):
+                        asyncio.set_event_loop(asyncio.new_event_loop())
+                        return asyncio.get_event_loop()
+
+            loop = get_or_create_eventloop()
+
+            async def run_async(loop, *args, executor=None, **kwargs):
+                pfunc = partial(func, *args, **kwargs)
+                return await loop.run_in_executor(executor, pfunc)
+
+            return loop.run_until_complete(run_async(loop, *args, **kwargs))
+
+        return run
+
+    @asyncify
     def dir_exists(self, path):
         """Does a directory exist at the given path?
         Like os.path.isdir
@@ -45,6 +71,7 @@ class CS3APIsManager(ContentsManager):
         path = FileUtils.remove_drives_names(path)
         return self._is_dir(path)
 
+    @asyncify
     def is_hidden(self, path):
         """Is path a hidden directory or file?
         Parameters
@@ -63,6 +90,7 @@ class CS3APIsManager(ContentsManager):
             return True
         return False
 
+    @asyncify
     def file_exists(self, path=''):
         """Does a file exist at the given path?
         Like os.path.isfile
@@ -90,6 +118,13 @@ class CS3APIsManager(ContentsManager):
 
         return False
 
+    # @test
+    # def get(self, path, content=True, type=None, format=None):
+    #     # loop = asyncio.get_event_loop()
+    #     # loop.run_until_complete(self.test_async_sleep())
+    #     return self._get(path, content, type, format)
+
+    @asyncify
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
         path = FileUtils.remove_drives_names(path)
@@ -104,6 +139,7 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
+    @asyncify
     def get_kernel_path(self, path, model=None):
         """
         Return the initial API path of a kernel associated with a given notebook.
@@ -131,6 +167,7 @@ class CS3APIsManager(ContentsManager):
             parent_dir = ''
         return parent_dir
 
+    @asyncify
     def save(self, model, path):
         """
         Save a file or directory model to path.
@@ -194,6 +231,7 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
+    @asyncify
     def delete_file(self, path):
         """Delete the file or directory at path."""
         path = FileUtils.remove_drives_names(path)
@@ -208,6 +246,7 @@ class CS3APIsManager(ContentsManager):
             self.log.error(u'Unknown error delete file: %s %s', path, e, exc_info=True)
             raise web.HTTPError(500, u'Unknown error delete file: %s %s' % (path, e))
 
+    @asyncify
     def rename_file(self, old_path, new_path):
         """Rename a file or directory."""
 
@@ -226,6 +265,7 @@ class CS3APIsManager(ContentsManager):
             self.log.error(u'Error renaming file: %s %s', old_path, e)
             raise web.HTTPError(500, u'Error renaming file: %s %s' % (old_path, e))
 
+    @asyncify
     def new(self, model=None, path=''):
 
         path = path.strip('/')
@@ -409,23 +449,29 @@ class CS3APIsManager(ContentsManager):
     #
     # Notebook hack - disable checkpoint
     #
+    @asyncify
     def delete(self, path):
         path = path.strip('/')
         if not path:
             raise web.HTTPError(400, "Can't delete root")
         self.delete_file(path)
 
+    @asyncify
     def rename(self, old_path, new_path):
         self.rename_file(old_path, new_path)
 
+    @asyncify
     def create_checkpoint(self, path):
         return {'id': 'checkpoint', 'last_modified': "0"}
 
+    @asyncify
     def restore_checkpoint(self, checkpoint_id, path):
         pass
 
+    @asyncify
     def list_checkpoints(self, path):
         return [{'id': 'checkpoint', 'last_modified': "0"}]
 
+    @asyncify
     def delete_checkpoint(self, checkpoint_id, path):
         pass

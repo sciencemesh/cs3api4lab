@@ -1,4 +1,6 @@
 import json
+import nest_asyncio
+
 from pathlib import Path
 
 from .handlers import setup_handlers
@@ -27,6 +29,10 @@ def _load_jupyter_server_extension(server_app):
     server_app: jupyterlab.labapp.LabApp
         JupyterLab application instance
     """
+
+    #line below must be run in order for loop.run_until_complete() to work
+    nest_asyncio.apply()
+
     url_path = "cs3api4lab"
     setup_handlers(server_app.web_app, url_path)
     server_app.log.info(
