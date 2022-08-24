@@ -155,8 +155,7 @@ c.ServerApp.contents_manager_class = 'cs3api4lab.CS3APIsManager'
 ### Disable default file browser
 To disable the default file browser use these commands in the console:
 ```bash
-jupyter labextension disable @jupyterlab/filebrowser-extension
-jupyter labextension disable @jupyterlab/filebrowser
+jupyter labextension disable @jupyterlab/filebrowser-extension:browser
 ```
 You can also use a config file to disable the default file browser, copy page_config.json from jupyter-config/page_config.json to:
 * Windows:
