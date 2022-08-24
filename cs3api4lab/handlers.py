@@ -10,7 +10,6 @@ from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.api.cs3_public_share_api import Cs3PublicShareApi
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
-from cs3api4lab.api.test_api import TestApi
 from jupyter_server.utils import url_path_join
 
 
@@ -63,7 +62,6 @@ class ListSharesHandler(APIHandler):
     @gen.coroutine
     def get(self):
         yield AsyncRequestHandler.handle_request(self, self.share_api.list_shares, 200)
-        # yield AsyncRequestHandler.async_handle_request(self, self.share_api.list_shares, 200)
 
 
 class ListReceivedSharesHandler(APIHandler):
@@ -116,35 +114,6 @@ class HomeDirHandler(APIHandler):
     @gen.coroutine
     def get(self):
         yield AsyncRequestHandler.handle_request(self, self.file_api.get_home_dir, 200)
-
-class TestBlockingHandler(APIHandler):
-    @property
-    def test_api(self):
-        return TestApi(self.log)
-
-    @web.authenticated
-    @gen.coroutine
-    def get(self):
-        yield AsyncRequestHandler.handle_request(self, self.test_api.test, 200)
-
-class TestAsyncHandler(APIHandler):
-    @property
-    def test_api(self):
-        return TestApi(self.log)
-
-    @web.authenticated
-    @gen.coroutine
-    def get(self):
-
-        # response = yield self.test_api.test2()
-        #
-        # self.set_header('Content-Type', 'application/json')
-        # self.set_status(200)
-        # if response is None:
-        #     self.finish()
-        # else:
-        #     self.finish(json.dumps(response))
-        yield AsyncRequestHandler.handle_request(self, self.test_api.test, 200)
 
 class PublicSharesHandler(APIHandler):
     @property
@@ -261,9 +230,7 @@ def setup_handlers(web_app, url_path):
         (r"/api/cs3/user", UserInfoHandler),
         (r"/api/cs3/user/claim", UserInfoClaimHandler),
         (r"/api/cs3/user/query", UserQueryHandler),
-        (r"/api/cs3/user/home_dir", HomeDirHandler),
-        (r"/api/cs3/test_blocking", TestBlockingHandler),
-        (r"/api/cs3/test_async", TestAsyncHandler)
+        (r"/api/cs3/user/home_dir", HomeDirHandler)
     ]
 
     for handler in handlers:
@@ -317,20 +284,6 @@ class RequestHandler(APIHandler):
         return 500
 
 class AsyncRequestHandler(APIHandler):
-    # def wrap(func):
-    #     @wraps(func)
-    #     async def run(*args, loop=None, executor=None, **kwargs):
-    #         if loop is None:
-    #             loop = asyncio.get_event_loop()
-    #         pfunc = partial(func, *args, **kwargs)
-    #         return await loop.run_in_executor(executor, pfunc)
-    #
-    #     return run
-    #
-    # @wrap
-    # @staticmethod
-    # def wrapped(func, *args):
-    #     return func(*args)
 
     @staticmethod
     async def handle_request(self, api_function, success_code, *args):
@@ -343,14 +296,6 @@ class AsyncRequestHandler(APIHandler):
             AsyncRequestHandler.handle_error(self, err)
         else:
             AsyncRequestHandler.handle_response(self, response, success_code)
-
-
-    # @staticmethod
-    # async def wrap_async(func, *args):
-    #     loop = asyncio.get_event_loop()
-    #     resp = await loop.run_in_executor(None, func, *args)
-    #     return resp
-
 
     @staticmethod
     def handle_error(self, err):
