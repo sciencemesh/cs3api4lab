@@ -95,12 +95,6 @@ class CS3APIsManager(ContentsManager):
 
         return False
 
-    # @test
-    # def get(self, path, content=True, type=None, format=None):
-    #     # loop = asyncio.get_event_loop()
-    #     # loop.run_until_complete(self.test_async_sleep())
-    #     return self._get(path, content, type, format)
-
     @asyncify
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
