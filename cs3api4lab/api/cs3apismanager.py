@@ -1,5 +1,4 @@
 import time
-import asyncio
 
 import nbformat
 import mimetypes
@@ -18,8 +17,7 @@ from cs3api4lab.utils.share_utils import ShareUtils
 from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.utils.model_utils import ModelUtils
-
-from functools import wraps, partial
+from cs3api4lab.utils.asyncify import asyncify
 
 class CS3APIsManager(ContentsManager):
     cs3_config = None
@@ -32,27 +30,6 @@ class CS3APIsManager(ContentsManager):
         self.log = log
         self.file_api = Cs3FileApi(self.log)
         self.share_api = ShareAPIFacade(log)
-
-    def asyncify(func):
-        @wraps(func)
-        def run(*args, **kwargs):
-            def get_or_create_eventloop():
-                try:
-                    return asyncio.get_event_loop()
-                except RuntimeError as ex:
-                    if "There is no current event loop in thread" in str(ex):
-                        asyncio.set_event_loop(asyncio.new_event_loop())
-                        return asyncio.get_event_loop()
-
-            loop = get_or_create_eventloop()
-
-            async def run_async(loop, *args, executor=None, **kwargs):
-                pfunc = partial(func, *args, **kwargs)
-                return await loop.run_in_executor(executor, pfunc)
-
-            return loop.run_until_complete(run_async(loop, *args, **kwargs))
-
-        return run
 
     @asyncify
     def dir_exists(self, path):
