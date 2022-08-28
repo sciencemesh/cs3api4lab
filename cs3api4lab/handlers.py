@@ -254,9 +254,7 @@ class RequestHandler(APIHandler):
     async def async_handle_request(self, api_function, success_code, *args):
         try:
             loop = get_or_create_eventloop()
-
             response = await loop.run_in_executor(None, api_function, *args)
-
         except Exception as err:
             self.log.error(err)
             RequestHandler.handle_error(self, err)
