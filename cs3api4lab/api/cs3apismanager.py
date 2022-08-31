@@ -31,7 +31,7 @@ class CS3APIsManager(ContentsManager):
         self.file_api = Cs3FileApi(self.log)
         self.share_api = ShareAPIFacade(log)
 
-    @asyncify
+    # _is_dir is already async, co no need to asyncify this
     def dir_exists(self, path):
         """Does a directory exist at the given path?
         Like os.path.isdir
@@ -95,7 +95,7 @@ class CS3APIsManager(ContentsManager):
 
         return False
 
-    @asyncify
+    # can't be async because of notebooks and SQLite
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
         path = FileUtils.remove_drives_names(path)
@@ -138,7 +138,7 @@ class CS3APIsManager(ContentsManager):
             parent_dir = ''
         return parent_dir
 
-    @asyncify
+    # can't be async because of notebooks and SQLite
     def save(self, model, path):
         """
         Save a file or directory model to path.
@@ -236,7 +236,7 @@ class CS3APIsManager(ContentsManager):
             self.log.error(u'Error renaming file: %s %s', old_path, e)
             raise web.HTTPError(500, u'Error renaming file: %s %s' % (old_path, e))
 
-    @asyncify
+    # can't be async because of notebooks and SQLite
     def new(self, model=None, path=''):
 
         path = path.strip('/')
@@ -290,6 +290,7 @@ class CS3APIsManager(ContentsManager):
 
         return content
 
+    @asyncify
     def _dir_model(self, path, content):
 
         cs3_container = self.file_api.read_directory(path, self.cs3_config.endpoint)
@@ -297,6 +298,7 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
+    @asyncify
     def _file_model(self, path, content, format):
         parent_path = self._get_parent_path(path)
         cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
@@ -325,6 +327,7 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
+    # can't be async because of notebooks and SQLite
     def _notebook_model(self, path, content):
         parent_path = self._get_parent_path(path)
         cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
@@ -342,6 +345,7 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
+    @asyncify
     def _is_dir(self, path):
 
         if path == '/' or path == '' or path is None:
@@ -365,6 +369,7 @@ class CS3APIsManager(ContentsManager):
 
         return False
 
+    @asyncify
     def _save_file(self, path, content, format):
 
         if format not in {'text', 'base64'}:
@@ -383,6 +388,7 @@ class CS3APIsManager(ContentsManager):
             self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
 
+    # can't be async because of notebooks and SQLite
     def _save_notebook(self, path, nb):
 
         nb_content = nbformat.writes(nb)
@@ -393,6 +399,7 @@ class CS3APIsManager(ContentsManager):
             self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
 
+    @asyncify
     def _save_directory(self, path):
 
         if self.is_hidden(path) and not self.allow_hidden:
@@ -406,6 +413,7 @@ class CS3APIsManager(ContentsManager):
 
         self.file_api.create_directory(path, self.cs3_config.endpoint)
 
+    @asyncify
     def _check_write_permissions(self, path):
 
         parent = self._get_parent_path(path)
@@ -431,18 +439,14 @@ class CS3APIsManager(ContentsManager):
     def rename(self, old_path, new_path):
         self.rename_file(old_path, new_path)
 
-    @asyncify
     def create_checkpoint(self, path):
         return {'id': 'checkpoint', 'last_modified': "0"}
 
-    @asyncify
     def restore_checkpoint(self, checkpoint_id, path):
         pass
 
-    @asyncify
     def list_checkpoints(self, path):
         return [{'id': 'checkpoint', 'last_modified': "0"}]
 
-    @asyncify
     def delete_checkpoint(self, checkpoint_id, path):
         pass
