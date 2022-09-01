@@ -162,10 +162,15 @@ class ShareAPIFacade:
 
     def is_ocm_received_share(self, share_id):
         """Checks if share is present on OCM received shares list"""
-        received_shares = self.ocm_share_api.list_received()
-        for share in received_shares.shares:
-            if share_id == share.share.id.opaque_id:
-                return True
+        if self.config.enable_ocm:
+            try:
+                # if OCM is not enabled on IOP side this call will fail
+                received_shares = self.ocm_share_api.list_received()
+                for share in received_shares.shares:
+                    if share_id == share.share.id.opaque_id:
+                        return True
+            except Exception as e:
+                self.log.error("Error checking OCM " + str(e))
         return False
 
     def map_shares(self, share_list, ocm_share_list, received=False):
