@@ -122,7 +122,7 @@ class Config(LoggingConfigurable):
 
     @default("secure_channel")
     def _secure_channel_default(self):
-        return self._get_config_value("secure_channel") == "true"
+        return self._get_config_value("secure_channel") in ["true", True]
 
     @default("authenticator_class")
     def _authenticator_class_default(self):
@@ -150,11 +150,11 @@ class Config(LoggingConfigurable):
 
     @default("tus_enabled")
     def _tus_enabled_default(self):
-        return self._get_config_value("tus_enabled") == "true"
+        return self._get_config_value("tus_enabled") in ["true", True]
 
     @default("enable_ocm")
     def _enable_ocm_default(self):
-        return self._get_config_value("enable_ocm") == "true"
+        return self._get_config_value("enable_ocm") in ["true", True]
 
     @default("shared_folder")
     def _shared_folder_default(self):
@@ -184,9 +184,9 @@ class Config(LoggingConfigurable):
         env = os.getenv("CS3_" + key.upper())
         if env:
             return env
-        elif self._file_config(key):
+        elif self._file_config(key) is not None:
             return self._file_config(key)
-        elif self._default_config[key]:
+        elif self._default_config[key] is not None:
             return self._default_config[key]
         else:
             return None
