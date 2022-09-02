@@ -26,59 +26,58 @@ class TestCS3APIsManager(TestCase):
         file_id = "/test_get_text_file.txt"
         message = "Lorem ipsum dolor sit amet..."
         self.file_api.write_file(file_id, message, self.endpoint)
-
-        model = self.contents_manager.get(file_id, True, None)
-
-        self.assertEqual(model["name"], "test_get_text_file.txt")
-        self.assertEqual(model["path"], file_id)
-        self.assertEqual(model["content"], message)
-        self.assertEqual(model["format"], "text")
-        self.assertEqual(model["mimetype"], "text/plain")
-        self.assertEqual(model["size"], 29)
-        self.assertEqual(model["writable"], True)
-        self.assertEqual(model["type"], "file")
-
-        self.file_api.remove(file_id, self.endpoint)
+        try:
+            model = self.contents_manager.get(file_id, True, None)
+            self.assertEqual(model["name"], "test_get_text_file.txt")
+            self.assertEqual(model["path"], file_id)
+            self.assertEqual(model["content"], message)
+            self.assertEqual(model["format"], "text")
+            self.assertEqual(model["mimetype"], "text/plain")
+            self.assertEqual(model["size"], 29)
+            self.assertEqual(model["writable"], True)
+            self.assertEqual(model["type"], "file")
+        finally:
+            self.file_api.remove(file_id, self.endpoint)
 
     def test_get_file_with_drive_name_starting_with_slash(self):
         file_path = "/cs3drive:test_get_text_file.txt"
         file_id = "/test_get_text_file.txt"
         message = "Lorem ipsum dolor sit amet..."
         self.file_api.write_file(file_id, message, self.endpoint)
-
-        model = self.contents_manager.get(file_path, True, None)
-        self.assertEqual(model["name"], "test_get_text_file.txt")
-
-        self.file_api.remove(file_id, self.endpoint)
+        try:
+            model = self.contents_manager.get(file_path, True, None)
+            self.assertEqual(model["name"], "test_get_text_file.txt")
+        finally:
+            self.file_api.remove(file_id, self.endpoint)
 
     def test_get_file_with_drive_name(self):
         file_path = "cs3drive:test_get_text_file.txt"
         file_id = "/test_get_text_file.txt"
         message = "Lorem ipsum dolor sit amet..."
         self.file_api.write_file(file_id, message, self.endpoint)
-
-        model = self.contents_manager.get(file_path, True, None)
-        self.assertEqual(model["name"], "test_get_text_file.txt")
-
-        self.file_api.remove(file_id, self.endpoint)
+        try:
+            model = self.contents_manager.get(file_path, True, None)
+            self.assertEqual(model["name"], "test_get_text_file.txt")
+        finally:
+            self.file_api.remove(file_id, self.endpoint)
 
     def test_get_text_file_with_share_path(self):
         file_id = "/test_get_text_file.txt"
         share_file_id = "/reva/einstein/test_get_text_file.txt"
         message = "Lorem ipsum dolor sit amet..."
         self.file_api.write_file(file_id, message, self.endpoint)
-
-        model = self.contents_manager.get(share_file_id, True, None)
-        self.assertEqual(model["name"], "test_get_text_file.txt")
-        self.assertEqual(model["path"], share_file_id)
-        self.assertEqual(model["content"], message)
-        self.assertEqual(model["format"], "text")
-        self.assertEqual(model["mimetype"], "text/plain")
-        self.assertEqual(model["size"], 29)
-        self.assertEqual(model["writable"], True)
-        self.assertEqual(model["type"], "file")
-
-        self.file_api.remove(file_id, self.endpoint)
+        try:
+            model = self.contents_manager.get(share_file_id, True, None)
+            self.assertEqual(model["name"], "test_get_text_file.txt")
+            self.assertEqual(model["path"], share_file_id)
+            self.assertEqual(model["content"], message)
+            self.assertEqual(model["format"], "text")
+            self.assertEqual(model["mimetype"], "text/plain")
+            self.assertEqual(model["size"], 29)
+            self.assertEqual(model["writable"], True)
+            self.assertEqual(model["type"], "file")
+        finally:
+            self.file_api.remove(file_id, self.endpoint)
 
     def test_get_notebook_file(self):
         file_id = "/test_get_notebook_file.ipynb"
@@ -116,19 +115,18 @@ class TestCS3APIsManager(TestCase):
 					}'
 
         self.file_api.write_file(file_id, buffer, self.endpoint)
-
-        model = self.contents_manager.get(file_id, True, "notebook")
-
-        self.assertEqual(model["name"], "test_get_notebook_file.ipynb")
-        self.assertEqual(model["path"], file_id)
-        self.assertTrue("### Markdown example" in str(model["content"]))
-        self.assertEqual(model["format"], "json")
-        self.assertEqual(model["mimetype"], None)
-        self.assertEqual(model["size"], 637)
-        self.assertEqual(model["writable"], True)
-        self.assertEqual(model["type"], "notebook")
-
-        self.file_api.remove(file_id, self.endpoint)
+        try:
+            model = self.contents_manager.get(file_id, True, "notebook")
+            self.assertEqual(model["name"], "test_get_notebook_file.ipynb")
+            self.assertEqual(model["path"], file_id)
+            self.assertTrue("### Markdown example" in str(model["content"]))
+            self.assertEqual(model["format"], "json")
+            self.assertEqual(model["mimetype"], None)
+            self.assertEqual(model["size"], 637)
+            self.assertEqual(model["writable"], True)
+            self.assertEqual(model["type"], "notebook")
+        finally:
+            self.file_api.remove(file_id, self.endpoint)
 
     def test_save_text_model(self):
         file_id = "/test_save_text_model.txt"
@@ -137,9 +135,7 @@ class TestCS3APIsManager(TestCase):
             "format": "text",
             "content": "Test content",
         }
-
         save_model = self.contents_manager.save(model, file_id)
-
         self.assertEqual(save_model["name"], "test_save_text_model.txt")
         self.assertEqual(save_model["path"], file_id)
         self.assertEqual(save_model["content"], None)
@@ -148,15 +144,12 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["size"], 12)
         self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "file")
-
         self.file_api.remove(file_id, self.endpoint)
 
     def test_save_notebook_model(self):
         file_id = "/test_save_notebook_model.ipynb"
         model = self._create_notebook_model()
-
         save_model = self.contents_manager.save(model, file_id)
-
         self.assertEqual(save_model["name"], "test_save_notebook_model.ipynb")
         self.assertEqual(save_model["path"], file_id)
         self.assertEqual(save_model["content"], None)
@@ -165,7 +158,6 @@ class TestCS3APIsManager(TestCase):
         self.assertEqual(save_model["size"], 521)
         self.assertEqual(save_model["writable"], True)
         self.assertEqual(save_model["type"], "notebook")
-
         self.file_api.remove(file_id, self.endpoint)
 
     def _create_notebook_model(self):
@@ -209,37 +201,42 @@ class TestCS3APIsManager(TestCase):
     def test_delete_file(self):
         file_path = "/test_delete_exits_file.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.file_api.write_file(file_path, message, self.endpoint)
-
-        self.contents_manager.delete_file(file_path)
+        try:
+            self.file_api.write_file(file_path, message, self.endpoint)
+        finally:
+            self.contents_manager.delete_file(file_path)
 
         with self.assertRaises(IOError):
             self.file_api.stat(file_path, self.endpoint)
 
     def test_delete_non_exits_file(self):
         file_path = "/test_delete_non_exits_file.txt"
-
         with self.assertRaises(web.HTTPError):
             self.contents_manager.delete_file(file_path)
 
     def test_rename_file(self):
+        file_renamed = False
         file_path = "/test_rename_file.txt"
         message = "Lorem ipsum dolor sit amet..."
-        self.file_api.write_file(file_path, message, self.endpoint)
-
         file_dest = "/test_after_rename_file.txt"
 
-        self.contents_manager.rename_file(file_path, file_dest)
+        self.file_api.write_file(file_path, message, self.endpoint)
+        try:
+            self.contents_manager.rename_file(file_path, file_dest)
+            file_renamed = True
 
-        stat_info = self.file_api.stat(file_dest, self.endpoint)
-        self.assertIsInstance(stat_info, dict)
+            stat_info = self.file_api.stat(file_dest, self.endpoint)
+            self.assertIsInstance(stat_info, dict)
 
-        with self.assertRaises(IOError):
-            self.file_api.stat(file_path, self.endpoint)
+            with self.assertRaises(IOError):
+                self.file_api.stat(file_path, self.endpoint)
 
-        self.file_api.remove(file_dest, self.endpoint)
-        with self.assertRaises(IOError):
-            self.file_api.stat(file_dest, self.endpoint)
+            self.file_api.remove(file_dest, self.endpoint)
+            with self.assertRaises(IOError):
+                self.file_api.stat(file_dest, self.endpoint)
+        except Exception as e:
+            self.file_api.remove(file_dest, self.endpoint) if file_renamed else self.file_api.remove(file_path, self.endpoint)
+            raise e
 
     def test_rename_file_non_exits_file(self):
         file_path = "/test_rename_file.txt"
@@ -259,8 +256,8 @@ class TestCS3APIsManager(TestCase):
 
             with self.assertRaises(web.HTTPError) as context:
                 self.contents_manager.rename_file(file_path, file_dest)
-            self.assertEqual('Error renaming file: /test_rename_file.txt file already exists', context.exception.log_message)
-                
+            self.assertEqual('Error renaming file: /test_rename_file.txt file already exists',
+                             context.exception.log_message)
         finally:
             self.file_api.remove(file_path, self.endpoint)
             self.file_api.remove(file_dest, self.endpoint)
@@ -272,20 +269,19 @@ class TestCS3APIsManager(TestCase):
             "format": "text",
             "content": "Test content",
         }
-
-        self.contents_manager.new(model, file_path)
-
-        model = self.contents_manager.get(file_path, True, None)
-        self.assertEqual(model["name"], "test_new_file_model.txt")
-        self.assertEqual(model["path"], file_path)
-        self.assertEqual(model["content"], "Test content")
-        self.assertEqual(model["format"], "text")
-        self.assertEqual(model["mimetype"], "text/plain")
-        self.assertEqual(model["size"], 12)
-        self.assertEqual(model["writable"], True)
-        self.assertEqual(model["type"], "file")
-
-        self.file_api.remove(file_path, self.endpoint)
+        try:
+            self.contents_manager.new(model, file_path)
+            model = self.contents_manager.get(file_path, True, None)
+            self.assertEqual(model["name"], "test_new_file_model.txt")
+            self.assertEqual(model["path"], file_path)
+            self.assertEqual(model["content"], "Test content")
+            self.assertEqual(model["format"], "text")
+            self.assertEqual(model["mimetype"], "text/plain")
+            self.assertEqual(model["size"], 12)
+            self.assertEqual(model["writable"], True)
+            self.assertEqual(model["type"], "file")
+        finally:
+            self.file_api.remove(file_path, self.endpoint)
 
     def test_new_notebook_model(self):
         file_path = "/test_new_notebook_model.ipynb"
@@ -364,38 +360,41 @@ class TestCS3APIsManager(TestCase):
     def test_recreate_directory(self):
         file_path = "/test_recreate_directory"
         self.file_api.create_directory(file_path, self.endpoint)
-
-        with self.assertRaises(IOError):
-            self.file_api.create_directory(file_path, self.endpoint)
-
-        self.contents_manager.delete_file(file_path)
-
-        with self.assertRaises(IOError):
-            self.file_api.stat(file_path, self.endpoint)
+        try:
+            with self.assertRaises(IOError):
+                self.file_api.create_directory(file_path, self.endpoint)
+            self.contents_manager.delete_file(file_path)
+            with self.assertRaises(IOError):
+                self.file_api.stat(file_path, self.endpoint)
+        except Exception as e:
+            self.contents_manager.delete_file(file_path)
+            raise e
 
     def test_create_subdirectory(self):
-        file_path = "/test_create_directory"
-        self.file_api.create_directory(file_path, self.endpoint)
+        try:
+            file_path = "/test_create_directory"
+            self.file_api.create_directory(file_path, self.endpoint)
 
-        file_path2 = "/test_create_directory/test_subdir"
-        self.file_api.create_directory(file_path2, self.endpoint)
+            file_path2 = "/test_create_directory/test_subdir"
+            self.file_api.create_directory(file_path2, self.endpoint)
 
-        self.contents_manager.delete_file(file_path2)
-        with self.assertRaises(IOError):
-            self.file_api.stat(file_path2, self.endpoint)
+            self.contents_manager.delete_file(file_path2)
+            with self.assertRaises(IOError):
+                self.file_api.stat(file_path2, self.endpoint)
 
-        self.contents_manager.delete_file(file_path)
-        with self.assertRaises(IOError):
-            self.file_api.stat(file_path, self.endpoint)
+            self.contents_manager.delete_file(file_path)
+            with self.assertRaises(IOError):
+                self.file_api.stat(file_path, self.endpoint)
+        except Exception as e:
+            self.contents_manager.delete(file_path)
+            self.contents_manager.delete(file_path2)
+            raise e
 
     def test_kernel_path_when_config_entry_provided(self):
         self.config.kernel_path = "/test/path"
-
         path = self.contents_manager.get_kernel_path('')
-
         self.assertEqual(path, "/test/path")
 
     def test_kernel_path_when_config_entry_default(self):
         path = self.contents_manager.get_kernel_path('')
-
         self.assertEqual(path, "/")
