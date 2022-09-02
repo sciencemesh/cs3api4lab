@@ -3,7 +3,6 @@ import json
 from unittest import TestCase
 from time import sleep
 from cs3api4lab.tests.share_test_base import ShareTestBase
-from traitlets.config import LoggingConfigurable
 import urllib.parse
 
 class TestLocks(ShareTestBase, TestCase):
