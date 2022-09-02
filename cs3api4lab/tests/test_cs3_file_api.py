@@ -19,16 +19,14 @@ class TestCs3FileApi(TestCase):
     def test_stat(self):
         file_id = "/test.txt"
         message = "Lorem ipsum dolor sit amet..."
-
-        self.storage.write_file(file_id, message, self.endpoint)
-
-        stat_info = self.storage.stat(file_id, self.endpoint)
-
-        self.assertIsInstance(stat_info, dict)
-        self.assertTrue('mtime' in stat_info, 'Missing mtime from stat output')
-        self.assertTrue('size' in stat_info, 'Missing size from stat output')
-
-        self.storage.remove(file_id, self.endpoint)
+        try:
+            self.storage.write_file(file_id, message, self.endpoint)
+            stat_info = self.storage.stat(file_id, self.endpoint)
+            self.assertIsInstance(stat_info, dict)
+            self.assertTrue('mtime' in stat_info, 'Missing mtime from stat output')
+            self.assertTrue('size' in stat_info, 'Missing size from stat output')
+        finally:
+            self.storage.remove(file_id, self.endpoint)
 
     def test_stat_no_file(self):
         with self.assertRaises(IOError, msg='No such file or directory'):
@@ -39,194 +37,138 @@ class TestCs3FileApi(TestCase):
         content_to_write = b'bla\n'
         content_check = 'bla\n'
         file_path = "/test_read.txt"
-
-        self.storage.write_file(file_path, content_to_write, self.endpoint)
-        content = ''
-
-        for chunk in self.storage.read_file(file_path, self.endpoint):
-            self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
-            content += chunk.decode('utf-8')
-
-        self.assertEqual(content, content_check, 'File ' + file_path + ' should contain the string: ' + content_check)
-
-        self.storage.remove(file_path, self.endpoint)
-
+        try:
+            self.storage.write_file(file_path, content_to_write, self.endpoint)
+            content = ''
+            for chunk in self.storage.read_file(file_path, self.endpoint):
+                self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
+                content += chunk.decode('utf-8')
+            self.assertEqual(content, content_check,
+                             'File ' + file_path + ' should contain the string: ' + content_check)
+        finally:
+            self.storage.remove(file_path, self.endpoint)
 
     def test_read_file_by_id(self):
-
         content_to_write = b'bla_by_id\n'
         content_to_check = 'bla_by_id\n'
         file_path = "/test_read_by_id.txt"
+        try:
+            self.storage.write_file(file_path, content_to_write, self.endpoint)
+            stat = self.storage.stat(file_path)
+            content = ''
+            for chunk in self.storage.read_file(file_path, self.endpoint):
+                self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
+                content += chunk.decode('utf-8')
 
-        self.storage.write_file(file_path, content_to_write, self.endpoint)
-        stat = self.storage.stat(file_path)
-
-        content = ''
-        for chunk in self.storage.read_file(file_path, self.endpoint):
-            self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
-            content += chunk.decode('utf-8')
-
-        self.storage.remove(file_path, self.endpoint)
-
-        self.assertEqual(stat['inode']['opaque_id'], 'fileid-einstein%2Ftest_read_by_id.txt')
-        self.assertEqual(stat['inode']['storage_id'], '123e4567-e89b-12d3-a456-426655440000')
-
-        self.assertEqual(content, content_to_check, 'File ' + file_path + ' should contain the string: ' + content_to_check)
+            self.assertEqual(stat['inode']['opaque_id'], 'fileid-einstein%2Ftest_read_by_id.txt')
+            self.assertEqual(stat['inode']['storage_id'], '123e4567-e89b-12d3-a456-426655440000')
+            self.assertEqual(content, content_to_check,
+                             'File ' + file_path + ' should contain the string: ' + content_to_check)
+        finally:
+            self.storage.remove(file_path, self.endpoint)
 
     def test_read_file_by_share_path(self):
-
         content_to_write = b'bla_by_share\n'
         content_to_check = 'bla_by_share\n'
         file_path = "/test_read_by_share_path.txt"
-
-        self.storage.write_file(file_path, content_to_write, self.endpoint)
-
-        stat = self.storage.stat(file_path)
-        stat_by_id = self.storage.stat(stat['inode']['opaque_id'], stat['inode']['storage_id'])
-
-        content = ''
-        for chunk in self.storage.read_file(file_path, self.endpoint):
-            self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
-            content += chunk.decode('utf-8')
-
-        self.storage.remove(file_path, self.endpoint)
-
-        self.assertEqual(stat_by_id['filepath'], '/reva/einstein/test_read_by_share_path.txt')
-        self.assertEqual(content, content_to_check, 'File ' + file_path + ' should contain the string: ' + content_to_check)
-
+        try:
+            self.storage.write_file(file_path, content_to_write, self.endpoint)
+            stat = self.storage.stat(file_path)
+            stat_by_id = self.storage.stat(stat['inode']['opaque_id'], stat['inode']['storage_id'])
+            content = ''
+            for chunk in self.storage.read_file(file_path, self.endpoint):
+                self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
+                content += chunk.decode('utf-8')
+            self.assertEqual(stat_by_id['filepath'], '/reva/einstein/test_read_by_share_path.txt')
+            self.assertEqual(content, content_to_check,
+                             'File ' + file_path + ' should contain the string: ' + content_to_check)
+        finally:
+            self.storage.remove(file_path, self.endpoint)
 
     def test_read_file_no_file(self):
-
         file_path = "/test_read_no_existing_file.txt"
         content = ''
-
         with self.assertRaises(IOError, msg='No such file or directory'):
             for chunk in self.storage.read_file(file_path, self.endpoint):
                 content += chunk.decode('utf-8')
 
     def test_write_file(self):
-
         buffer = b"Testu form cs3 Api"
         file_id = "/testfile.txt"
-
-        self.storage.write_file(file_id, buffer, self.endpoint)
-
-        stat_info = self.storage.stat(file_id, self.endpoint)
-        self.assertIsInstance(stat_info, dict)
-
-        self.storage.remove(file_id, self.endpoint)
-        with self.assertRaises(IOError):
-            self.storage.stat(file_id, self.endpoint)
+        try:
+            self.storage.write_file(file_id, buffer, self.endpoint)
+            stat_info = self.storage.stat(file_id, self.endpoint)
+            self.assertIsInstance(stat_info, dict)
+        finally:
+            self.storage.remove(file_id, self.endpoint)
 
     def test_write_empty_file(self):
-
         buffer = b""
         file_id = "/zero_test_file.txt"
-
-        self.storage.write_file(file_id, buffer, self.endpoint)
-
-        stat_info = self.storage.stat(file_id, self.endpoint)
-        self.assertIsInstance(stat_info, dict)
-
-        self.storage.remove(file_id, self.endpoint)
-        with self.assertRaises(IOError):
-            self.storage.stat(file_id, self.endpoint)
-
-    def test_write_example(self):
-
-        buffer = b"Example from cs3 API (Test X22)"
-        file_id = "/example1.txt"
-        self.storage.write_file(file_id, buffer, self.endpoint)
-
-        buffer = b"Example2 from cs3 API"
-        file_id = "/example2.txt"
-        self.storage.write_file(file_id, buffer, self.endpoint)
-
-        buffer = b'{\
-					"cells": [\
-						{\
-							"cell_type": "markdown",\
-							"metadata": {},\
-							"source": [\
-								"### Markdown example"\
-							]\
-						}\
-					],\
-					"metadata": {\
-						"kernelspec": {\
-							"display_name": "Python 3",\
-							"language": "python",\
-							"name": "python3"\
-						},\
-						"language_info": {\
-							"codemirror_mode": {\
-								"name": "ipython",\
-								"version": 3\
-							},\
-							"file_extension": ".py",\
-							"mimetype": "text/x-python",\
-							"name": "python",\
-							"nbconvert_exporter": "python",\
-							"pygments_lexer": "ipython3",\
-							"version": "3.7.4"\
-						}\
-					},\
-					"nbformat": 4,\
-					"nbformat_minor": 4\
-					}'
-        file_id = "/note1.ipynb"
-        self.storage.write_file(file_id, buffer, self.endpoint)
+        try:
+            self.storage.write_file(file_id, buffer, self.endpoint)
+            stat_info = self.storage.stat(file_id, self.endpoint)
+            self.assertIsInstance(stat_info, dict)
+        finally:
+            self.storage.remove(file_id, self.endpoint)
 
     def test_remove_file(self):
         file_id = "/file_to_remove.txt"
         buffer = b"ebe5tresbsrdthbrdhvdtr"
-
-        self.storage.write_file(file_id, buffer, self.endpoint)
-
-        self.storage.remove(file_id, self.endpoint)
-        with self.assertRaises(IOError):
-            self.storage.stat(file_id, self.endpoint)
+        try:
+            self.storage.write_file(file_id, buffer, self.endpoint)
+            self.storage.remove(file_id, self.endpoint)
+            with self.assertRaises(IOError):
+                self.storage.stat(file_id, self.endpoint)
+        except:
+            self.storage.remove(file_id, self.endpoint)
 
     def test_read_directory(self):
-
         file_id = "/"
         read_directory = self.storage.read_directory(file_id, self.endpoint)
         self.assertIsNotNone(read_directory[0])
         self.assertIsNotNone(read_directory[0].path)
 
     def test_move_file(self):
-
         src_id = "/file_to_rename.txt"
         buffer = b"ebe5tresbsrdthbrdhvdtr"
-
         dest_id = "/file_after_rename.txt"
-
         try:
             self.storage.remove(dest_id)
-        except: pass
-
-        self.storage.write_file(src_id, buffer, self.endpoint)
-        self.storage.move(src_id, dest_id, self.endpoint)
-
-        self.storage.remove(dest_id, self.endpoint)
-        with self.assertRaises(IOError):
-            self.storage.stat(dest_id, self.endpoint)
+        except:
+            pass
+        try:
+            self.storage.write_file(src_id, buffer, self.endpoint)
+            self.storage.move(src_id, dest_id, self.endpoint)
+            self.storage.remove(dest_id, self.endpoint)
+            with self.assertRaises(IOError):
+                self.storage.stat(dest_id, self.endpoint)
+        finally:
+            try:
+                self.storage.remove(src_id, self.endpoint)
+            except: pass
+            try:
+                self.storage.remove(dest_id, self.endpoint)
+            except: pass
 
     def test_move_file_already_exists(self):
         try:
             source_path = "/file_to_rename.txt"
             buffer = b"ebe5tresbsrdthbrdhvdtr"
-
             destination_path = "/file_after_rename.txt"
-
             self.storage.write_file(source_path, buffer, self.endpoint)
             self.storage.write_file(destination_path, buffer, self.endpoint)
-            
+
             with self.assertRaises(IOError) as context:
                 self.storage.move(source_path, destination_path, self.endpoint)
             self.assertEqual("file already exists", context.exception.args[0])
         finally:
-            self.storage.remove(destination_path, self.endpoint)
+            try:
+                self.storage.remove(source_path, self.endpoint)
+            except: pass
+            try:
+                self.storage.remove(destination_path, self.endpoint)
+            except: pass
 
 if __name__ == '__main__':
     unittest.main()
