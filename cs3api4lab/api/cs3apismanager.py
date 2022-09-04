@@ -1,5 +1,3 @@
-import time
-
 import nbformat
 import mimetypes
 import os
