@@ -1,6 +1,4 @@
 import json
-import time
-import asyncio
 
 from jupyter_server.base.handlers import APIHandler
 from tornado import gen, web
