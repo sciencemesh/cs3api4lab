@@ -95,7 +95,7 @@ class CS3APIsManager(ContentsManager):
 
         return False
 
-    # can't be async because SQLite doesn't allow multithreaded operations by default
+    # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
         path = FileUtils.remove_drives_names(path)
@@ -138,7 +138,7 @@ class CS3APIsManager(ContentsManager):
             parent_dir = ''
         return parent_dir
 
-    # can't be async because of notebooks and SQLite
+    # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
     def save(self, model, path):
         """
         Save a file or directory model to path.
@@ -236,7 +236,7 @@ class CS3APIsManager(ContentsManager):
             self.log.error(u'Error renaming file: %s %s', old_path, e)
             raise web.HTTPError(500, u'Error renaming file: %s %s' % (old_path, e))
 
-    # can't be async because SQLite doesn't allow multithreaded operations by default
+    # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
     def new(self, model=None, path=''):
 
         path = path.strip('/')
@@ -327,7 +327,7 @@ class CS3APIsManager(ContentsManager):
 
         return model
 
-    # can't be async because SQLite doesn't allow multithreaded operations by default
+    # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
     def _notebook_model(self, path, content):
         parent_path = self._get_parent_path(path)
         cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
@@ -388,7 +388,7 @@ class CS3APIsManager(ContentsManager):
             self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
 
-    # can't be async because SQLite doesn't allow multithreaded operations by default
+    # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
     def _save_notebook(self, path, nb):
 
         nb_content = nbformat.writes(nb)
