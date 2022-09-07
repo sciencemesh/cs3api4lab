@@ -78,18 +78,18 @@ class FileUtils:
     @staticmethod
     def get_drive(path):
         has_root = path.startswith("/")
-        for drive in ["cs3driveShareWithMe", "cs3driveShareByMe", "cs3driveShareWithMe:", "cs3driveShareByMe:"]:
+        has_colon = ":" in path
+        for drive in ["cs3driveShareWithMe", "cs3driveShareByMe", "cs3drive"]:
             if has_root:
                 drive = "/" + drive
+            if has_colon:
+                drive = drive + ":"
             if path.startswith(drive):
                 return drive
-        if path.startswith("/cs3drive") or path.startswith("cs3drive"):
-            return "/cs3drive" if has_root else "cs3drive"
         return None
 
     @staticmethod
     def replace_drive_with_directory(path, drive, config):
-        path = path.replace(":", "")
         if "cs3driveShareWithMe" in drive:
             prefix = FileUtils.get_my_shares_path_prefix(config)
             path = path.replace(drive, prefix + "/")

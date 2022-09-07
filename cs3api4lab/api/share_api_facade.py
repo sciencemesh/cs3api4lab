@@ -130,6 +130,7 @@ class ShareAPIFacade:
         :param file_path: path to the file
         :return: list of grantees
         """
+        file_path = file_path if "cs3driveShareByMe" in file_path else file_path.replace('cs3drive', 'cs3driveShareByMe')
         file_path = FileUtils.handle_drive(file_path, self.config)[0]
         file_path = FileUtils.normalize_path(file_path)
         share_list = self.share_api.list()
