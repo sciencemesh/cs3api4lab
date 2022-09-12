@@ -90,3 +90,8 @@ export type DeclineButtonProps = {
   };
   declineShare: (pendingShare: any) => Promise<void>;
 };
+
+export type PendingSharesContentProps = {
+  hideWidget: () => void;
+  showWidget: () => void;
+};

@@ -31,9 +31,9 @@ import {
   Cs3Panel,
   Cs3TabWidget
 } from './cs3panel';
-import { Cs3PendingSharesWidget } from './pendingShares';
-import { addHomeDirButton, addLaunchersButton, createShareBox } from './utils';
-import { SplitPanel, Widget } from '@lumino/widgets';
+import { PendingSharesListWrapper } from './pendingShares';
+import { addHomeDirButton, addLaunchersButton } from './utils';
+import { AccordionPanel } from '@lumino/widgets';
 import {
   kernelIcon,
   caseSensitiveIcon,
@@ -45,6 +45,7 @@ import { createLauncher, restoreBrowser, addCommands } from './browserCommands';
 import { IMainMenu } from '@jupyterlab/mainmenu';
 import { ITranslator } from '@jupyterlab/translation';
 import { requestAPI } from './services';
+// import { cs3AccordionChild } from './cs3Accordion';
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -260,27 +261,12 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     //
     // Share split panel
     //
-    const splitPanel = new SplitPanel();
-    splitPanel.id = 'sharesPanel';
-    splitPanel.spacing = 5;
-    splitPanel.orientation = 'vertical';
-    splitPanel.title.iconClass = 'jp-example-view';
-    splitPanel.title.caption = 'Shares';
-    splitPanel.title.label = 'Shares';
-    splitPanel.title.icon = inspectorIcon;
-    splitPanel.hide();
-
-    //
-    // Pending shares
-    //
-    const acceptSharesPanel = new Cs3PendingSharesWidget({
-      title: {
-        label: 'Pending shares',
-        caption: 'Pending shares'
-      },
-      id: 'jp-pending-shares'
-    });
-    splitPanel.addWidget(acceptSharesPanel);
+    // const splitPanel = new BoxPanel();
+    // splitPanel.id = 'sharesPanel';
+    // splitPanel.title.caption = 'Shares';
+    // splitPanel.title.label = 'Shares';
+    // splitPanel.title.icon = inspectorIcon;
+    // splitPanel.hide();
 
     //
     // ShareByMe
@@ -298,14 +284,6 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
       }
     );
     fileBrowserSharedByMe.toolbar.hide();
-
-    const shareByMePanel: Widget = createShareBox(
-      'cs3-share-by-me',
-      'Shared by Me',
-      fileBrowserSharedByMe
-    );
-    splitPanel.addWidget(shareByMePanel);
-
     docManager.services.contents.addDrive(driveShareByMe);
 
     //
@@ -324,18 +302,10 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
       }
     );
     fileBrowserSharedWithMe.toolbar.hide();
-
-    const shareWithMePanel = createShareBox(
-      'cs3-share-with-me',
-      'Share with Me',
-      fileBrowserSharedWithMe
-    );
-    splitPanel.addWidget(shareWithMePanel);
-
     docManager.services.contents.addDrive(driveShareWithMe);
 
     //
-    // Example tab
+    // Projects tab
     //
     const cs3TabWidget3: ReactWidget = new Cs3TabWidget(
       'Projects',
@@ -415,9 +385,30 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         fileBrowser.useFuzzyFilter = useFuzzyFilter;
       });
 
+    // Create shares panel
+    const cs3Accordion = new AccordionPanel();
+    cs3Accordion.id = 'sharesPanel';
+    cs3Accordion.title.caption = 'Shares';
+    cs3Accordion.title.label = 'Shares';
+    cs3Accordion.title.icon = inspectorIcon;
+    cs3Accordion.hide();
+
+    const pendingShares = new PendingSharesListWrapper();
+    pendingShares.title.label = 'Pending shares';
+    fileBrowserSharedByMe.title.label = 'Shared by me';
+    fileBrowserSharedWithMe.title.label = 'Shared with me';
+
+    // fold accordion widget
+    pendingShares.hide();
+
+    cs3Accordion.insertWidget(1, pendingShares);
+    cs3Accordion.insertWidget(2, fileBrowserSharedByMe);
+    cs3Accordion.insertWidget(3, fileBrowserSharedWithMe);
+    cs3Accordion.setRelativeSizes([100, 400, 400]);
+
     cs3Panel.addTab(fileBrowser);
     cs3Panel.addTab(cs3TabWidget3);
-    cs3Panel.addTab(splitPanel);
+    cs3Panel.addTab(cs3Accordion);
 
     cs3Panel.sharesTabVisible().connect(() => {
       void fileBrowserSharedWithMe.model.refresh();
