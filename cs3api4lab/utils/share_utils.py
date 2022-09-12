@@ -52,9 +52,12 @@ class ShareUtils:
     def get_resource_permissions(role):
         if role == Role.VIEWER:
             return storage_resources.ResourcePermissions(get_path=True,
+                                                         get_quota=True,
                                                          initiate_file_download=True,
                                                          list_grants=True,
                                                          list_container=True,
+                                                         list_file_versions=True,
+                                                         list_recycle=True,
                                                          stat=True)
         if role == Role.EDITOR:
             return storage_resources.ResourcePermissions(get_path=True,
