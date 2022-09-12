@@ -73,7 +73,7 @@ class TestCs3FileApi(TestCase):
         file_path = "/test_read_by_share_path.txt"
         try:
             self.storage.write_file(file_path, content_to_write, self.endpoint)
-            stat = self.storage.stat(file_path)
+            stat = self.storage.stat_info(file_path)
             stat_by_id = self.storage.stat_info(stat['inode']['opaque_id'], stat['inode']['storage_id'])
             content = ''
             for chunk in self.storage.read_file(file_path, self.endpoint):
