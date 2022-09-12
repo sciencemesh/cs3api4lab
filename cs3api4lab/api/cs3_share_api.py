@@ -265,9 +265,12 @@ class Cs3ShareApi:
     def _get_share_permissions(self, role):
         if role == Role.VIEWER:
             permissions = storage_resources.ResourcePermissions(get_path=True,
+                                                                get_quota=True,
                                                                 initiate_file_download=True,
                                                                 list_file_versions=True,
                                                                 list_container=True,
+                                                                list_grants=True,
+                                                                list_recycle=True,
                                                                 stat=True)
             return sharing_res.SharePermissions(permissions=permissions)
         if role == Role.EDITOR:
