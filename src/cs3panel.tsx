@@ -201,14 +201,3 @@ export class Cs3TabWidget extends ReactWidget {
     return <div>{this.title.caption}</div>;
   }
 }
-
-export class Cs3TitleWidget extends ReactWidget {
-  constructor(options: Widget.IOptions = {}) {
-    super(options);
-    this.addClass('c3-title-widget');
-  }
-
-  protected render(): JSX.Element {
-    return <div>{this.title.caption}</div>;
-  }
-}
