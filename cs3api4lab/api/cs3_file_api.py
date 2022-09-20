@@ -5,7 +5,6 @@ CS3 File API for the JupyterLab Extension
 
 Authors:
 """
-
 import http
 import time
 import grpc
@@ -118,10 +117,11 @@ class Cs3FileApi:
         else:
             self.log.info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (
                 file_path, (time_end - time_start) * 1000))
-            for i in range(0, len(file_get.content), self.config.chunk_size):
-                yield file_get.content[i:i + self.config.chunk_size]
 
-    def write_file(self, file_path, content, endpoint=None):
+        for i in range(0, len(file_get.content), self.config.chunk_size):
+            yield file_get.content[i:i + self.config.chunk_size]
+
+    def write_file(self, file_path, content, endpoint=None, format=None):
         """
         Write a file using the given userid as access token. The entire content is written
         and any pre-existing file is deleted (or moved to the previous version if supported).
@@ -135,7 +135,7 @@ class Cs3FileApi:
         if stat.status.code == cs3code.CODE_OK:
             self.lock_manager.handle_locks(file_path, endpoint)
 
-        content_size = FileUtils.calculate_content_size(content)
+        content_size = FileUtils.calculate_content_size(content, format)
         init_file_upload = self.storage_api.init_file_upload(file_path, endpoint, content_size)
 
         try:

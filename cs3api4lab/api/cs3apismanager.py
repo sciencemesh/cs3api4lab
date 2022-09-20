@@ -8,6 +8,8 @@ import cs3.rpc.v1beta1.code_pb2 as cs3code
 
 from base64 import decodebytes
 from jupyter_server.services.contents.manager import ContentsManager
+from requests import HTTPError
+
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from tornado import web
 from nbformat.v4 import new_notebook
@@ -164,7 +166,7 @@ class CS3APIsManager(ContentsManager):
 
                 nb = nbformat.from_dict(model['content'])
                 self.check_and_sign(nb, path)
-                self._save_notebook(path, nb)
+                self._save_notebook(path, nb, model['format'])
 
                 # ToDo: Implements save to checkpoint
                 # if not self.checkpoints.list_checkpoints(path):
@@ -284,13 +286,27 @@ class CS3APIsManager(ContentsManager):
         head, _sep, tail = source_string.rpartition(replace_what)
         return head + replace_with + tail
 
-    def _read_file(self, path):
+    def _read_file(self, path, file_format=None):
+        if file_format is None or file_format == "text":
+            try:
+                content = ''
+                for chunk in self.file_api.read_file(path, self.cs3_config.endpoint):
+                    content += chunk.decode('utf-8')
 
-        content = ''
+                return content
+            except UnicodeError as e:
+                if file_format == "text":
+                    raise HTTPError(
+                        400,
+                        "%s is not UTF-8 encoded" % path,
+                        reason="bad format",
+                    ) from e
+
+        content = []
         for chunk in self.file_api.read_file(path, self.cs3_config.endpoint):
-            content += chunk.decode('utf-8')
+            content.append(chunk)
 
-        return content
+        return b''.join(content)
 
     @asyncify
     def _dir_model(self, path, content):
@@ -310,7 +326,7 @@ class CS3APIsManager(ContentsManager):
         model['mimetype'] = mimetypes.guess_type(tmp_model.path)[0]
 
         if content:
-            content = self._read_file(tmp_model.path)
+            content = self._read_file(tmp_model.path, format)
 
             if format is None:
                 format = "text"
@@ -359,29 +375,28 @@ class CS3APIsManager(ContentsManager):
 
     @asyncify
     def _save_file(self, path, content, format):
-
         if format not in {'text', 'base64'}:
             raise web.HTTPError(400, "Must specify format of file contents as 'text' or 'base64'", )
 
         try:
-            if format == 'text':
+            if format is None or format == 'text':
                 bcontent = content.encode('utf8')
             else:
                 b64_bytes = content.encode('ascii')
                 bcontent = decodebytes(b64_bytes)
 
-            self.file_api.write_file(path, bcontent, self.cs3_config.endpoint)
+            self.file_api.write_file(path, bcontent, self.cs3_config.endpoint, format)
 
         except Exception as e:
             self.log.error(u'Error saving: %s %s', path, e)
             raise web.HTTPError(400, u'Error saving %s: %s' % (path, e))
 
     # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
-    def _save_notebook(self, path, nb):
+    def _save_notebook(self, path, nb, format):
 
         nb_content = nbformat.writes(nb)
         try:
-            self.file_api.write_file(path, nb_content, self.cs3_config.endpoint)
+            self.file_api.write_file(path, nb_content, self.cs3_config.endpoint, format)
 
         except Exception as e:
             self.log.error(u'Error saving: %s %s', path, e)

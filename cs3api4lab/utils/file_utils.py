@@ -30,11 +30,12 @@ class FileUtils:
         return file_id
 
     @staticmethod
-    def calculate_content_size(content):
-        if isinstance(content, str):
-            content_len = len(content)
-        else:
+    def calculate_content_size(content, format=None):
+        if format == "text":
             content_len = len(content.decode('utf-8'))
+        else:
+            content_len = len(content)
+
         content_size = str(content_len)
         return content_size
 
