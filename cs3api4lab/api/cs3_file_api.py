@@ -23,7 +23,6 @@ from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.api.lock_manager import LockManager
-from cs3api4lab.utils.model_utils import ModelUtils
 
 
 class Cs3FileApi:
@@ -251,15 +250,6 @@ class Cs3FileApi:
         tend = time.time()
         self.log.debug(
             'msg="Invoked create container" filepath="%s" elapsedTimems="%.1f"' % (path, (tend - tstart) * 1000))
-
-    def list_shared_folder(self):
-        """
-        List a shared folder - MyShares by default
-        """
-        shared_folder_path = self.config.mount_dir + '/' + self.config.shared_folder
-        container = self.read_directory(shared_folder_path)
-
-        return ModelUtils.convert_container_to_directory_model(shared_folder_path, container)
 
     def get_home_dir(self):
         return self.config.home_dir if self.config.home_dir else ""

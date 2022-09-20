@@ -93,17 +93,6 @@ class ListSharesForFile(APIHandler):
         file_path = self.get_query_argument('file_path')
         yield RequestHandler.async_handle_request(self, self.share_api.list_grantees_for_file, 200, file_path)
 
-class SharedFolder(APIHandler):
-    @property
-    def file_api(self):
-        return Cs3FileApi(self.log)
-
-    @web.authenticated
-    @gen.coroutine
-    def get(self):
-        yield RequestHandler.async_handle_request(self, self.file_api.list_shared_folder, 200)
-
-
 class HomeDirHandler(APIHandler):
     @property
     def file_api(self):
@@ -222,7 +211,6 @@ def setup_handlers(web_app, url_path):
         (r"/api/cs3/shares/list", ListSharesHandler),
         (r"/api/cs3/shares/received", ListReceivedSharesHandler),
         (r"/api/cs3/shares/file", ListSharesForFile),
-        (r"/api/cs3/shares/shared_folder", SharedFolder),
         (r"/api/cs3/public/shares", PublicSharesHandler),
         (r"/api/cs3/public/shares/list", ListPublicSharesHandler),
         (r"/api/cs3/public/share", GetPublicShareByTokenHandler),
