@@ -74,28 +74,6 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
             if self.file_name:
                 self.remove_test_file('richard', self.file_name)
 
-    def test_list_shared_folder(self):
-        try:
-            self.file_name = self.file_path + self.get_random_suffix()
-            created_share = self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
-            self.share_id = created_share['opaque_id']
-            self.uni_api.update_received(self.share_id, 'ACCEPTED')
-
-            shared_folder = self.file_api.list_shared_folder()
-            shared_file = self.file_name.split('/')[-1]
-
-            list_of_shared_files = []
-            for item in shared_folder['content']:
-                list_of_shared_files.append(item['name'])
-
-            self.assertIn(shared_file, list_of_shared_files)
-
-        finally:
-            if self.share_id:
-                self.remove_test_share('richard', self.share_id)
-            if self.file_name:
-                self.remove_test_file('richard', self.file_name)
-
     def test_list_received_not_accepted(self):
         try:
             self.file_name = self.file_path + self.get_random_suffix()
