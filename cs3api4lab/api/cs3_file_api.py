@@ -14,7 +14,6 @@ import requests
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.v1beta1.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
-from google.protobuf.json_format import MessageToJson
 
 from cs3api4lab.exception.exceptions import ResourceNotFoundError
 
@@ -78,7 +77,7 @@ class Cs3FileApi:
             self.sql_cache.save_item(
                 storage_id=stat.info.id.storage_id,
                 opaque_id=stat.info.id.storage_id,
-                stored_value=MessageToJson(stat)
+                stored_value=stat
             )
             return self._stat_output(stat)
 
@@ -89,12 +88,16 @@ class Cs3FileApi:
         or an id (which MUST NOT start with a /).
         """
         time_start = time.time()
-
+        #
         if self.sql_cache.item_exists(storage_id=storage_id, opaque_id=opaque_id):
-            print('from cache ')
-            stat = self.sql_cache.get_stored_value(storage_id=storage_id, opaque_id=opaque_id)
+            print('from cache')
+            stat = self.sql_cache.get_stored_value(
+                storage_id=storage_id,
+                opaque_id=opaque_id,
+                message=cs3sp.StatResponse()
+            )
         else:
-            print('from request')
+            print('from request ')
             stat = self.storage_api.stat_by_resource(opaque_id, storage_id)
             if stat.status.code == cs3code.CODE_NOT_FOUND:
                 self.log.info(
@@ -103,7 +106,7 @@ class Cs3FileApi:
                 )
                 raise FileNotFoundError(stat.status.message + ", file " + stat.info.path)
             else:
-                self.sql_cache.save_item(storage_id=storage_id, opaque_id=opaque_id, stored_value=MessageToJson(stat))
+                self.sql_cache.save_item(storage_id=storage_id, opaque_id=opaque_id, stored_value=stat)
 
         time_end = time.time()
         self.log.info(

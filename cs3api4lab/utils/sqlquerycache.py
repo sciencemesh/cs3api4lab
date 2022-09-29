@@ -1,4 +1,4 @@
-import json
+from google.protobuf.json_format import MessageToJson, Parse
 import time
 from datetime import datetime, timedelta
 import sqlite3
@@ -16,8 +16,8 @@ class SqlQueryCache:
     def connection(self):
         if self._connection is None:
             # Set isolation level to None to autocommit all changes to the database.
-            # self._connection = sqlite3.connect("./test.db", check_same_thread=False, isolation_level=None)
-            self._connection = sqlite3.connect(":memory:", check_same_thread=False, isolation_level=None)
+            self._connection = sqlite3.connect("./test.db", check_same_thread=False, isolation_level=None)
+            # self._connection = sqlite3.connect(":memory:", check_same_thread=False, isolation_level=None)
             self._connection.row_factory = sqlite3.Row
         return self._connection
 
@@ -48,7 +48,7 @@ class SqlQueryCache:
 
         if row is not None:
             btime = row['btime']
-            exists = datetime.fromtimestamp(btime) + timedelta(minutes=1) > datetime.fromtimestamp(time.time())
+            exists = datetime.fromtimestamp(btime) + timedelta(minutes=3) > datetime.fromtimestamp(time.time())
             if not exists:
                 self.cursor.execute("DELETE FROM cached_stat WHERE storage_id=? AND opaque_id=?", (storage_id, opaque_id))
 
@@ -57,16 +57,19 @@ class SqlQueryCache:
 
     def save_item(self, storage_id=None, opaque_id=None, stored_value=None):
         btime = datetime.timestamp(datetime.now())
-        # stored_value = json.dumps(stored_value)
+        stored_value = MessageToJson(stored_value)
         if not self.item_exists(storage_id, opaque_id):
             self.cursor.execute(
                 "INSERT INTO cached_stat VALUES (?,?,?,?)", (storage_id, opaque_id, stored_value, btime)
             )
 
-    def get_stored_value(self, storage_id, opaque_id):
+    def get_stored_value(self, storage_id, opaque_id, message):
         self.cursor.execute("SELECT * FROM cached_stat WHERE storage_id=? AND opaque_id=?", (storage_id, opaque_id))
         row = self.cursor.fetchone()
-        return json.loads(row['stored_value']) if row is not None else None
+        if row is not None:
+            return Parse(row['stored_value'], message)
+        else:
+            return None
 
     def __del__(self):
         self.close()
