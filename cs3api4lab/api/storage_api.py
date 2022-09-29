@@ -46,6 +46,10 @@ class StorageApi:
         ref = FileUtils.get_reference(file_path, endpoint)
         return self._stat_internal(ref)
 
+    def stat_by_resource(self, opaque_id, storage_id):
+        ref = FileUtils.get_reference_by_resource(opaque_id=opaque_id, storage_id=storage_id)
+        return self._stat_internal(ref)
+
     def _stat_internal(self, ref):
         return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
                                  metadata=[('x-access-token', self.auth.authenticate())])

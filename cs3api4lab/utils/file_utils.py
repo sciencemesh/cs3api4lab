@@ -19,6 +19,12 @@ class FileUtils:
         return storage_provider.Reference(resource_id=storage_provider.ResourceId(storage_id=endpoint, opaque_id=file_id))
 
     @staticmethod
+    def get_reference_by_resource(opaque_id, storage_id):
+        return storage_provider.Reference(
+            resource_id=storage_provider.ResourceId(storage_id=storage_id, opaque_id=opaque_id)
+        )
+
+    @staticmethod
     def check_and_transform_file_path(file_id):
         config = Cs3ConfigManager().get_config() #note: can cause problems in tests because of the config, it should be passed as an argument
 

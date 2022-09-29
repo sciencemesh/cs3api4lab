@@ -1,4 +1,5 @@
 import urllib.parse
+import time
 
 import cs3.ocm.provider.v1beta1.provider_api_pb2_grpc as ocm_provider_api_grpc
 import cs3.storage.provider.v1beta1.resources_pb2 as Resources
@@ -19,6 +20,7 @@ from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.api.storage_api import StorageApi
 from cs3api4lab.exception.exceptions import OCMDisabledError
 
+
 class ShareAPIFacade:
     def __init__(self, log):
         self.log = log
@@ -34,6 +36,7 @@ class ShareAPIFacade:
         self.ocm_share_api = Cs3OcmShareApi(log)
 
         self.storage_api = StorageApi(log)
+
         return
 
     def create(self, endpoint, file_path, opaque_id, idp, role=Role.EDITOR, grantee_type=Grantee.USER, reshare=True):
@@ -102,12 +105,18 @@ class ShareAPIFacade:
         :return: created shares and OCM shares combined and mapped to Jupyter model
         :rtype: dict
         """
+        time_start = time.time()
         share_list = self.share_api.list()
         if self.config.enable_ocm:
             ocm_share_list = self.ocm_share_api.list()
         else:
             ocm_share_list = None
-        return self.map_shares(share_list, ocm_share_list)
+
+        mapped_shares = self.map_shares(share_list, ocm_share_list)
+        time_end = time.time()
+        print('shares times:', time_end - time_start)
+
+        return mapped_shares
 
     def list_received(self, status=None):
         """
@@ -205,9 +214,9 @@ class ShareAPIFacade:
                 share = share.share
             try:
                 user = self.user_api.get_user_info(share.owner.idp, share.owner.opaque_id)
-                stat = self.file_api.stat_info(urllib.parse.unquote(share.resource_id.opaque_id),
-                                               share.resource_id.storage_id)  # todo remove this and use storage_logic
-                # stat = self.storage_logic.stat_info(urllib.parse.unquote(share.resource_id.opaque_id), share.resource_id.storage_id)
+                # if not self.stat_cache.item_exists(share.resource_id.storage_id, share.resource_id.opaque_id):
+                stat = self.file_api.stat_info_by_resource(urllib.parse.unquote(share.resource_id.opaque_id),
+                                                   share.resource_id.storage_id)
 
                 if stat['type'] == Resources.RESOURCE_TYPE_FILE:
                     if hasattr(share.permissions.permissions,
@@ -226,6 +235,7 @@ class ShareAPIFacade:
                 model['writable'] = True if ShareUtils.map_permissions_to_role(
                     share.permissions.permissions) == 'editor' else False
             except Exception as e:
+                print(e)
                 self.log.error("Unable to map share " + share.resource_id.opaque_id + ", " + e.__str__())
                 continue
 

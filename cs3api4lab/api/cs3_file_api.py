@@ -14,6 +14,8 @@ import requests
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.v1beta1.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
+from google.protobuf.json_format import MessageToJson
+
 from cs3api4lab.exception.exceptions import ResourceNotFoundError
 
 from cs3api4lab.utils.file_utils import FileUtils
@@ -23,6 +25,7 @@ from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.api.lock_manager import LockManager
+from cs3api4lab.utils.sqlquerycache import SqlQueryCache
 
 
 class Cs3FileApi:
@@ -31,6 +34,7 @@ class Cs3FileApi:
     auth = None
     config = None
     lock_manager = None
+    sql_cache = None
 
     def __init__(self, log):
         self.log = log
@@ -41,9 +45,8 @@ class Cs3FileApi:
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.storage_api = StorageApi(log)
-
         self.lock_manager = LockManager(log)
-
+        self.sql_cache = SqlQueryCache()
         return
 
     def mount_point(self):
@@ -64,27 +67,51 @@ class Cs3FileApi:
         """
         time_start = time.time()
         stat = self.storage_api.stat(file_path, endpoint)
-        if stat.status.code == cs3code.CODE_OK:
-            time_end = time.time()
-            self.log.info('msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (file_path, (time_end - time_start) * 1000))
-            return {
-                'inode': {'storage_id': stat.info.id.storage_id,
-                          'opaque_id': stat.info.id.opaque_id},
-                'filepath': stat.info.path,
-                'userid': stat.info.owner.opaque_id,
-                'size': stat.info.size,
-                'mtime': stat.info.mtime.seconds,
-                'type': stat.info.type,
-                'mime_type': stat.info.mime_type,
-                'idp': stat.info.owner.idp,
-                'permissions': stat.info.permission_set
-            }
-        elif stat.status.code == cs3code.CODE_NOT_FOUND:
+        time_end = time.time()
+        self.log.info(
+            'msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (file_path, (time_end - time_start) * 1000))
+
+        if stat.status.code == cs3code.CODE_NOT_FOUND:
             self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_path, stat.status.message))
             raise FileNotFoundError(stat.status.message + ", file " + file_path)
         else:
-            self._handle_error(stat)
-        
+            self.sql_cache.save_item(
+                storage_id=stat.info.id.storage_id,
+                opaque_id=stat.info.id.storage_id,
+                stored_value=MessageToJson(stat)
+            )
+            return self._stat_output(stat)
+
+    def stat_info_by_resource(self, opaque_id, storage_id):
+        """
+        Stat a file and returns (size, mtime) as well as other extended info using the given userid as access token.
+        Note that endpoint here means the storage id. Note that fileid can be either a path (which MUST begin with /)
+        or an id (which MUST NOT start with a /).
+        """
+        time_start = time.time()
+
+        if self.sql_cache.item_exists(storage_id=storage_id, opaque_id=opaque_id):
+            print('from cache ')
+            stat = self.sql_cache.get_stored_value(storage_id=storage_id, opaque_id=opaque_id)
+        else:
+            print('from request')
+            stat = self.storage_api.stat_by_resource(opaque_id, storage_id)
+            if stat.status.code == cs3code.CODE_NOT_FOUND:
+                self.log.info(
+                    'msg="Failed stat" fileid="%s" storageid="%s" reason="%s"' %
+                    (opaque_id, storage_id, stat.status.message)
+                )
+                raise FileNotFoundError(stat.status.message + ", file " + stat.info.path)
+            else:
+                self.sql_cache.save_item(storage_id=storage_id, opaque_id=opaque_id, stored_value=MessageToJson(stat))
+
+        time_end = time.time()
+        self.log.info(
+            'msg="Invoked stat" fileid="%s" storageid="%s" elapsedTimems="%.1f"' % (
+            opaque_id, storage_id, (time_end - time_start) * 1000))
+
+        return self._stat_output(stat)
+
     def read_file(self, file_path, endpoint=None):
         """
         Read a file using the given userid as access token.
@@ -253,6 +280,23 @@ class Cs3FileApi:
 
     def get_home_dir(self):
         return self.config.home_dir if self.config.home_dir else ""
+
+    def _stat_output(self, stat):
+        if stat.status.code == cs3code.CODE_OK:
+            return {
+                'inode': {'storage_id': stat.info.id.storage_id,
+                          'opaque_id': stat.info.id.opaque_id},
+                'filepath': stat.info.path,
+                'userid': stat.info.owner.opaque_id,
+                'size': stat.info.size,
+                'mtime': stat.info.mtime.seconds,
+                'type': stat.info.type,
+                'mime_type': stat.info.mime_type,
+                'idp': stat.info.owner.idp,
+                'permissions': stat.info.permission_set
+            }
+        else:
+            self._handle_error(stat)
 
     def _handle_error(self, response):
         self.log.error(response)
