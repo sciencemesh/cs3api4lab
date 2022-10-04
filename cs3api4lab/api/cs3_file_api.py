@@ -45,7 +45,7 @@ class Cs3FileApi:
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.storage_api = StorageApi(log)
         self.lock_manager = LockManager(log)
-        self.sql_cache = SqlQueryCache()
+        self.sql_cache = SqlQueryCache(config=self.config)
         return
 
     def mount_point(self):
