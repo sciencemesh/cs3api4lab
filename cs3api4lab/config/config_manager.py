@@ -62,9 +62,6 @@ class Config(LoggingConfigurable):
     tus_enabled = Bool(
         config=True, help="""Flag to enable TUS"""
     )
-    shared_folder = Unicode(
-        config=True, help="""Folder where files shared for the user are present"""
-    )
     eos_file = Unicode(
         config=True, allow_none=True, help="""EOS file location"""
     )
@@ -156,10 +153,6 @@ class Config(LoggingConfigurable):
     def _enable_ocm_default(self):
         return self._get_config_value("enable_ocm") in ["true", True]
 
-    @default("shared_folder")
-    def _shared_folder_default(self):
-        return self._get_config_value("shared_folder")
-
     @default("kernel_path")
     def _kernel_path_default(self):
         return self._get_config_value("kernel_path")
@@ -230,7 +223,6 @@ class Config(LoggingConfigurable):
         "ca_cert": None,
         "tus_enabled": False,
         "enable_ocm": False,
-        "shared_folder": "MyShares",
         "kernel_path": "/",
         "eos_file": None,
         "eos_token": None,

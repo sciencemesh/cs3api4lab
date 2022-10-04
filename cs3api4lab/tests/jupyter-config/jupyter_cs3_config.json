@@ -15,7 +15,6 @@
     "client_secret": "relativity",
     "locks_expiration_time": 10,
     "tus_enabled": false,
-    "enable_ocm": false,
-    "shared_folder": "MyShares"
+    "enable_ocm": false
   }
 }

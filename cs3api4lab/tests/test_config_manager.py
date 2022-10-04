@@ -26,7 +26,6 @@ class TestCS3ConfigManager(TestCase):
         'locks_expiration_time': 10,
         'tus_enabled': False,
         'enable_ocm': False,
-        "shared_folder": "MyShares",
         "kernel_path": "/"
     }
 
@@ -62,7 +61,6 @@ class TestCS3ConfigManager(TestCase):
         self.assertEqual(configManager.ca_cert, self.config["ca_cert"])
         self.assertEqual(configManager.tus_enabled, self.config["tus_enabled"])
         self.assertEqual(configManager.enable_ocm, self.config["enable_ocm"])
-        self.assertEqual(configManager.shared_folder, self.config["shared_folder"])
         
 
     def test_load_from_environment_variables(self):
