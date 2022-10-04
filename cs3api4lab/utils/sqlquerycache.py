@@ -25,6 +25,9 @@ class SqlQueryCache:
 
     @property
     def cursor(self):
+        if not self.config.stat_cache_enabled:
+            return None
+
         """Start a cursor and create a database called 'session'"""
         if self._cursor is None:
             self._cursor = self.connection.cursor()
@@ -33,7 +36,7 @@ class SqlQueryCache:
                 (storage_id, opaque_id, stored_value, ctime)"""
             )
 
-        return self._cursor if self.config.stat_cache_enabled else None
+        return self._cursor
 
     def close(self):
         """Close the sqlite connection"""

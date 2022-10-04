@@ -90,14 +90,12 @@ class Cs3FileApi:
         time_start = time.time()
         #
         if self.sql_cache.item_exists(storage_id=storage_id, opaque_id=opaque_id):
-            print('from cache')
             stat = self.sql_cache.get_stored_value(
                 storage_id=storage_id,
                 opaque_id=opaque_id,
                 message=cs3sp.StatResponse()
             )
         else:
-            print('from request ')
             stat = self.storage_api.stat_by_resource(opaque_id, storage_id)
             if stat.status.code == cs3code.CODE_NOT_FOUND:
                 self.log.info(
