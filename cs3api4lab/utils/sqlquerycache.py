@@ -63,6 +63,12 @@ class SqlQueryCache:
                 "INSERT INTO cached_stat VALUES (?,?,?,?)", (storage_id, opaque_id, stored_value, btime)
             )
 
+    def clean_old_records(self):
+        older_than = datetime.now() + timedelta(minutes=-3)
+        older_than = datetime.timestamp(older_than)
+        self.cursor.execute("DELETE FROM cached_stat WHERE btime < ?", (older_than,))
+        return
+
     def get_stored_value(self, storage_id, opaque_id, message):
         self.cursor.execute("SELECT * FROM cached_stat WHERE storage_id=? AND opaque_id=?", (storage_id, opaque_id))
         row = self.cursor.fetchone()
@@ -72,4 +78,5 @@ class SqlQueryCache:
             return None
 
     def __del__(self):
+        self.clean_old_records()
         self.close()
