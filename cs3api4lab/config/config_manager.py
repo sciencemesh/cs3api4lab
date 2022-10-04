@@ -80,6 +80,15 @@ class Config(LoggingConfigurable):
     oauth_token = Unicode(
         config=True, allow_none=True, help="""OAuth token"""
     )
+    stat_cache_enabled = Bool(
+        config=True, default_value=False, help="""Stat caching is enabled"""
+    )
+    stat_cache_file = Unicode(
+        config=True, default_value="./tmp_cache_file.db", allow_none=True, help="""Path to db file"""
+    )
+    stat_cache_time = CInt(
+        config=True, default_value=180, allow_none=True, help="""Cache ttl in seconds"""
+    )
 
     @default("reva_host")
     def _reva_host_default(self):
@@ -180,6 +189,18 @@ class Config(LoggingConfigurable):
     def _oauth_token_default(self):
         return self._get_config_value("oauth_token")
 
+    @default("stat_cache_enabled")
+    def _stat_cache_enabled_default(self):
+        return self._get_config_value("stat_cache_enabled") in ["true", True]
+
+    @default("stat_cache_file")
+    def _stat_cache_file_default(self):
+        return self._get_config_value("stat_cache_file")
+
+    @default("stat_cache_time")
+    def _stat_cache_time_default(self):
+        return self._get_config_value("stat_cache_time")
+
     def _get_config_value(self, key):
         env = os.getenv("CS3_" + key.upper())
         if env:
@@ -235,7 +256,8 @@ class Config(LoggingConfigurable):
         "eos_file": None,
         "eos_token": None,
         "oauth_file": None,
-        "oauth_token": None
+        "oauth_token": None,
+        "stat_cache_enabled": False,
     }
 
 

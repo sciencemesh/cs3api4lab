@@ -22,6 +22,8 @@ import cs3.identity.user.v1beta1.user_api_pb2_grpc as user_api_grpc
 import cs3.sharing.ocm.v1beta1.ocm_api_pb2_grpc as ocm_api_grpc
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as grpc_gateway
 
+from cs3api4lab.utils.sqlquerycache import SqlQueryCache
+
 
 class ExtStorageApi(StorageApi):
     def __init__(self, log, config):
@@ -76,6 +78,7 @@ class ExtCs3FileApi(Cs3FileApi):
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.lock_manager = ExtLockManager(log, config)
         self.storage_api = ExtStorageApi(log, config)
+        self.sql_cache = SqlQueryCache(config=self.config)
 
 
 class ExtCs3ShareApi(Cs3ShareApi):

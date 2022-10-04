@@ -5,6 +5,7 @@ from traitlets.config import LoggingConfigurable
 import cs3.rpc.v1beta1.code_pb2 as cs3code
 from collections import namedtuple
 
+
 class ShareTestBase:
     storage_id = '123e4567-e89b-12d3-a456-426655440000'
     receiver_role = 'editor'
@@ -34,10 +35,11 @@ class ShareTestBase:
             "authenticator_class": "cs3api4lab.auth.RevaPassword",
             "client_id": "marie",
             "client_secret": "radioactivity",
-	        "locks_expiration_time": 10,
-	        "tus_enabled": True,
-  	        "enable_ocm": False
-            }
+            "locks_expiration_time": 10,
+            "tus_enabled": True,
+            "enable_ocm": False,
+            "stat_cache_enabled": False
+        }
         marie_ext_config = namedtuple('MarieConfig', marie_ext_config)(**marie_ext_config)
 
         richard_local_config = {
@@ -54,9 +56,10 @@ class ShareTestBase:
             "authenticator_class": "cs3api4lab.auth.RevaPassword",
             "client_id": "richard",
             "client_secret": "superfluidity",
-	        "locks_expiration_time": 10,
-	        "tus_enabled": True,
-  	        "enable_ocm": False
+            "locks_expiration_time": 10,
+            "tus_enabled": True,
+            "enable_ocm": False,
+            "stat_cache_enabled": False,
         }
         richard_local_config = namedtuple('richardConfig', richard_local_config)(**richard_local_config)
 
@@ -152,7 +155,6 @@ class ShareTestBase:
         for lock in list(metadata.keys()):
             self.storage_api.set_metadata({lock: "{}"}, file, endpoint)
 
-
     def remove_test_share(self, user, share_id):
         if user == 'einstein':
             self.share_api.remove(share_id)
@@ -228,9 +230,9 @@ class ShareTestBase:
         stat = storage.stat(file_path)
         if stat.status.code == cs3code.CODE_NOT_FOUND or stat.status.code == cs3code.CODE_INTERNAL:
             self.create_test_file(user, file_path)
-        #todo the code above won't be necessary after https://github.com/cs3org/reva/issues/2847 is fixed
+        # todo the code above won't be necessary after https://github.com/cs3org/reva/issues/2847 is fixed
 
-        shares = share_api.list_shares_for_filepath(file_path) #todo this won't work on CERNBOX
+        shares = share_api.list_shares_for_filepath(file_path)  # todo this won't work on CERNBOX
         if shares:
             for share in shares:
                 share_api.remove(share['opaque_id'])

@@ -16,6 +16,9 @@
 	"locks_expiration_time": 150,
 	"tus_enabled": false,
 	"enable_ocm": false,
-	"shared_folder": "MyShares"
+	"shared_folder": "MyShares",
+	"stat_cache_enabled": true,
+	"stat_cache_file": "./test.db",
+	"stat_cache_time": 180
 	}
 }
