@@ -1,5 +1,7 @@
 import random
 import string
+import urllib.parse
+
 from cs3api4lab.tests.extensions import *
 from traitlets.config import LoggingConfigurable
 import cs3.rpc.v1beta1.code_pb2 as cs3code
@@ -34,9 +36,10 @@ class ShareTestBase:
             "authenticator_class": "cs3api4lab.auth.RevaPassword",
             "client_id": "marie",
             "client_secret": "radioactivity",
-	        "locks_expiration_time": 10,
-	        "tus_enabled": True,
-  	        "enable_ocm": False
+            "locks_expiration_time": 10,
+            "tus_enabled": True,
+            "enable_ocm": False,
+            "dev_env": True
             }
         marie_ext_config = namedtuple('MarieConfig', marie_ext_config)(**marie_ext_config)
 
@@ -54,9 +57,10 @@ class ShareTestBase:
             "authenticator_class": "cs3api4lab.auth.RevaPassword",
             "client_id": "richard",
             "client_secret": "superfluidity",
-	        "locks_expiration_time": 10,
-	        "tus_enabled": True,
-  	        "enable_ocm": False
+            "locks_expiration_time": 10,
+            "tus_enabled": True,
+            "enable_ocm": False,
+            "dev_env": True
         }
         richard_local_config = namedtuple('richardConfig', richard_local_config)(**richard_local_config)
 
@@ -76,7 +80,8 @@ class ShareTestBase:
 
     def read_file_content(self, file_api, file_path):
         content = ''
-        for chunk in file_api.read_file(file_path):
+        stat = file_api.stat_info(file_path)
+        for chunk in file_api.read_file(stat):
             self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
             content += chunk.decode('utf-8')
         return content
@@ -99,29 +104,33 @@ class ShareTestBase:
                                                      ocm_receiver_idp,
                                                      self.storage_id, file_path)
 
-    def create_share(self, user, receiver_id, receiver_idp, file_path):
+    def create_share(self, user, receiver_id, receiver_idp, file_path, role=None):
         self.create_test_file(user, file_path)
-        if user == 'einstein':
-            return self.share_api.create(self.storage_id,
-                                         file_path,
-                                         receiver_id,
-                                         receiver_idp,
-                                         self.receiver_role,
-                                         self.receiver_grantee_type)
+        receiver_role = self.receiver_role
+        if role:
+            receiver_role = role
+
         if user == 'marie':
             return self.marie_share_api.create(self.storage_id,
                                                file_path,
                                                receiver_id,
                                                receiver_idp,
-                                               self.receiver_role,
+                                               receiver_role,
                                                self.receiver_grantee_type)
         if user == 'richard':
             return self.richard_share_api.create(self.storage_id,
                                                  file_path,
                                                  receiver_id,
                                                  receiver_idp,
-                                                 self.receiver_role,
+                                                 receiver_role,
                                                  self.receiver_grantee_type)
+
+        return self.share_api.create(self.storage_id,
+                                 file_path,
+                                 receiver_id,
+                                 receiver_idp,
+                                 receiver_role,
+                                 self.receiver_grantee_type)
 
     def create_container_share(self, user, receiver_id, receiver_idp, container_path):
         self.create_test_container(user, container_path)
@@ -147,10 +156,21 @@ class ShareTestBase:
                                                  self.receiver_role,
                                                  self.receiver_grantee_type)
 
-    def clear_locks_on_file(self, file, endpoint='/'):
-        metadata = self.storage_api.get_metadata(file, endpoint)
-        for lock in list(metadata.keys()):
-            self.storage_api.set_metadata({lock: "{}"}, file, endpoint)
+    def clear_locks_on_file(self, file, endpoint='/', user=None):
+        if user == 'richard':
+            stat = self.richard_file_api.stat_info(file, endpoint)
+            if self.config.dev_env and "/home/" in stat['filepath']:
+                opaque_id = urllib.parse.unquote(stat['inode']['opaque_id'])
+                storage_id = urllib.parse.unquote(stat['inode']['storage_id'])
+                stat = self.richard_file_api.stat_info(opaque_id, storage_id)
+            self.richard_storage_api.set_metadata('cs3apis_lock', '', stat)
+        else:
+            stat = self.file_api.stat_info(file, endpoint)
+            if self.config.dev_env and "/home/" in stat['filepath']:
+                opaque_id = urllib.parse.unquote(stat['inode']['opaque_id'])
+                storage_id = urllib.parse.unquote(stat['inode']['storage_id'])
+                stat = self.file_api.stat_info(opaque_id, storage_id)
+            self.storage_api.set_metadata('cs3apis_lock', '', stat)
 
 
     def remove_test_share(self, user, share_id):
@@ -215,9 +235,8 @@ class ShareTestBase:
             print(str(ex))
 
     def remove_share_and_file_by_path(self, user, file_path):
-        if user == 'einstein':
-            share_api = self.share_api
-            storage = self.storage_api
+        share_api = self.share_api
+        storage = self.storage_api
         if user == 'marie':
             share_api = self.marie_share_api
             storage = self.marie_storage_api

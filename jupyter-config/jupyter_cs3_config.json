@@ -15,6 +15,7 @@
 	"client_secret": "relativity",
 	"locks_expiration_time": 150,
 	"tus_enabled": false,
-	"enable_ocm": false
+	"enable_ocm": false,
+    "dev_env": true
 	}
 }

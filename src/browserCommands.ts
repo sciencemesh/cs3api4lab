@@ -49,61 +49,62 @@ import { IIterator, map, reduce, toArray } from '@lumino/algorithm';
  * Copied from packages/filebrowser-extension/src/index.ts:81
  */
 namespace CommandIDs {
-  export const copy = 'filebrowser:copy';
+  export const copy = 'cs3filebrowser:copy';
 
-  export const copyDownloadLink = 'filebrowser:copy-download-link';
-
-  // For main browser only.
-  export const createLauncher = 'filebrowser:create-main-launcher';
-
-  export const cut = 'filebrowser:cut';
-
-  export const del = 'filebrowser:delete';
-
-  export const download = 'filebrowser:download';
-
-  export const duplicate = 'filebrowser:duplicate';
+  export const copyDownloadLink = 'cs3filebrowser:copy-download-link';
 
   // For main browser only.
-  export const hideBrowser = 'filebrowser:hide-main';
+  export const createLauncher = 'cs3filebrowser:create-main-launcher';
 
-  export const goToPath = 'filebrowser:go-to-path';
+  export const cut = 'cs3filebrowser:cut';
 
-  export const openPath = 'filebrowser:open-path';
+  export const del = 'cs3filebrowser:delete';
 
-  export const open = 'filebrowser:open';
+  export const download = 'cs3filebrowser:download';
 
-  export const openBrowserTab = 'filebrowser:open-browser-tab';
-
-  export const paste = 'filebrowser:paste';
-
-  export const createNewDirectory = 'filebrowser:create-new-directory';
-
-  export const createNewFile = 'filebrowser:create-new-file';
-
-  export const createNewMarkdownFile = 'filebrowser:create-new-markdown-file';
-
-  export const rename = 'filebrowser:rename';
+  export const duplicate = 'cs3filebrowser:duplicate';
 
   // For main browser only.
-  export const share = 'filebrowser:share-main';
+  export const hideBrowser = 'cs3filebrowser:hide-main';
+
+  export const goToPath = 'cs3filebrowser:go-to-path';
+
+  export const openPath = 'cs3filebrowser:open-path';
+
+  export const open = 'cs3filebrowser:open';
+
+  export const openBrowserTab = 'cs3filebrowser:open-browser-tab';
+
+  export const paste = 'cs3filebrowser:paste';
+
+  export const createNewDirectory = 'cs3filebrowser:create-new-directory';
+
+  export const createNewFile = 'cs3filebrowser:create-new-file';
+
+  export const createNewMarkdownFile =
+    'cs3filebrowser:create-new-markdown-file';
+
+  export const rename = 'cs3filebrowser:rename';
 
   // For main browser only.
-  export const copyPath = 'filebrowser:copy-path';
-
-  export const showBrowser = 'filebrowser:activate';
-
-  export const shutdown = 'filebrowser:shutdown';
+  export const share = 'cs3filebrowser:share-main';
 
   // For main browser only.
-  export const toggleBrowser = 'filebrowser:toggle-main';
+  export const copyPath = 'cs3filebrowser:copy-path';
+
+  export const showBrowser = 'cs3filebrowser:activate';
+
+  export const shutdown = 'cs3filebrowser:shutdown';
+
+  // For main browser only.
+  export const toggleBrowser = 'cs3filebrowser:toggle-main';
 
   export const toggleNavigateToCurrentDirectory =
-    'filebrowser:toggle-navigate-to-current-directory';
+    'cs3filebrowser:toggle-navigate-to-current-directory';
 
-  export const toggleLastModified = 'filebrowser:toggle-last-modified';
+  export const toggleLastModified = 'cs3filebrowser:toggle-last-modified';
 
-  export const search = 'filebrowser:search';
+  export const search = 'cs3filebrowser:search';
 }
 
 /**
@@ -469,6 +470,7 @@ export function addCommands(
 
       // Check for browser not found
       if (!browserForPath) {
+        console.log('no browser');
         return;
       }
       // Shortcut if we are using the main file browser
@@ -800,10 +802,8 @@ export async function restoreBrowser(
           dontShowBrowser: true
         });
       }
-    } else {
-      await browser.model.restore(browser.id);
-      await browser.model.refresh();
     }
+    // modified, removed else - restoring browser at the start of the session
     browser.removeClass(restoring);
   };
   router.routed.connect(listener);

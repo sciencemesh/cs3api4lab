@@ -7,14 +7,16 @@ from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from traitlets.config import LoggingConfigurable
 
+from cs3api4lab.tests.share_test_base import ShareTestBase
 
-class TestCS3APIsManager(TestCase):
+class TestCS3APIsManager(ShareTestBase,TestCase):
     user_id = None
     endpoint = None
     file_api = None
     contents_manager = None
 
     def setUp(self):
+        ShareTestBase.setUp(self)   # this is needed to set up sharing from different accounts than default (einstein)
         self.log = LoggingConfigurable().log
         self.config = Cs3ConfigManager.get_config()
         self.user_id = self.config.client_id
@@ -22,8 +24,9 @@ class TestCS3APIsManager(TestCase):
         self.file_api = Cs3FileApi(self.log)
         self.contents_manager = CS3APIsManager(None, self.log)
 
+
     def test_get_text_file(self):
-        file_id = "/test_get_text_file.txt"
+        file_id = "/home/test_get_text_file.txt"
         message = "Lorem ipsum dolor sit amet..."
         try:
             self.file_api.write_file(file_id, message, self.endpoint)
@@ -40,7 +43,7 @@ class TestCS3APIsManager(TestCase):
             self.file_api.remove(file_id, self.endpoint)
 
     def test_get_text_file_without_type(self):
-        file_id = "/test_get_text_file_no_type.txt"
+        file_id = "/home/test_get_text_file_no_type.txt"
         message = "Lorem ipsum dolor sit amet..."
         try:
             self.file_api.write_file(file_id, message, self.endpoint)
@@ -55,39 +58,6 @@ class TestCS3APIsManager(TestCase):
             self.assertEqual(model["type"], "file")
         finally:
             self.file_api.remove(file_id, self.endpoint)
-
-    def test_get_file_with_drive_name_starting_with_slash(self):
-        file_path = "/cs3drive:test_get_text_file.txt"
-        file_id = "/test_get_text_file.txt"
-        message = "Lorem ipsum dolor sit amet..."
-        try:
-            self.file_api.write_file(file_id, message, self.endpoint)
-            model = self.contents_manager.get(file_path, True, 'file')
-            self.assertEqual(model["name"], "test_get_text_file.txt")
-        finally:
-            self.file_api.remove(file_id, self.endpoint)
-
-    def test_get_file_with_drive_name(self):
-        file_path = "cs3drive:test_get_text_file.txt"
-        file_id = "/test_get_text_file.txt"
-        message = "Lorem ipsum dolor sit amet..."
-        try:
-            self.file_api.write_file(file_id, message, self.endpoint)
-            model = self.contents_manager.get(file_path, True, 'file')
-            self.assertEqual(model["name"], "test_get_text_file.txt")
-        finally:
-            self.file_api.remove(file_id, self.endpoint)
-
-    def test_get_file_with_drive_name_starting_with_slash(self):
-        file_path = "/cs3drive:test_get_text_file.txt"
-        file_id = "/test_get_text_file.txt"
-        message = "Lorem ipsum dolor sit amet..."
-        self.file_api.write_file(file_id, message, self.endpoint)
-
-        model = self.contents_manager.get(file_path, True, 'file')
-        self.assertEqual(model["name"], "test_get_text_file.txt")
-
-        self.file_api.remove(file_id, self.endpoint)
 
     def test_get_text_file_with_share_path(self):
         file_id = "/test_get_text_file.txt"
@@ -108,7 +78,7 @@ class TestCS3APIsManager(TestCase):
             self.file_api.remove(file_id, self.endpoint)
 
     def test_get_notebook_file(self):
-        file_id = "/test_get_notebook_file.ipynb"
+        file_id = "/home/test_get_notebook_file.ipynb"
         buffer = b'{\
 					"cells": [\
 						{\
@@ -157,7 +127,7 @@ class TestCS3APIsManager(TestCase):
             self.file_api.remove(file_id, self.endpoint)
 
     def test_save_text_model(self):
-        file_id = "/test_save_text_model.txt"
+        file_id = "/home/test_save_text_model.txt"
         model = {
             "type": "file",
             "format": "text",
@@ -177,7 +147,7 @@ class TestCS3APIsManager(TestCase):
             self.file_api.remove(file_id, self.endpoint)
 
     def test_save_notebook_model(self):
-        file_id = "/test_save_notebook_model.ipynb"
+        file_id = "/home/test_save_notebook_model.ipynb"
         model = self._create_notebook_model()
         try:
             save_model = self.contents_manager.save(model, file_id)
@@ -243,6 +213,40 @@ class TestCS3APIsManager(TestCase):
                 self.contents_manager.delete_file(file_path)
             except: pass
 
+    def test_is_editor(self):
+        file_path  = '/home/test_is_editor_file.txt'
+        message = "Lorem ipsum dolor sit amet..."
+        try:
+            self.file_api.write_file(file_path, message, self.endpoint)
+            stat = self.file_api.stat_info(file_path, self.config.endpoint)
+            result = self.contents_manager._is_editor(stat)
+            self.assertEqual(result, True, 'Incorrect check if file is editor')
+        finally:
+            try:
+                self.contents_manager.delete_file(file_path)
+            except Exception:
+                pass
+
+    def test_is_editor_shared_as_viewer(self):
+        self.content  = "Lorem ipsum dolor sit amet..."
+        file_path  = '/home/test_is_editor_file.txt'
+        remote_path = '/reva/richard/test_is_editor_file.txt'
+        einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
+        einstein_idp = 'cernbox.cern.ch'
+        try:
+            richards_share = self.create_share('richard', einstein_id, einstein_idp, file_path, 'viewer')
+            self.share_id = richards_share['opaque_id']
+            stat = self.file_api.stat_info(remote_path, self.config.endpoint)
+            result = self.contents_manager._is_editor(stat)
+            self.assertEqual(result, False, 'Is editor should be false')
+        finally:
+            try:
+                self.remove_test_share('richard', self.share_id)
+                self.remove_test_file('richard', file_path)
+            except Exception:
+                pass   #we don't need any actions here
+
+
     def test_delete_non_exits_file(self):
         file_path = "/test_delete_non_exits_file.txt"
         with self.assertRaises(web.HTTPError):
@@ -262,10 +266,12 @@ class TestCS3APIsManager(TestCase):
         finally:
             try:
                 self.file_api.remove(file_dest, self.endpoint)
-            except: pass
+            except Exception:
+                pass   #we don't need any actions here
             try:
                 self.file_api.remove(file_path, self.endpoint)
-            except: pass
+            except Exception:
+                pass   #we don't need any actions here
 
     def test_rename_file_non_exits_file(self):
         file_path = "/test_rename_file.txt"
@@ -290,13 +296,15 @@ class TestCS3APIsManager(TestCase):
         finally:
             try:
                 self.file_api.remove(file_path, self.endpoint)
-            except: pass
+            except Exception:
+                pass   #we don't need any actions here
             try:
                 self.file_api.remove(file_dest, self.endpoint)
-            except: pass
+            except Exception:
+                pass   #we don't need any actions here
 
     def test_new_file_model(self):
-        file_path = "/test_new_file_model.txt"
+        file_path = "/home/test_new_file_model.txt"
         model = {
             "type": "file",
             "format": "text",
@@ -317,7 +325,7 @@ class TestCS3APIsManager(TestCase):
             self.file_api.remove(file_path, self.endpoint)
 
     def test_new_notebook_model(self):
-        file_path = "/test_new_notebook_model.ipynb"
+        file_path = "/home/test_new_notebook_model.ipynb"
         model = self._create_notebook_model()
         try:
             save_model = self.contents_manager.new(model, file_path)

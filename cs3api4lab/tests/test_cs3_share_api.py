@@ -222,8 +222,9 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
             self.assertEqual(file_stat['filepath'], received_file_path, 'Share not updated')
 
             self.clear_locks_on_file(received_file_path)
+            stat = self.file_api.stat_info(received_file_path)
             content = ''
-            for chunk in self.file_api.read_file(received_file_path, self.config.endpoint):
+            for chunk in self.file_api.read_file(stat):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content)
         finally:
@@ -245,8 +246,9 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
 
             self.clear_locks_on_file(received_file_path)
             self.file_api.write_file(received_file_path, self.content + self.content)
+            stat = self.file_api.stat_info(received_file_path)
             content = ''
-            for chunk in self.file_api.read_file(received_file_path, self.config.endpoint):
+            for chunk in self.file_api.read_file(stat):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content + self.content)
         finally:
@@ -269,15 +271,19 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
             self.assertEqual('/' + dir_read[0].path.split('/')[-1], file_name)
 
             self.clear_locks_on_file(received_container_path + file_name)
+
+
             content = ''
-            for chunk in self.file_api.read_file(received_container_path + file_name, self.config.endpoint):
+            received_path_stat = self.file_api.stat_info(received_container_path + file_name)
+            for chunk in self.file_api.read_file(received_path_stat):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content)
 
             self.file_api.write_file(received_container_path + file_name, self.content + self.content)
-            self.clear_locks_on_file(received_container_path + file_name)
+            self.clear_locks_on_file(received_container_path + file_name, '/')
             content = ''
-            for chunk in self.richard_file_api.read_file(self.container_name + file_name, self.config.endpoint):
+            container_path_stat = self.file_api.stat_info(received_container_path + file_name)
+            for chunk in self.file_api.read_file(container_path_stat):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content + self.content)
 
@@ -302,8 +308,9 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
             self.create_test_file('einstein', received_container_path + inner_container + file_name)
 
             self.clear_locks_on_file(received_container_path + inner_container + file_name)
+            stat = self.richard_file_api.stat_info(self.container_name + inner_container + file_name, self.config.endpoint)
             content = ''
-            for chunk in self.richard_file_api.read_file(self.container_name + inner_container + file_name, self.config.endpoint):
+            for chunk in self.richard_file_api.read_file(stat):
                 content += chunk.decode('utf-8')
             self.assertEqual(content, self.content)
 
@@ -312,3 +319,18 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
                 self.remove_test_share('richard', self.share_id)
             if self.container_name:
                 self.remove_test_file('richard', self.container_name)
+
+    def test_get_share_received(self):
+        try:
+            self.file_name = self.file_path + "_test_list_received"
+            shared_file_path = '/reva/richard/' + self.file_name.split('/')[-1]
+            created_share = self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+            share = self.share_api.get_share_received(shared_file_path)
+            self.assertIn(self.file_name.split('/')[-1], share.resource_id.opaque_id, 'Share is incorrect')
+
+        finally:
+            if self.share_id:
+               self.remove_test_share('richard', self.share_id)
+            if self.file_name:
+                self.remove_test_file('richard', self.file_name)

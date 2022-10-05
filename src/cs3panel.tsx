@@ -6,7 +6,6 @@ import { IStateDB } from '@jupyterlab/statedb';
 import { BottomProps } from './types';
 import { useState } from 'react';
 import { FileBrowser } from '@jupyterlab/filebrowser';
-import { Contents } from '@jupyterlab/services';
 import { IIterator } from '@lumino/algorithm';
 import { ISignal, Signal } from '@lumino/signaling';
 
@@ -15,6 +14,7 @@ export class Cs3Panel extends Widget {
   protected main: DockPanel;
   protected bottom: BoxPanel;
   private _sharesTabVisible = new Signal<Widget, any>(this);
+  private _filesTabVisible = new Signal<Widget, any>(this);
 
   constructor(
     title: string,
@@ -31,7 +31,7 @@ export class Cs3Panel extends Widget {
 
     const rootLayout = new BoxLayout();
     rootLayout.direction = 'top-to-bottom';
-    rootLayout.spacing = 5;
+    rootLayout.spacing = 0;
 
     this.header = new BoxPanel();
     this.bottom = new BoxPanel();
@@ -73,18 +73,17 @@ export class Cs3Panel extends Widget {
         let tab: Widget | undefined;
         do {
           tab = dockPanelIterator?.next();
-          if (tab !== undefined) {
-            if (Cs3Panel.isWidgetVisible(tab)) {
-              if (tab.id === 'fileBrowser') {
-                this.bottom.show();
-              }
-              if (tab.id === 'sharesPanel') {
-                // emit signal to refresh the tab
-                this._sharesTabVisible.emit(this);
-                this.bottom.hide();
-              }
-              void stateDB.save('activeTab', tab.id);
+          if (tab !== undefined && Cs3Panel.isWidgetVisible(tab)) {
+            if (tab.id === 'cs3filebrowser') {
+              this._filesTabVisible.emit(this);
+              this.bottom.show();
             }
+            if (tab.id === 'sharesPanel') {
+              // emit signal to refresh the tab
+              this._sharesTabVisible.emit(this);
+              this.bottom.hide();
+            }
+            void stateDB.save('activeTab', tab.id);
           }
         } while (tab);
       }
@@ -112,6 +111,10 @@ export class Cs3Panel extends Widget {
 
   public sharesTabVisible(): ISignal<Widget, any> {
     return this._sharesTabVisible;
+  }
+
+  public filesTabVisible(): ISignal<Widget, any> {
+    return this._filesTabVisible;
   }
 }
 
@@ -156,7 +159,6 @@ export const Bottom = (props: BottomProps): JSX.Element => {
 export class Cs3BottomWidget extends ReactWidget {
   private bottomProps: {
     db: IStateDB;
-    drive: Contents.IDrive;
     browser: FileBrowser;
   };
 
@@ -165,14 +167,13 @@ export class Cs3BottomWidget extends ReactWidget {
     id: string,
     options: Widget.IOptions = {},
     stateDB: IStateDB,
-    browser: FileBrowser,
-    drive: Contents.IDrive
+    browser: FileBrowser
   ) {
     super(options);
     this.addClass('c3-bottom-widget');
     this.id = id;
     this.title.closable = false;
-    this.bottomProps = { db: stateDB, drive: drive, browser: browser };
+    this.bottomProps = { db: stateDB, browser: browser };
     this.node.onclick = async () => {
       const showHidden = await stateDB.fetch('showHidden');
       await stateDB.save('showHidden', !showHidden);

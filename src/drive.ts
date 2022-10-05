@@ -55,7 +55,7 @@ export class CS3Contents implements Contents.IDrive {
    * The name of the drive.
    */
   get name(): string {
-    return 'cs3drive';
+    return '';
   }
 
   /**
@@ -72,8 +72,7 @@ export class CS3Contents implements Contents.IDrive {
     options?: Contents.IFetchOptions
   ): Promise<Contents.IModel> {
     const activeTab: string = (await this._state.fetch('activeTab')) as string;
-
-    if (activeTab === 'fileBrowser' || activeTab === undefined) {
+    if (activeTab === 'cs3filebrowser' || activeTab === undefined) {
       return await CS3ContainerFiles('filelist', this._state, path, options);
     } else {
       return Promise.resolve({} as Contents.IModel);
@@ -94,7 +93,7 @@ export class CS3Contents implements Contents.IDrive {
     return this._isDisposed;
   }
 
-  /**h
+  /**
    * Dispose of the resources held by the manager.
    */
   dispose(): void {

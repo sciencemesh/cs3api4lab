@@ -1,3 +1,5 @@
+import urllib.parse
+
 import grpc
 import requests
 
@@ -47,18 +49,24 @@ class StorageApi:
         return self._stat_internal(ref)
 
     def _stat_internal(self, ref):
-        return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
+        return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref, arbitrary_metadata_keys='*'),
                                  metadata=[('x-access-token', self.auth.authenticate())])
 
-    def set_metadata(self, data, file_path, endpoint):
-        ref = self.get_unified_file_ref(file_path, endpoint)
+    def set_metadata(self, key, data, stat):
+        opaque_id = urllib.parse.unquote(stat['inode']['opaque_id'])
+        storage_id = urllib.parse.unquote(stat['inode']['storage_id'])
+        reference = FileUtils.get_reference(opaque_id, storage_id)
+        arbitrary_metadata = storage_provider.ArbitraryMetadata()
+        arbitrary_metadata.metadata[key] = data
+
         set_metadata_response = self.cs3_api.SetArbitraryMetadata(
             request=cs3sp.SetArbitraryMetadataRequest(
-                ref=ref,
-                arbitrary_metadata=storage_provider.ArbitraryMetadata(metadata=data)),
+                ref=reference,
+                arbitrary_metadata=arbitrary_metadata),
             metadata=self._get_token())
+
         if set_metadata_response.status.code != cs3code.CODE_OK:
-            raise Exception('Unable to set metadata for: ' + file_path + ' ' + str(set_metadata_response.status))
+            raise Exception('Unable to set metadata for: ' + stat['filepath'] + ' ' + str(set_metadata_response.status))
 
     def get_metadata(self, file_path, endpoint):
         ref = self.get_unified_file_ref(file_path, endpoint)

@@ -18,18 +18,34 @@ class Cs3(LockBase):
     def __init__(self, log, config):
         super().__init__(log, config)
 
-    def handle_locks(self, file_path, endpoint):
-        ref = FileUtils.get_reference(file_path, endpoint)
+    def set_lock(self, stat):
+        ref = FileUtils.get_reference(stat['inode']['opaque_id'], stat['inode']['storage_id'])
         lock = self._get_lock(ref)
+        '''
+        this if statement should be replaced with self.is_file_locked()  and set_lock
+        function after the bug with setting/refreshing locks is resolved 
+        '''
         if not lock:
             self._set_lock(ref)
         elif self._is_lock_mine(lock):
             self._refresh_lock(ref)
         else:
-            raise FileLockedError("File %s is locked" % file_path)
+            raise FileLockedError("File %s is locked" % stat['filepath'])
 
-    def is_valid_external_lock(self, file_path, endpoint):
-        ref = FileUtils.get_reference(file_path, endpoint)
+    def is_file_locked(self, stat):
+        file_is_locked = True
+
+        ref = FileUtils.get_reference(stat['inode']['opaque_id'], stat['inode']['storage_id'])
+        lock = self._get_lock(ref)
+        if not lock:
+           file_is_locked = False
+        elif self._is_lock_mine(lock):
+            file_is_locked = False
+
+        return file_is_locked
+
+    def is_valid_external_lock(self, stat):
+        ref = FileUtils.get_reference(stat['inode']['opaque_id'], stat['inode']['storage_id'])
         lock = self._get_lock(ref)
         return lock and not self._is_lock_mine(lock)
 

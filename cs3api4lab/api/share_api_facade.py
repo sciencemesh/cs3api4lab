@@ -38,7 +38,7 @@ class ShareAPIFacade:
 
     def create(self, endpoint, file_path, opaque_id, idp, role=Role.EDITOR, grantee_type=Grantee.USER, reshare=True):
         """Creates a share or creates an OCM share if the user is not found in local domain"""
-        file_path = FileUtils.remove_drives_names(file_path)
+        file_path = FileUtils.normalize_path(file_path)
         if self._is_ocm_user(opaque_id, idp):
             if self.config.enable_ocm:
                 return self.ocm_share_api.create(opaque_id, idp, idp, endpoint, file_path, grantee_type, role, reshare)
@@ -46,6 +46,16 @@ class ShareAPIFacade:
                 raise OCMDisabledError('Cannot create OCM share - OCM functionality is disabled')
         else:
             return self.share_api.create(endpoint, file_path, opaque_id, idp, role, grantee_type)
+
+    def get_share_received_role(self, path):
+        """Check if share has viewer or editor permissions"""
+        share = self.share_api.get_share_received(path)
+
+        role = None
+        if share:
+            role = ShareUtils.map_permissions_to_role(share.permissions.permissions)
+
+        return role
 
     def update_share(self, params):
         """Updates a field of a share
@@ -124,13 +134,13 @@ class ShareAPIFacade:
         return shares
 
 
-    def list_received(self, status=None):
+    def list_received(self, status=None, path=None):
         """
         :return: received shares and OCM received shares combined and mapped to Jupyter model
         :rtype: dict
         """
 
-        share_list = self.share_api.list_received()
+        share_list = self.share_api.list_received(path)
         if self.config.enable_ocm:
             ocm_share_list = self.ocm_share_api.list_received()
         else:
@@ -148,7 +158,7 @@ class ShareAPIFacade:
         :return: list of grantees
         """
 
-        file_path = FileUtils.remove_drives_names(file_path)
+        file_path = FileUtils.normalize_path(file_path)
         file_path = FileUtils.check_and_transform_file_path(file_path)
 
         all_shares_list = []

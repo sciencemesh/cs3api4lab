@@ -48,11 +48,6 @@ class Cs3OcmShareApi:
         return
 
     def create(self, opaque_id, idp, domain, endpoint, file_path, grantee_type=GRANTEE_TYPE_USER, role=Role.EDITOR, reshare=True):
-        opaque = cs3_types.Opaque(
-            map={"permissions": cs3_types.OpaqueEntry(decoder="plain",
-                                                      value=str.encode(self._map_role(role))),
-                 "name": cs3_types.OpaqueEntry(decoder="plain",
-                                               value=str.encode('my_resource_name'))})
         resource_info = self._get_resource_info(endpoint, file_path)
         user_id = identity_res.UserId(idp=idp, opaque_id=opaque_id)
         opaque_id = storage_resources.Grantee(type=ShareUtils.map_grantee(grantee_type), user_id=user_id)
@@ -60,6 +55,14 @@ class Cs3OcmShareApi:
                                              reshare=bool(reshare))
         grant = sharing_res.ShareGrant(permissions=perms, grantee=opaque_id)
         provider_info = self._get_provider_info(domain)
+
+        opaque = cs3_types.Opaque(
+            map={"permissions": cs3_types.OpaqueEntry(decoder="plain",
+                                                      value=str.encode(self._map_role(role))),
+                 "name": cs3_types.OpaqueEntry(decoder="plain",
+                                               value=str.encode(resource_info.id.opaque_id))}
+        )
+
         request = ocm_api.CreateOCMShareRequest(opaque=opaque,
                                                 resource_id=resource_info.id,
                                                 grant=grant,
@@ -171,12 +174,13 @@ class Cs3OcmShareApi:
         else:
             return self.get_received_share(share_id)
 
-    def list_received(self):
+    def list_received(self, path=None):  #@TODO list received shares needs filters
         request = ocm_api.ListReceivedOCMSharesRequest()
         response = self.ocm_share_api.ListReceivedOCMShares(request=request,
                                                             metadata=self._token())
         if not self._is_code_ok(response):
             self._handle_error(response, "Error listing OCM received shares: ")
+
         return response
 
     def get_received_share(self, share_id):
