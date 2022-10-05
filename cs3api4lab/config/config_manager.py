@@ -81,6 +81,9 @@ class Config(LoggingConfigurable):
         config=True, allow_none=False, help="""Locking API implementation to choose from 'cs3' (cs3apis 
         grpc locks) and 'metadata' (file arbitrary metadata, the default one)""",
     )
+    dev_env = Bool(
+        config=True, allow_none=True, default_value=False, help=""""This is a temporary variable to determine whether this is dev environment"""
+    )
 
     @default("reva_host")
     def _reva_host_default(self):
@@ -181,6 +184,10 @@ class Config(LoggingConfigurable):
     def _locks_api(self):
         return self._get_config_value("locks_api")
 
+    @default("dev_env")
+    def _dev_env_default(self):
+        return self._get_config_value("dev_env") in ["true", True]
+
     def _get_config_value(self, key):
         env = os.getenv("CS3_" + key.upper())
         if env:
@@ -236,7 +243,9 @@ class Config(LoggingConfigurable):
         "eos_token": None,
         "oauth_file": None,
         "oauth_token": None,
-        "locks_api": "metadata"
+        "locks_api": "metadata",
+        "oauth_token": None,
+        "dev_env": False
     }
 
 

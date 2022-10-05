@@ -1,5 +1,4 @@
 import nbformat
-import mimetypes
 import os
 import posixpath
 import nest_asyncio
@@ -11,6 +10,7 @@ from base64 import decodebytes
 from jupyter_server.services.contents.manager import ContentsManager
 from requests import HTTPError
 
+from cs3api4lab.common.strings import Role
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from tornado import web
 from nbformat.v4 import new_notebook
@@ -21,13 +21,19 @@ from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.utils.model_utils import ModelUtils
 from cs3api4lab.utils.asyncify import asyncify
 from cs3api4lab.api.storage_api import StorageApi
+from cs3api4lab.locks.factory import LockApiFactory
 from cs3api4lab.exception.exceptions import ResourceNotFoundError
 
+"""
+This class redefines default upstream ContentsManager.
+It's used for operations on files (user filesystem and files shared by users)
 
+Note: This uses validation from ContentsManager package which means we are 
+bound to the endpoint rules defined in ContentsManager.
+"""
 class CS3APIsManager(ContentsManager):
     cs3_config = None
     log = None
-
     file_api = None
 
     def __init__(self, parent, log, **kwargs):
@@ -37,7 +43,8 @@ class CS3APIsManager(ContentsManager):
         self.file_api = Cs3FileApi(self.log)
         self.share_api = ShareAPIFacade(log)
         self.storage_api = StorageApi(log)
-    
+        self.lock_api = LockApiFactory.create(log, self.cs3_config)
+
         #line below must be run in order for loop.run_until_complete() to work
         nest_asyncio.apply()
 
@@ -55,7 +62,7 @@ class CS3APIsManager(ContentsManager):
         exists : bool
             Whether the path does indeed exist.
         """
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.normalize_path(path)
         return self._is_dir(path)
 
     @asyncify
@@ -71,7 +78,7 @@ class CS3APIsManager(ContentsManager):
         hidden : bool
             Whether the path is hidden.
         """
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.normalize_path(path)
         parts = path.split('/')
         if any(part.startswith('.') for part in parts):
             return True
@@ -91,24 +98,21 @@ class CS3APIsManager(ContentsManager):
         exists : bool
             Whether the file exists.
         """
-        path = FileUtils.remove_drives_names(path)
-        parent_path = self._get_parent_path(path)
+        path = FileUtils.normalize_path(path)
         try:
-            cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
-        except Exception as ex:
-            self.log.error(u'Error while reading container: %s %s', path, ex, exc_info=True)
-            raise web.HTTPError(500, u'Unexpected error while reading container: %s %s' % (path, ex))
+            file_info = self.file_api.stat_info(path, self.cs3_config.endpoint)
+        except FileNotFoundError:
+            return False
 
-        for cs3_model in cs3_container:
-            if cs3_model.type == resource_types.RESOURCE_TYPE_FILE and cs3_model.path == path:
-                return True
+        if file_info['type'] == resource_types.RESOURCE_TYPE_FILE:
+            return True
 
         return False
 
     # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.normalize_path(path)
         model = None
 
         if type:
@@ -117,9 +121,17 @@ class CS3APIsManager(ContentsManager):
             elif type == 'file' and self.file_exists(path):
                 model = self._file_model(path, content=content, format=format)
             elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
-                model = self._notebook_model(path, content=content)
+                try:   #this needs to be fixed/refactored in a separate issue
+                    model = self._notebook_model(path, content=content)
+                except Exception:
+                    self.log.info("Notebook does not exist %s", path)
         else:
-            if self.file_exists(path):
+            if path.endswith('.ipynb'):
+                try:   #this needs to be fixed/refactored in a separate issue
+                    model = self._notebook_model(path, content=content)
+                except Exception:
+                    self.log.info("Notebook does not exist %s", path)
+            elif self.file_exists(path):
                 model = self._file_model(path, content=content, format=format)
             elif self._is_dir(path):
                 model = self._dir_model(path, content=content)
@@ -147,7 +159,7 @@ class CS3APIsManager(ContentsManager):
 
         kernel_path = self.cs3_config.kernel_path
         path = posixpath.join(kernel_path, path)
-        
+
         # Lets use the local filesystem instead of going via cs3apis
         if os.path.isdir(path):
             return path
@@ -165,8 +177,8 @@ class CS3APIsManager(ContentsManager):
         should call self.run_pre_save_hook(model=model, path=path) prior to
         writing any data.
         """
-        path = FileUtils.remove_drives_names(path)
-        self._check_write_permissions(path)
+        path = FileUtils.check_and_transform_file_path(path)
+        # self._check_write_permissions(path)
 
         if 'type' not in model:
             raise web.HTTPError(400, u'No file type provided')
@@ -224,7 +236,7 @@ class CS3APIsManager(ContentsManager):
     @asyncify
     def delete_file(self, path):
         """Delete the file or directory at path."""
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.normalize_path(path)
         try:
             self.file_api.remove(path, self.cs3_config.endpoint)
 
@@ -246,8 +258,8 @@ class CS3APIsManager(ContentsManager):
         #
         # ToDo: Implements validate file like: notebook/services/contents/filemanager.py:587 using Reva API
         #
-        old_path = FileUtils.remove_drives_names(old_path)
-        new_path = FileUtils.remove_drives_names(new_path)
+        old_path = FileUtils.normalize_path(old_path)
+        new_path = FileUtils.normalize_path(new_path)
 
         try:
             self.file_api.move(old_path, new_path, self.cs3_config.endpoint)
@@ -259,8 +271,8 @@ class CS3APIsManager(ContentsManager):
     def new(self, model=None, path=''):
 
         path = path.strip('/')
-        path = FileUtils.remove_drives_names(path)
-        self._check_write_permissions(path)
+        path = FileUtils.normalize_path(path)
+        # self._check_write_permissions(path)
 
         if model is None:
             model = {}
@@ -282,9 +294,6 @@ class CS3APIsManager(ContentsManager):
 
         model = self.save(model, path)
 
-        # ToDo: Fix writable flag - based on container status
-        model['writable'] = True
-
         return model
 
     def _get_parent_path(self, path):
@@ -301,11 +310,11 @@ class CS3APIsManager(ContentsManager):
         head, _sep, tail = source_string.rpartition(replace_what)
         return head + replace_with + tail
 
-    def _read_file(self, path, file_format=None):
+    def _read_file(self, stat, file_format=None):
         if file_format is None or file_format == "text":
             try:
                 content = ''
-                for chunk in self.file_api.read_file(path, self.cs3_config.endpoint):
+                for chunk in self.file_api.read_file(stat, self.cs3_config.endpoint):
                     content += chunk.decode('utf-8')
 
                 return content
@@ -313,12 +322,12 @@ class CS3APIsManager(ContentsManager):
                 if file_format == "text":
                     raise HTTPError(
                         400,
-                        "%s is not UTF-8 encoded" % path,
+                        "%s is not UTF-8 encoded" % stat['filepath'],
                         reason="bad format",
                     ) from e
 
         content = []
-        for chunk in self.file_api.read_file(path, self.cs3_config.endpoint):
+        for chunk in self.file_api.read_file(stat, self.cs3_config.endpoint):
             content.append(chunk)
 
         return b''.join(content)
@@ -334,16 +343,19 @@ class CS3APIsManager(ContentsManager):
 
     @asyncify
     def _file_model(self, path, content, format):
-        parent_path = self._get_parent_path(path)
-        cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
+        file_info = None
+        model = ModelUtils.create_empty_file_model(path)
+        try:
+            file_info = self.file_api.stat_info(path, self.cs3_config.endpoint)
+        except Exception as e:
+            self.log.info('File % does not exists' % path)
 
-        model, tmp_model = ModelUtils.create_base_model_from_cs3_container(path, cs3_container)
-        model['type'] = 'file'
-        model['mimetype'] = mimetypes.guess_type(tmp_model.path)[0]
+        if file_info:
+            model = ModelUtils.update_file_model(ModelUtils.create_empty_file_model(path), file_info)
 
+        model['writable'] = self._is_editor(file_info)
         if content:
-            content = self._read_file(tmp_model.path, format)
-
+            content = self._read_file(file_info, format)
             if format is None:
                 format = "text"
 
@@ -363,14 +375,13 @@ class CS3APIsManager(ContentsManager):
 
     # can't be async because SQLite (used for jupyter notebooks) doesn't allow multithreaded operations by default
     def _notebook_model(self, path, content):
-        parent_path = self._get_parent_path(path)
-        cs3_container = self.file_api.read_directory(parent_path, self.cs3_config.endpoint)
+        file_info = self.file_api.stat_info(path, self.cs3_config.endpoint)
 
-        model, tmp_model = ModelUtils.create_base_model_from_cs3_container(path, cs3_container)
+        model = ModelUtils.update_file_model(ModelUtils.create_empty_file_model(path), file_info)
         model['type'] = 'notebook'
 
         if content:
-            file_content = self._read_file(tmp_model.path)
+            file_content = self._read_file(file_info)
             nb = nbformat.reads(file_content, as_version=4)
             self.mark_trusted_cells(nb, path)
             model['content'] = nb
@@ -381,11 +392,10 @@ class CS3APIsManager(ContentsManager):
 
     @asyncify
     def _is_dir(self, path):
-
         if path == '/' or path == '' or path is None:
             return True
 
-        path = FileUtils.remove_drives_names(path)
+        path = FileUtils.normalize_path(path)
         stat = self.storage_api.stat(path)
         return stat.status.code == cs3code.CODE_OK and stat.info.type == resource_types.RESOURCE_TYPE_CONTAINER
 
@@ -432,17 +442,31 @@ class CS3APIsManager(ContentsManager):
 
         self.file_api.create_directory(path, self.cs3_config.endpoint)
 
-    @asyncify
-    def _check_write_permissions(self, path):
+    def _is_editor(self, file_info):
+        '''
+        This determines if the user can write to the file or not
+        (check permissions of the file, share and check if the file is locked)
+        '''
+        is_editor = True
 
-        parent = self._get_parent_path(path)
-        stat = self.file_api.stat_info(parent)
-        if not ShareUtils.map_permissions_to_role(stat['permissions']) == 'editor':
-            raise web.HTTPError(403, u'The path %s is not writable' % parent)
-        # check if the path is a received share with editor permissions
-        for share in self.share_api.list_received()['content']:
-            if share['path'] == path and share['writable'] == False:
-                raise web.HTTPError(403, u'The share %s is not writable' % path)
+        if not file_info:
+            return is_editor
+
+        # check file permissions
+        if ShareUtils.map_permissions_to_role(file_info['permissions']) == Role.VIEWER:
+            is_editor = False
+
+        # check if file is shared with me
+        role = self.share_api.get_share_received_role(file_info['filepath'])
+        if is_editor and role and role == Role.VIEWER:
+            is_editor = False
+
+        # check if file is locked
+        if self.lock_api.is_file_locked(file_info):
+            is_editor = False
+
+        return is_editor
+
 
     #
     # Notebook hack - disable checkpoint

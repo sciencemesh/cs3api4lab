@@ -14,32 +14,35 @@ class Metadata(LockBase):
         self.log = log
         self.locks_expiration_time = self.config.locks_expiration_time
 
-    def handle_locks(self, file_path, endpoint):
-        lock = self._get_lock(file_path, endpoint)
-        if not lock:
-            self._set_lock(file_path, endpoint)
-            return
+    def set_lock(self, stat):
+        if not self.is_file_locked(stat):
+            self.storage_api.set_metadata(self.lock_name, self._generate_lock_entry(), stat)
         else:
-            if self._is_lock_mine(lock) or self._is_lock_expired(lock):
-                self._set_lock(file_path, endpoint)
-                return
-        raise FileLockedError("File %s is locked" % file_path)
+            raise FileLockedError("File %s is locked" % stat['filepath'])
+
+    def is_file_locked(self, stat):
+        file_is_locked = True
+
+        lock = self._get_lock(stat)
+        if not lock:
+            file_is_locked = False
+        elif self._is_lock_mine(lock) or self._is_lock_expired(lock):
+            file_is_locked = False
+
+        return file_is_locked
 
     def _generate_lock_entry(self):
         user = self.get_current_user()
-        return {self.lock_name: urllib.parse.quote(json.dumps({
+        return urllib.parse.quote(json.dumps({
             "username": user.username,
             "idp": user.id.idp,
             "opaque_id": user.id.opaque_id,
             "updated": time.time(),
             "created": time.time()
-        }))}
+        }))
 
-    def _set_lock(self, file_path, endpoint):
-        self.storage_api.set_metadata(self._generate_lock_entry(), file_path, endpoint)
-
-    def is_valid_external_lock(self, file_path, endpoint):
-        lock = self._get_lock(file_path, endpoint)
+    def is_valid_external_lock(self, stat):
+        lock = self._get_lock(stat)
         is_mine = self._is_lock_mine(lock)
         return lock and not is_mine and not self._is_lock_expired(lock)
 
@@ -55,10 +58,12 @@ class Metadata(LockBase):
             return True
         return (time.time() - lock['updated']) > datetime.timedelta(seconds=self.locks_expiration_time).total_seconds()
 
-    def _get_lock(self, file_path, endpoint):
-        lock = None
-        metadata = self.storage_api.get_metadata(file_path, endpoint)
-        if metadata:
-            lock = json.loads(urllib.parse.unquote(list(metadata.values())[0]))
-        return lock
+    def _get_lock(self, stat):
+        if not stat['arbitrary_metadata']:
+            return None
 
+        if not stat['arbitrary_metadata']['metadata'].get(self.lock_name):
+            return None
+
+        lock = stat['arbitrary_metadata']['metadata'].get(self.lock_name)
+        return json.loads(urllib.parse.unquote(lock))

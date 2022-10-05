@@ -1,10 +1,10 @@
 import mimetypes
 import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
-
 from tornado import web
 from datetime import datetime
 from IPython.utils import tz
 from cs3api4lab.utils.share_utils import ShareUtils
+
 
 class ModelUtils:
     date_fmt = '%Y-%m-%dT%H:%M:%SZ'
@@ -174,3 +174,31 @@ class ModelUtils:
                     writable = True
 
         return created, last_modified, size, writable
+
+    @staticmethod
+    def create_empty_file_model(path):
+        model = ModelUtils.create_respond_model()
+        model['content'] = None
+        model['format'] = None
+        model['name'] = path.rsplit('/', 1)[-1]
+        model['path'] = path
+        model['type'] = 'file'
+        model['size'] = 1
+        model['mimetype'] = 'text/plain'
+
+        return model
+
+    @staticmethod
+    def update_file_model(model, stat=None):
+        if not stat:
+            return model
+
+        model['name'] = stat['filepath'].rsplit('/', 1)[-1]
+        model['path'] = stat['filepath']
+        model['size'] = stat['size']
+        model['mimetype'] = mimetypes.guess_type(stat['filepath'])[0]
+        model['writable'] = True
+        model['last_modified'] = datetime.fromtimestamp(stat['mtime']).strftime(ModelUtils.date_fmt)
+        model['created'] = datetime.fromtimestamp(stat['mtime']).strftime(ModelUtils.date_fmt)
+
+        return model

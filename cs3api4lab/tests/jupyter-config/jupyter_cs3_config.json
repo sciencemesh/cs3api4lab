@@ -16,6 +16,7 @@
     "locks_expiration_time": 10,
     "tus_enabled": false,
     "enable_ocm": false,
+    "dev_env": true,
     "locks_api": "metadata"
   }
 }

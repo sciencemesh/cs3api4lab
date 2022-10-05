@@ -25,7 +25,11 @@ class LockBase(ABC):
         self.lock_name = 'cs3apis4lab_lock'
 
     @abstractmethod
-    def handle_locks(self, file_path, endpoint):
+    def set_lock(self, stat):
+        pass
+
+    @abstractmethod
+    def is_file_locked(self, stat):
         pass
 
     def get_current_user(self):
@@ -34,19 +38,19 @@ class LockBase(ABC):
                                    metadata=[('x-access-token', self.auth.authenticate())])
         return self.user.user
 
-    def resolve_file_path(self, file_path, endpoint):
-        if self.is_valid_external_lock(file_path, endpoint):
-            file_name = file_path.split('/')[-1]
-            file_dir = '/'.join(file_path.split('/')[0:-1])
-            return self._resolve_directory(file_dir, endpoint) + self._get_conflict_filename(file_name)
-        return file_path
+    def resolve_file_path(self, stat):
+        if self.is_valid_external_lock(stat):
+            file_name = stat['filepath'].split('/')[-1]
+            file_dir = '/'.join(stat['filepath'].split('/')[0:-1])
+            return self._resolve_directory(file_dir, self.config.endpoint) + self._get_conflict_filename(file_name)
+        return stat['filepath']
 
     @abstractmethod
-    def is_valid_external_lock(self, file_path, endpoint):
+    def is_valid_external_lock(self, stat):
         pass
 
     def _resolve_directory(self, dir_path,
-                           endpoint):  # right now its possible to write in somone else's directory without it being shared
+                           endpoint):  # right now it's possible to write in somone else's directory without it being shared
         stat = self.storage_api.stat(dir_path, endpoint)
         if stat.status.code == cs3code.CODE_OK:
             return dir_path

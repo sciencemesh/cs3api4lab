@@ -1,3 +1,5 @@
+import urllib.parse
+
 import cs3.storage.provider.v1beta1.resources_pb2 as storage_provider
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 
@@ -48,9 +50,9 @@ class FileUtils:
         return path
 
     @staticmethod
-    def remove_drives_names(path):
-        for drive in ["cs3drive:", "cs3driveShareWithMe:", "cs3driveShareByMe:", "/cs3drive:", "/cs3driveShareWithMe:", "/cs3driveShareByMe:"]:
-            if path.startswith(drive):
-                path = path.replace(drive, "/")
-                break
-        return FileUtils.normalize_path(path)
+    def fix_dev_opaque(opaque_id, dev_env):  # remove after https://github.com/cs3org/reva/issues/3243 is fixed
+        if dev_env:
+            opaque_id = opaque_id.replace('fileid-/', 'fileid-').replace('+', ' ')
+            opaque_id = urllib.parse.quote_plus(opaque_id, '')
+
+        return opaque_id

@@ -41,8 +41,9 @@ class TestCs3FileApi(TestCase):
         file_path = "/test_read.txt"
         try:
             self.storage.write_file(file_path, content_to_write, self.endpoint)
+            stat = self.storage.stat_info(file_path, self.endpoint)
             content = ''
-            for chunk in self.storage.read_file(file_path, self.endpoint):
+            for chunk in self.storage.read_file(stat, self.endpoint):
                 self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
                 content += chunk.decode('utf-8')
             self.assertEqual(content, content_check,
@@ -58,7 +59,7 @@ class TestCs3FileApi(TestCase):
             self.storage.write_file(file_path, content_to_write, self.endpoint)
             stat = self.storage.stat_info(file_path)
             content = ''
-            for chunk in self.storage.read_file(file_path, self.endpoint):
+            for chunk in self.storage.read_file(stat, self.endpoint):
                 self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
                 content += chunk.decode('utf-8')
 
@@ -78,7 +79,7 @@ class TestCs3FileApi(TestCase):
             stat = self.storage.stat_info(file_path)
             stat_by_id = self.storage.stat_info(stat['inode']['opaque_id'], stat['inode']['storage_id'])
             content = ''
-            for chunk in self.storage.read_file(file_path, self.endpoint):
+            for chunk in self.storage.read_file(stat, self.endpoint):
                 self.assertNotIsInstance(chunk, IOError, 'raised by storage.readfile')
                 content += chunk.decode('utf-8')
             self.assertEqual(stat_by_id['filepath'], '/reva/einstein/test_read_by_share_path.txt')
@@ -86,13 +87,6 @@ class TestCs3FileApi(TestCase):
                              'File ' + file_path + ' should contain the string: ' + content_to_check)
         finally:
             self.storage.remove(file_path, self.endpoint)
-
-    def test_read_file_no_file(self):
-        file_path = "/test_read_no_existing_file.txt"
-        content = ''
-        with self.assertRaises(IOError, msg='No such file or directory'):
-            for chunk in self.storage.read_file(file_path, self.endpoint):
-                content += chunk.decode('utf-8')
 
     def test_write_file(self):
         buffer = b"Testu form cs3 Api"

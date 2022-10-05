@@ -7,12 +7,15 @@ Authors:
 """
 import http
 import time
+import urllib.parse
 import grpc
 import requests
 
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.v1beta1.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
+from google.protobuf.json_format import MessageToDict
+
 from cs3api4lab.exception.exceptions import ResourceNotFoundError, FileLockedError
 
 from cs3api4lab.utils.file_utils import FileUtils
@@ -73,7 +76,8 @@ class Cs3FileApi:
                 'type': stat.info.type,
                 'mime_type': stat.info.mime_type,
                 'idp': stat.info.owner.idp,
-                'permissions': stat.info.permission_set
+                'permissions': stat.info.permission_set,
+                'arbitrary_metadata': MessageToDict(stat.info.arbitrary_metadata),
             }
         elif stat.status.code == cs3code.CODE_NOT_FOUND:
             self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_path, stat.status.message))
@@ -81,45 +85,37 @@ class Cs3FileApi:
         else:
             self._handle_error(stat)
         
-    def read_file(self, file_path, endpoint=None):
+    def read_file(self, stat, endpoint=None):
         """
         Read a file using the given userid as access token.
         """
-        time_start = time.time()
+        if stat:
+            # additional request until this issue is resolved https://github.com/cs3org/reva/issues/3243
+            if self.config.dev_env and "/home/" in stat['filepath']:
+                opaque_id = urllib.parse.unquote(stat['inode']['opaque_id'])
+                storage_id = urllib.parse.unquote(stat['inode']['storage_id'])
+                stat = self.stat_info(opaque_id, storage_id)
 
-        stat = self.storage_api.stat(file_path, endpoint)
-        if stat.status.code == cs3code.CODE_OK:
             try:
-                # this will refresh the lock on every file chunk read
-                self.lock_api.handle_locks(file_path, endpoint)
-            except FileLockedError:
-                self.log.info("File %s locked, opening in read-only mode" % file_path)
-                # todo change writable to false
+                self.lock_api.set_lock(stat)
+            except IOError:
+                self.log.info("File %s locked, opening in read-only mode" % stat['filepath'])
+
         else:
             msg = "%s: %s" % (stat.status.code, stat.status.message)
             self.log.error('msg="Error when stating file for read" reason="%s"' % msg)
-            raise IOError(msg)
+            raise IOError('Error when stating file')
 
-        init_file_download = self.storage_api.init_file_download(file_path, endpoint)
-
-        file_get = None
+        init_file_download = self.storage_api.init_file_download(stat['filepath'], endpoint)
         try:
             file_get = self.storage_api.download_content(init_file_download)
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when downloading file from Reva" reason="%s"' % e)
             raise IOError(e)
 
-        time_end = time.time()
-
-        if not file_get or file_get.status_code != http.HTTPStatus.OK:
-            self.log.error('msg="Error downloading file from Reva" code="%d" reason="%s"' % (
-                file_get.status_code, file_get.reason))
-            raise IOError(file_get.reason)
-        else:
-            self.log.info('msg="File open for read" filepath="%s" elapsedTimems="%.1f"' % (
-                file_path, (time_end - time_start) * 1000))
-
-        for i in range(0, len(file_get.content), self.config.chunk_size):
+        size = len(file_get.content)
+        chunk_size = self.config.chunk_size
+        for i in range(0, size, chunk_size):
             yield file_get.content[i:i + self.config.chunk_size]
 
     def write_file(self, file_path, content, endpoint=None, format=None):
@@ -127,20 +123,32 @@ class Cs3FileApi:
         Write a file using the given userid as access token. The entire content is written
         and any pre-existing file is deleted (or moved to the previous version if supported).
         """
-        # todo fix me
-        #file_path = self.lock_api.resolve_file_path(file_path, endpoint)
         time_start = time.time()
 
-        stat = self.storage_api.stat(file_path, endpoint)
-        # fixme - this might cause overwriting/locking issues due to unexpected error codes
-        if stat.status.code == cs3code.CODE_OK:
-            self.lock_api.handle_locks(file_path, endpoint)
+        stat = None
+        try:
+            stat = self.stat_info(file_path, endpoint)
+            if stat:
+                # additional request until this issue is resolved https://github.com/cs3org/reva/issues/3243
+                if self.config.dev_env and "/home/" in stat['filepath']:
+                    opaque_id = urllib.parse.unquote(stat['inode']['opaque_id'])
+                    storage_id = urllib.parse.unquote(stat['inode']['storage_id'])
+                    stat = self.stat_info(opaque_id, storage_id)
+
+                # file_path = self.lock_manager.resolve_file_path(stat)
+        except Exception as e:
+            self.log.info('Creating new file %s', file_path)
+
+        if stat:
+            # fixme - this might cause overwriting/locking issues due to unexpected error codes
+            self.lock_api.set_lock(stat)
 
         content_size = FileUtils.calculate_content_size(content, format)
         init_file_upload = self.storage_api.init_file_upload(file_path, endpoint, content_size)
 
         try:
             upload_response = self.storage_api.upload_content(file_path, content, content_size, init_file_upload)
+
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when uploading file to Reva" reason="%s"' % e)
             raise IOError(e)
@@ -183,7 +191,7 @@ class Cs3FileApi:
         """
         tstart = time.time()
         reference = FileUtils.get_reference(path, endpoint)
-        req = cs3sp.ListContainerRequest(ref=reference, arbitrary_metadata_keys="*")
+        req = cs3sp.ListContainerRequest(ref=reference)
         res = self.cs3_api.ListContainer(request=req, metadata=[('x-access-token', self.auth.authenticate())])
 
         if res.status.code == cs3code.CODE_NOT_FOUND:

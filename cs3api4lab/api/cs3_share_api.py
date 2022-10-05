@@ -5,6 +5,8 @@ CS3 Share API for the JupyterLab Extension
 
 Authors:
 """
+import urllib.parse
+
 import cs3.sharing.collaboration.v1beta1.collaboration_api_pb2 as sharing
 import cs3.sharing.collaboration.v1beta1.resources_pb2 as sharing_res
 import cs3.storage.provider.v1beta1.provider_api_pb2 as storage_provider
@@ -15,6 +17,7 @@ import grpc
 
 from tornado import escape
 
+from cs3api4lab.api.storage_api import StorageApi
 from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
@@ -27,6 +30,7 @@ from cs3api4lab.exception.exceptions import *
 from cs3api4lab.utils.share_utils import ShareUtils
 
 import google.protobuf.field_mask_pb2 as field_masks
+
 
 class Cs3ShareApi:
     cs3_api = None
@@ -44,6 +48,7 @@ class Cs3ShareApi:
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = grpc_gateway.GatewayAPIStub(intercept_channel)
         self.file_api = Cs3FileApi(log)
+        self.storage_api = StorageApi(log)
 
 
     def create(self, endpoint, file_path, grantee, idp, role, grantee_type):
@@ -141,36 +146,109 @@ class Cs3ShareApi:
         else:
             self._handle_error(update_response)
 
-    def list_received(self):
-        self.log.info("Listing received shares")
-        list_request = sharing.ListReceivedSharesRequest()
-        list_response = self.cs3_api.ListReceivedShares(request=list_request,
-                                                        metadata=[('x-access-token', self.auth.authenticate())])
-
-        if self._is_code_ok(list_response):
-            self.log.debug(f"Retrieved received shares for user {self.config.client_id}:\n{list_response}")
-            return list_response
-        else:
-            self.log.error("Error retrieving received shares for user: " + self.config.client_id)
-            self._handle_error(list_response)
-
-    def _share_filter_by_resource(self, path):
-        if path is None:
-            return sharing.ListSharesRequest()
-
-        file_stat = self.file_api.stat_info(path)
+    def get_share_received(self, path):
         share_filters = []
+        stat = self.storage_api.stat(path, self.config.endpoint)
+
+        if stat.status.code == cs3_code.CODE_NOT_FOUND or stat.status.code == cs3_code.CODE_INTERNAL:
+            return None
+
+        # fix opaque_id on local/localhome driver
+        opaque_id = urllib.parse.unquote(stat.info.id.opaque_id)
+        storage_id = urllib.parse.unquote(stat.info.id.storage_id)
+
+        # remove after https://github.com/cs3org/reva/issues/3243 is fixed
+        opaque_id = FileUtils.fix_dev_opaque(opaque_id, self.config.dev_env)
+
         resource = storage_resources.ResourceId(
-            storage_id=file_stat['inode']['storage_id'],
-            opaque_id=file_stat['inode']['opaque_id']
+            storage_id=storage_id,
+            opaque_id=opaque_id
         )
         share_filters.append(sharing_res.Filter(
             resource_id=resource,
             type=sharing_res.Filter.Type.TYPE_RESOURCE_ID
         ))
-        list_request = sharing.ListSharesRequest(filters=share_filters)
 
-        return list_request
+        list_response = self.cs3_api.ListReceivedShares(
+            request=sharing.ListReceivedSharesRequest(filters=share_filters),
+            metadata=[('x-access-token', self.auth.authenticate())]
+        )
+        share = None
+        if len(list_response.shares):
+            share = list_response.shares.pop().share
+        return share  # this should return only one share
+
+    def list_received(self, path=None):
+        self.log.info("Listing received shares")
+        list_request = self._shares_received_filter_by_resource(path)
+        list_response = self.cs3_api.ListReceivedShares(request=list_request,
+                                                        metadata=[('x-access-token', self.auth.authenticate())])
+
+        if not self._is_code_ok(list_response):
+            self.log.error("Error retrieving received shares for user: " + self.config.client_id)
+            self._handle_error(list_response)
+
+        self.log.debug(f"Retrieved received shares for user {self.config.client_id}:\n{list_response}")
+        return list_response
+
+    def _share_filter_by_resource(self, path):
+        """
+        This method is designed to filter by resource_id (opaque_id, storage_id)
+        Reason for doing this that way is that depending on REVA configuration some resources
+        are interpreted differently.
+        For example on local/localhome when we stat a shared file with paths REVA interprets path:
+        /reva/user/file.txt and /home/reva/file.txt as a different result. Not all of the information
+        is retured (f. eg. metadata)
+        """
+        if path is None:
+            return sharing.ListSharesRequest()
+
+        file_stat = self.file_api.stat_info(path)
+        opaque_id = urllib.parse.unquote(file_stat['inode']['opaque_id'])
+        storage_id = urllib.parse.unquote(file_stat['inode']['storage_id'])
+
+        # remove after https://github.com/cs3org/reva/issues/3243 is fixed
+        opaque_id = FileUtils.fix_dev_opaque(opaque_id, self.config.dev_env)
+
+        resource = storage_resources.ResourceId(
+            storage_id=storage_id,
+            opaque_id=opaque_id
+        )
+
+        share_filters = []
+        share_filters.append(sharing_res.Filter(
+            resource_id=resource,
+            type=sharing_res.Filter.Type.TYPE_RESOURCE_ID
+        ))
+
+        return sharing.ListSharesRequest(filters=share_filters)
+
+    def _shares_received_filter_by_resource(self, path):
+        if path is None:
+            return sharing.ListReceivedSharesRequest()
+
+        try:
+            file_stat = self.file_api.stat_info(path)
+        except FileNotFoundError:
+            return sharing.ListReceivedSharesRequest()
+
+        opaque_id = urllib.parse.unquote(file_stat['inode']['opaque_id'])
+        storage_id = urllib.parse.unquote(file_stat['inode']['storage_id'])
+
+        # remove after https://github.com/cs3org/reva/issues/3243 is fixed
+        opaque_id = FileUtils.fix_dev_opaque(opaque_id, self.config.dev_env)
+
+        resource = storage_resources.ResourceId(
+            storage_id=storage_id,
+            opaque_id=opaque_id
+        )
+
+        share_filters = []
+        share_filters.append(sharing_res.Filter(
+            resource_id=resource,
+            type=sharing_res.Filter.Type.TYPE_RESOURCE_ID
+        ))
+        return sharing.ListReceivedSharesRequest(filters=share_filters)
 
     def _map_received_shares(self, list_res):
         shares = []
