@@ -446,8 +446,7 @@ const ShareForm: React.FC<ShareFormProps> = (
               const user = userValue[0] as { [key: string]: string };
               const formValues = {
                 endpoint: '/',
-                file_path:
-                  '/' + shareProps.fileInfo.path.replace('cs3drive:', ''),
+                file_path: shareProps.fileInfo.path.replace('cs3drive:', ''),
                 grantee: user.grantee,
                 idp: user.idp,
                 role: 'viewer',

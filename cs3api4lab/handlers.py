@@ -105,6 +105,18 @@ class HomeDirHandler(APIHandler):
     def get(self):
         yield RequestHandler.async_handle_request(self, self.file_api.get_home_dir, 200)
 
+class LockHandler(APIHandler):
+
+    @property
+    def contents_manager(self):
+        return self.settings["contents_manager"]
+
+    @web.authenticated
+    @gen.coroutine
+    def post(self):
+        request = self.get_json_body()
+        yield RequestHandler.async_handle_request(self, self.contents_manager.create_clone_file, 200, request['file_path'])
+
 class PublicSharesHandler(APIHandler):
     @property
     def public_share_api(self):
@@ -219,7 +231,8 @@ def setup_handlers(web_app, url_path):
         (r"/api/cs3/user", UserInfoHandler),
         (r"/api/cs3/user/claim", UserInfoClaimHandler),
         (r"/api/cs3/user/query", UserQueryHandler),
-        (r"/api/cs3/user/home_dir", HomeDirHandler)
+        (r"/api/cs3/user/home_dir", HomeDirHandler),
+        (r"/api/cs3/locks/create_clone_file", LockHandler),
     ]
 
     for handler in handlers:

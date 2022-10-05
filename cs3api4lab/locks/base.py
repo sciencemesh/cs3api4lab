@@ -38,19 +38,15 @@ class LockBase(ABC):
                                    metadata=[('x-access-token', self.auth.authenticate())])
         return self.user.user
 
-    def resolve_file_path(self, stat):
-        if self.is_valid_external_lock(stat):
-            file_name = stat['filepath'].split('/')[-1]
-            file_dir = '/'.join(stat['filepath'].split('/')[0:-1])
-            return self._resolve_directory(file_dir, self.config.endpoint) + self._get_conflict_filename(file_name)
-        return stat['filepath']
+    def resolve_file_path(self, path):
+        file_name = path.split('/')[-1]
+        return self._get_conflict_filename(file_name)
 
     @abstractmethod
     def is_valid_external_lock(self, stat):
         pass
 
-    def _resolve_directory(self, dir_path,
-                           endpoint):  # right now it's possible to write in somone else's directory without it being shared
+    def _resolve_directory(self, dir_path, endpoint):  # right now it's possible to write in somone else's directory without it being shared
         stat = self.storage_api.stat(dir_path, endpoint)
         if stat.status.code == cs3code.CODE_OK:
             return dir_path
