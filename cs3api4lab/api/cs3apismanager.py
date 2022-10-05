@@ -1,3 +1,4 @@
+import urllib
 import nbformat
 import os
 import posixpath
@@ -349,6 +350,12 @@ class CS3APIsManager(ContentsManager):
         model = ModelUtils.create_empty_file_model(path)
         try:
             file_info = self.file_api.stat_info(path, self.cs3_config.endpoint)
+
+            # additional request until this issue is resolved https://github.com/cs3org/reva/issues/3243
+            if self.config.dev_env and "/home/" in file_info['filepath']:
+                opaque_id = urllib.parse.unquote(file_info['inode']['opaque_id'])
+                storage_id = urllib.parse.unquote(file_info['inode']['storage_id'])
+                file_info = self.file_api.stat_info(opaque_id, storage_id)
         except Exception as e:
             self.log.info('File % does not exists' % path)
 
@@ -379,9 +386,15 @@ class CS3APIsManager(ContentsManager):
     def _notebook_model(self, path, content):
         file_info = self.file_api.stat_info(path, self.cs3_config.endpoint)
 
+        # additional request until this issue is resolved https://github.com/cs3org/reva/issues/3243
+        if self.config.dev_env and "/home/" in file_info['filepath']:
+            opaque_id = urllib.parse.unquote(file_info['inode']['opaque_id'])
+            storage_id = urllib.parse.unquote(file_info['inode']['storage_id'])
+            file_info = self.file_api.stat_info(opaque_id, storage_id)
+
         model = ModelUtils.update_file_model(ModelUtils.create_empty_file_model(path), file_info)
         model['type'] = 'notebook'
-
+        model['locked'] = self.lock_api.is_file_locked(file_info)
         if content:
             file_content = self._read_file(file_info)
             nb = nbformat.reads(file_content, as_version=4)
@@ -389,6 +402,8 @@ class CS3APIsManager(ContentsManager):
             model['content'] = nb
             model['format'] = 'json'
             self.validate_notebook_model(model)
+
+        model['writable'] = self._is_editor(file_info)
 
         return model
 
@@ -495,3 +510,37 @@ class CS3APIsManager(ContentsManager):
 
     def delete_checkpoint(self, checkpoint_id, path):
         pass
+
+    @asyncify
+    def create_clone_file(self, path):
+        path_normalized = FileUtils.normalize_path(path)
+        path_normalized = FileUtils.check_and_transform_file_path(path_normalized)
+        notebook_container = self.cs3_config.home_dir if self.cs3_config.home_dir else self.cs3_config.mount_dir
+
+        file_info = self.file_api.stat_info(path_normalized, self.config.endpoint)
+        # additional request until this issue is resolved https://github.com/cs3org/reva/issues/3243
+        if self.config.dev_env and "/home/" in file_info['filepath']:
+            opaque_id = urllib.parse.unquote(file_info['inode']['opaque_id'])
+            storage_id = urllib.parse.unquote(file_info['inode']['storage_id'])
+            file_info = self.file_api.stat_info(opaque_id, storage_id)
+
+        clone_file = self.lock_api.resolve_file_path(path)
+        clone_file_exists = self.file_exists(clone_file)
+        clone_file_created = False
+        clone_file_path = ""
+        if not clone_file_exists:
+            try:
+                file_content = self._read_file(file_info)
+                clone_file_path = FileUtils.normalize_path(notebook_container + '/' + clone_file)
+                clone_file_path = FileUtils.check_and_transform_file_path(clone_file_path)
+
+                self.file_api.write_file(clone_file_path, file_content, self.cs3_config.endpoint, None)
+
+                clone_file_created = True
+            except Exception:
+                self.log.info('Could not create a clone file from original %s', path)
+
+        return {
+            'conflict_file_path': clone_file_path,
+            'conflict_file_created': clone_file_created
+        }

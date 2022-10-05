@@ -80,16 +80,10 @@ class ShareUtils:
     def map_permissions_to_role(permissions):
         if permissions is None:
             return None
-        if permissions.get_path is True and \
-                permissions.initiate_file_download is True and \
-                permissions.list_container is True and \
-                permissions.stat is True and \
-                permissions.create_container is True and \
-                permissions.delete is True and \
-                permissions.initiate_file_upload is True and \
-                permissions.restore_file_version is True and \
-                permissions.move is True:
-            return Role.EDITOR
+
+        if permissions.initiate_file_upload is True and \
+            permissions.restore_file_version is True:
+               return Role.EDITOR
         else:
             return Role.VIEWER
 

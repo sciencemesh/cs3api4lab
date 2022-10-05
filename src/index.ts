@@ -123,7 +123,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
     const defaultBrowser = createFileBrowser('cs3filebrowser', {
       auto: true,
       restore: false,
-      driveName: ''
+      driveName: 'cs3Files'
     });
 
     void restoreBrowser(defaultBrowser, commands, router, tree);

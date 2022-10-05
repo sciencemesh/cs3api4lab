@@ -99,3 +99,9 @@ export type PendingSharesContentProps = {
   hideWidget: () => void;
   showWidget: () => void;
 };
+
+export type ConflictFileResponse = {
+  conflict_file_path: string;
+  conflic_file_exists: boolean;
+  conflict_file_created: boolean;
+};

@@ -5,6 +5,8 @@ import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { ISignal, Signal } from '@lumino/signaling';
 import { IStateDB } from '@jupyterlab/statedb';
 import { IDocumentManager } from '@jupyterlab/docmanager';
+import { Dialog, showDialog } from '@jupyterlab/apputils';
+import { ConflictFileResponse } from './types';
 
 export class CS3Contents implements Contents.IDrive {
   protected _docRegistry: DocumentRegistry;
@@ -55,7 +57,7 @@ export class CS3Contents implements Contents.IDrive {
    * The name of the drive.
    */
   get name(): string {
-    return '';
+    return 'cs3Files';
   }
 
   /**
@@ -73,7 +75,13 @@ export class CS3Contents implements Contents.IDrive {
   ): Promise<Contents.IModel> {
     const activeTab: string = (await this._state.fetch('activeTab')) as string;
     if (activeTab === 'cs3filebrowser' || activeTab === undefined) {
-      return await CS3ContainerFiles('filelist', this._state, path, options);
+      return await CS3ContainerFiles(
+        'filelist',
+        this._state,
+        path,
+        options,
+        this._docManager
+      );
     } else {
       return Promise.resolve({} as Contents.IModel);
     }
@@ -170,7 +178,13 @@ export class CS3ContentsShareByMe extends CS3Contents {
   ): Promise<Contents.IModel> {
     const activeTab: string = (await this._state.fetch('activeTab')) as string;
     if (activeTab === 'sharesPanel') {
-      return await CS3ContainerFiles('by_me', this._state, path, options);
+      return await CS3ContainerFiles(
+        'by_me',
+        this._state,
+        path,
+        options,
+        this._docManager
+      );
     } else {
       return Promise.resolve({} as Contents.IModel);
     }
@@ -188,7 +202,13 @@ export class CS3ContentsShareWithMe extends CS3Contents {
   ): Promise<Contents.IModel> {
     const activeTab: string = (await this._state.fetch('activeTab')) as string;
     if (activeTab === 'sharesPanel') {
-      return await CS3ContainerFiles('with_me', this._state, path, options);
+      return await CS3ContainerFiles(
+        'with_me',
+        this._state,
+        path,
+        options,
+        this._docManager
+      );
     } else {
       return Promise.resolve({} as Contents.IModel);
     }
@@ -199,7 +219,8 @@ export async function CS3ContainerFiles(
   readType: string,
   stateDB: IStateDB,
   path: string | null = null,
-  options: Contents.IFetchOptions = {}
+  options: Contents.IFetchOptions = {},
+  docManager: IDocumentManager
 ): Promise<any> {
   const share = await stateDB.fetch('share');
   const showHidden: boolean = (await stateDB.fetch('showHidden')) as boolean;
@@ -211,7 +232,7 @@ export async function CS3ContainerFiles(
   }
 
   if (path !== '') {
-    return await getFileList(path, options, showHidden, stateDB);
+    return await getFileList(path, options, showHidden, stateDB, docManager);
   }
 
   switch (shareType) {
@@ -221,15 +242,55 @@ export async function CS3ContainerFiles(
       return await getSharedWithMe();
     case 'filelist':
     default:
-      return await getFileList(path, options, showHidden, stateDB);
+      return await getFileList(path, options, showHidden, stateDB, docManager);
   }
+}
+export function openLockedFileDialog(
+  path: string,
+  docManager: IDocumentManager
+): void {
+  showDialog({
+    body: 'This file is currently locked by another person',
+    buttons: [
+      Dialog.cancelButton({
+        label: 'Stay in preview mode',
+        className: 'jp-preview-button'
+      }),
+      Dialog.okButton({
+        label: 'Create a copy',
+        className: 'jp-create-button'
+      })
+    ]
+  }).then(async result => {
+    if (result.button.className === 'jp-create-button') {
+      await requestAPI('/api/cs3/locks/create_clone_file', {
+        method: 'POST',
+        body: JSON.stringify({
+          file_path: path
+        })
+      })
+        .then(async response => {
+          const diffResponse = response as ConflictFileResponse;
+          if (diffResponse.conflict_file_path) {
+            docManager.openOrReveal(diffResponse.conflict_file_path);
+            await docManager.closeFile('cs3Files:' + path);
+            await docManager.closeFile('cs3driveShareWithMe:' + path);
+            await docManager.closeFile('cs3driveShareByMe:' + path);
+          }
+        })
+        .catch(error => {
+          console.log('request failed', error);
+        });
+    }
+  });
 }
 
 async function getFileList(
   path: string | null,
   options: Contents.IFetchOptions,
   showHidden: boolean,
-  stateDB: IStateDB
+  stateDB: IStateDB,
+  docManager: IDocumentManager
 ): Promise<any> {
   const { type, format, content } = options;
 
@@ -241,16 +302,20 @@ async function getFileList(
   if (format && type !== 'notebook') {
     url += '&format=' + format;
   }
-  const result: Contents.IModel = await requestAPI(
-    '/api/contents/' + path + '' + url,
-    { method: 'get' }
-  );
+  const result: Contents.IModel & {
+    locked: boolean;
+  } = await requestAPI('/api/contents/' + path + '' + url, { method: 'get' });
+
+  if (path !== null && result.type !== 'directory' && result?.locked) {
+    openLockedFileDialog(path, docManager);
+  }
 
   // if it is a directory, count hidden files inside
   if (Array.isArray(result.content) && result.type === 'directory') {
-    const hiddenFilesNo: number = result.content.filter(
-      (file: { name: string }) => file.name.startsWith('.')
-    ).length;
+    const hiddenFilesNo: number =
+      result.content.filter((file: { name: string }) =>
+        file.name.startsWith('.')
+      )?.length || 0;
     await stateDB.save('hiddenFilesNo', hiddenFilesNo);
 
     if (!showHidden) {
