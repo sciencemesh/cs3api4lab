@@ -244,6 +244,7 @@ class Config(LoggingConfigurable):
         "oauth_file": None,
         "oauth_token": None,
         "locks_api": "metadata",
+        "oauth_token": None,
         "dev_env": False
     }
 
