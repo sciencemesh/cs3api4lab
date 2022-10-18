@@ -11,46 +11,51 @@ import {
   Dialog,
   ICommandPalette,
   ReactWidget,
+  ToolbarButton,
   WidgetTracker
 } from '@jupyterlab/apputils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IStateDB } from '@jupyterlab/statedb';
 import { ILauncher } from '@jupyterlab/launcher';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser/lib/tokens';
-import { each } from '@lumino/algorithm';
+import { each, toArray } from '@lumino/algorithm';
+
 import {
   CS3Contents,
   CS3ContentsShareByMe,
   CS3ContentsShareWithMe
 } from './drive';
 import { FileBrowser, FilterFileBrowserModel } from '@jupyterlab/filebrowser';
-import { InfoboxWidget } from './infobox';
+import { createInfobox } from './infobox';
 import {
   Cs3BottomWidget,
   Cs3HeaderWidget,
   Cs3Panel,
   Cs3TabWidget
 } from './cs3panel';
-import { Cs3PendingSharesWidget } from './pendingShares';
-import { addHomeDirButton, addLaunchersButton, createShareBox } from './utils';
-import { SplitPanel, Widget } from '@lumino/widgets';
+import { PendingSharesListWrapper } from './pendingShares';
+import { addHomeDirButton, addLaunchersButton } from './utils';
+import { AccordionPanel } from '@lumino/widgets';
 import {
   kernelIcon,
   caseSensitiveIcon,
   inspectorIcon,
-  newFolderIcon
+  newFolderIcon,
+  circleIcon
 } from '@jupyterlab/ui-components';
 import { Contents } from '@jupyterlab/services';
 import { createLauncher, restoreBrowser, addCommands } from './browserCommands';
 import { IMainMenu } from '@jupyterlab/mainmenu';
 import { ITranslator } from '@jupyterlab/translation';
 import { requestAPI } from './services';
+// import { cs3AccordionChild } from './cs3Accordion';
 
 /**
  * The command IDs used by the react-widget plugin.
  */
 namespace CS3CommandIDs {
   export const info = 'filebrowser:cs3-info';
+  export const shareInfo = 'filebrowser:cs3-share-info';
   export const createShare = 'filebrowser:cs3-create-share';
 }
 
@@ -125,9 +130,43 @@ const cs3share: JupyterFrontEndPlugin<void> = {
     const { tracker } = factory;
 
     app.contextMenu.addItem({
+      command: CS3CommandIDs.info,
+      selector: '.jp-DirListing-item', // show only for file/directory items.
+      rank: 3
+    });
+
+    app.contextMenu.addItem({
+      command: CS3CommandIDs.shareInfo,
+      selector: '.jp-DirListing-item', // show only for file/directory items.
+      rank: 3
+    });
+
+    app.contextMenu.addItem({
       command: CS3CommandIDs.createShare,
       selector: '.jp-DirListing-item', // show only for file/directory items.
       rank: 3
+    });
+
+    // Add the CS3 share to file browser context menu
+    commands.addCommand(CS3CommandIDs.info, {
+      execute: () => {
+        const widget = tracker.currentWidget;
+        const dialogTracker = new WidgetTracker<Dialog<any>>({
+          namespace: '@jupyterlab/apputils:Dialog'
+        });
+
+        if (widget) {
+          each(widget.selectedItems(), fileInfo => {
+            const dialog = createInfobox(fileInfo, 'info');
+            dialog.launch();
+            dialogTracker.add(dialog);
+          });
+        }
+      },
+      iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
+      label: () => {
+        return 'File info';
+      }
     });
 
     // Add the CS3 share to file browser context menu
@@ -140,14 +179,7 @@ const cs3share: JupyterFrontEndPlugin<void> = {
 
         if (widget) {
           each(widget.selectedItems(), fileInfo => {
-            const dialog = new Dialog({
-              body: new InfoboxWidget({
-                fileInfo: fileInfo,
-                widgetTracker: dialogTracker
-              }),
-              buttons: [Dialog.okButton({ label: 'Close' })]
-            });
-
+            const dialog = createInfobox(fileInfo, 'shares');
             dialog.launch();
             dialogTracker.add(dialog);
           });
@@ -155,7 +187,7 @@ const cs3share: JupyterFrontEndPlugin<void> = {
       },
       iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
       label: () => {
-        return 'File info';
+        return 'Share file';
       }
     });
   }
@@ -238,6 +270,35 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     fileBrowser.title.label = 'My Files';
     fileBrowser.title.caption = 'My Files';
     fileBrowser.title.icon = caseSensitiveIcon;
+
+    fileBrowser.toolbar.addItem(
+      'Share files',
+      new ToolbarButton({
+        icon: circleIcon,
+        tooltip: 'Share files',
+        onClick: () => {
+          const selectedFileList: Contents.IModel[] = toArray(
+            fileBrowser.selectedItems()
+          );
+
+          if (selectedFileList.length <= 0) {
+            alert('select a file');
+            return;
+          }
+
+          const dialogTracker = new WidgetTracker<Dialog<any>>({
+            namespace: '@jupyterlab/apputils:Dialog'
+          });
+
+          each(fileBrowser.selectedItems(), file => {
+            const dialog = createInfobox(file, 'shares');
+            void dialog.launch();
+            void dialogTracker.add(dialog);
+          });
+        }
+      })
+    );
+
     docManager.services.contents.addDrive(drive);
 
     //
@@ -260,27 +321,12 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     //
     // Share split panel
     //
-    const splitPanel = new SplitPanel();
-    splitPanel.id = 'sharesPanel';
-    splitPanel.spacing = 5;
-    splitPanel.orientation = 'vertical';
-    splitPanel.title.iconClass = 'jp-example-view';
-    splitPanel.title.caption = 'Shares';
-    splitPanel.title.label = 'Shares';
-    splitPanel.title.icon = inspectorIcon;
-    splitPanel.hide();
-
-    //
-    // Pending shares
-    //
-    const acceptSharesPanel = new Cs3PendingSharesWidget({
-      title: {
-        label: 'Pending shares',
-        caption: 'Pending shares'
-      },
-      id: 'jp-pending-shares'
-    });
-    splitPanel.addWidget(acceptSharesPanel);
+    // const splitPanel = new BoxPanel();
+    // splitPanel.id = 'sharesPanel';
+    // splitPanel.title.caption = 'Shares';
+    // splitPanel.title.label = 'Shares';
+    // splitPanel.title.icon = inspectorIcon;
+    // splitPanel.hide();
 
     //
     // ShareByMe
@@ -298,14 +344,6 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
       }
     );
     fileBrowserSharedByMe.toolbar.hide();
-
-    const shareByMePanel: Widget = createShareBox(
-      'cs3-share-by-me',
-      'Shared by Me',
-      fileBrowserSharedByMe
-    );
-    splitPanel.addWidget(shareByMePanel);
-
     docManager.services.contents.addDrive(driveShareByMe);
 
     //
@@ -324,18 +362,10 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
       }
     );
     fileBrowserSharedWithMe.toolbar.hide();
-
-    const shareWithMePanel = createShareBox(
-      'cs3-share-with-me',
-      'Share with Me',
-      fileBrowserSharedWithMe
-    );
-    splitPanel.addWidget(shareWithMePanel);
-
     docManager.services.contents.addDrive(driveShareWithMe);
 
     //
-    // Example tab
+    // Projects tab
     //
     const cs3TabWidget3: ReactWidget = new Cs3TabWidget(
       'Projects',
@@ -415,9 +445,30 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
         fileBrowser.useFuzzyFilter = useFuzzyFilter;
       });
 
+    // Create shares panel
+    const cs3Accordion = new AccordionPanel();
+    cs3Accordion.id = 'sharesPanel';
+    cs3Accordion.title.caption = 'Shares';
+    cs3Accordion.title.label = 'Shares';
+    cs3Accordion.title.icon = inspectorIcon;
+    cs3Accordion.hide();
+
+    const pendingShares = new PendingSharesListWrapper();
+    pendingShares.title.label = 'Pending shares';
+    fileBrowserSharedByMe.title.label = 'Shared by me';
+    fileBrowserSharedWithMe.title.label = 'Shared with me';
+
+    // fold accordion widget
+    pendingShares.hide();
+
+    cs3Accordion.insertWidget(1, pendingShares);
+    cs3Accordion.insertWidget(2, fileBrowserSharedByMe);
+    cs3Accordion.insertWidget(3, fileBrowserSharedWithMe);
+    cs3Accordion.setRelativeSizes([100, 400, 400]);
+
     cs3Panel.addTab(fileBrowser);
     cs3Panel.addTab(cs3TabWidget3);
-    cs3Panel.addTab(splitPanel);
+    cs3Panel.addTab(cs3Accordion);
 
     cs3Panel.sharesTabVisible().connect(() => {
       void fileBrowserSharedWithMe.model.refresh();

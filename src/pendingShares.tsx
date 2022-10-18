@@ -1,51 +1,24 @@
 import { ReactWidget } from '@jupyterlab/apputils';
-import { PanelLayout, Widget } from '@lumino/widgets';
 import * as React from 'react';
 import { acceptIcon, declineIcon } from './icons';
 import {
   AcceptButtonProps,
   DeclineButtonProps,
   PendingShareProp,
-  PendingSharesOptions
+  PendingSharesContentProps
 } from './types';
 import { findFileIcon, requestAPI } from './services';
 import { useEffect, useState } from 'react';
 import { Time } from '@jupyterlab/coreutils';
-import { Message } from '@lumino/messaging';
+import { Widget } from '@lumino/widgets';
 
-export class Cs3PendingSharesWidget extends Widget {
-  layout: PanelLayout;
-  private header: PendingSharesHeader;
-  private content: PendingSharesListWrapper;
-
-  constructor(options: PendingSharesOptions) {
+export class PendingSharesListWrapper extends ReactWidget {
+  constructor() {
     super();
-    this.id = options.id;
-    this.title.label = options.title.label;
-    this.title.caption = options.title.caption;
-    this.title.closable = false;
+    this.hide = this.hide.bind(this);
+    this.show = this.show.bind(this);
 
-    this.layout = new PanelLayout();
-
-    this.header = new PendingSharesHeader({
-      title: {
-        label: this.title.label
-      }
-    });
-
-    this.content = new PendingSharesListWrapper();
-  }
-
-  protected onAfterShow(msg: Message): void {
-    super.onAfterShow(msg);
-    this.layout.addWidget(this.header);
-    this.layout.addWidget(this.content);
-  }
-
-  protected onAfterHide(msg: Message): void {
-    super.onAfterHide(msg);
-    this.layout.removeWidget(this.header);
-    this.layout.removeWidget(this.content);
+    this.addClass('jp-pending-shares-listing-wrapper');
   }
 
   protected onResize(msg: Widget.ResizeMessage): void {
@@ -54,20 +27,19 @@ export class Cs3PendingSharesWidget extends Widget {
 
     this.toggleClass('jp-pending-shares-narrow', width < 290);
   }
-}
-
-class PendingSharesListWrapper extends ReactWidget {
-  constructor() {
-    super();
-    this.addClass('jp-pending-shares-listing-wrapper');
-  }
 
   protected render(): JSX.Element {
-    return <PendingSharesContent />;
+    return (
+      <div>
+        <PendingSharesContent hideWidget={this.hide} showWidget={this.show} />
+      </div>
+    );
   }
 }
 
-const PendingSharesContent = (): JSX.Element => {
+const PendingSharesContent = (
+  props: PendingSharesContentProps
+): JSX.Element => {
   const [pendingShares, setPendingShares] = useState([]);
 
   const refreshPendingShares = async (): Promise<void> => {
@@ -106,6 +78,12 @@ const PendingSharesContent = (): JSX.Element => {
     void refreshPendingShares();
   }, []);
 
+  useEffect((): void => {
+    if (pendingShares.length > 0) {
+      props.showWidget();
+    }
+  }, [pendingShares]);
+
   return (
     <>
       <div className="jp-pending-shares-header">
@@ -133,23 +111,6 @@ const PendingSharesContent = (): JSX.Element => {
     </>
   );
 };
-
-class PendingSharesHeader extends ReactWidget {
-  constructor(options: any) {
-    super();
-    this.addClass('jp-pending-shares-content');
-    this.title.label = options.title.label;
-  }
-  protected render(): JSX.Element {
-    return (
-      <>
-        <div className="jp-pending-shares-title c3-title-widget">
-          {this.title.label}
-        </div>
-      </>
-    );
-  }
-}
 
 const PendingSharesElement = (props: PendingShareProp): JSX.Element => {
   const Icon = findFileIcon(props.content);

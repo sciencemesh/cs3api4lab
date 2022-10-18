@@ -15,7 +15,8 @@ from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.auth.authenticator import Auth
 
-class StorageLogic:
+
+class StorageApi:
     log = None
     cs3_api = None
     auth = None
@@ -32,29 +33,22 @@ class StorageLogic:
         return
 
     def get_unified_file_ref(self, file_path, endpoint):
-        ref = FileUtils.get_reference(file_path, endpoint)
-        stat = self._stat_internal(ref)
-        if stat is None or stat.status.code == cs3code.CODE_NOT_FOUND:
+        stat = self.stat(file_path, endpoint)
+        if stat.status.code != cs3code.CODE_OK:
             return None
         else:
             stat_unified = self._stat_internal(ref=storage_provider.Reference(
                 resource_id=storage_provider.ResourceId(storage_id=stat.info.id.storage_id,
-                                     opaque_id=stat.info.id.opaque_id)))
+                                                        opaque_id=stat.info.id.opaque_id)))
             return storage_provider.Reference(path=stat_unified.info.path)
-    
-    def stat(self, file_path, endpoint):
+
+    def stat(self, file_path, endpoint='/'):
         ref = FileUtils.get_reference(file_path, endpoint)
-        stat = self._stat_internal(ref)
-        if stat and stat.status.code is not cs3code.CODE_NOT_FOUND and stat.status.code is not cs3code.CODE_INTERNAL:
-            return stat.info
-        return None
-    
-    def _stat_internal(self, ref): #Reva returns runtime error if the file doesn't exist, change this when fixed in Reva
-        try:        
-            return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
+        return self._stat_internal(ref)
+
+    def _stat_internal(self, ref):
+        return self.cs3_api.Stat(request=cs3sp.StatRequest(ref=ref),
                                  metadata=[('x-access-token', self.auth.authenticate())])
-        except Exception:
-            return None
 
     def set_metadata(self, data, file_path, endpoint):
         ref = self.get_unified_file_ref(file_path, endpoint)
@@ -65,18 +59,20 @@ class StorageLogic:
             metadata=self._get_token())
         if set_metadata_response.status.code != cs3code.CODE_OK:
             raise Exception('Unable to set metadata for: ' + file_path + ' ' + str(set_metadata_response.status))
-    
-    def get_metadata (self, file_path, endpoint):
+
+    def get_metadata(self, file_path, endpoint):
         ref = self.get_unified_file_ref(file_path, endpoint)
-        stat = self._stat_internal(ref)
-        if stat:
-            return stat.info.arbitrary_metadata.metadata
+        if ref:
+            stat = self._stat_internal(ref)
+            if stat.status.code == cs3code.CODE_OK:
+                return stat.info.arbitrary_metadata.metadata
         return None
 
     def init_file_upload(self, file_path, endpoint, content_size):
         reference = FileUtils.get_reference(file_path, endpoint)
-        meta_data = types.Opaque(map={"Upload-Length": types.OpaqueEntry(decoder="plain", value=str.encode(content_size))})
-        
+        meta_data = types.Opaque(
+            map={"Upload-Length": types.OpaqueEntry(decoder="plain", value=str.encode(content_size))})
+
         req = cs3sp.InitiateFileUploadRequest(ref=reference, opaque=meta_data)
         init_file_upload_res = self.cs3_api.InitiateFileUpload(request=req, metadata=[
             ('x-access-token', self.auth.authenticate())])
@@ -88,7 +84,7 @@ class StorageLogic:
 
         self.log.debug(
             'msg="writefile: InitiateFileUploadRes returned" protocols="%s"' % init_file_upload_res.protocols)
-            
+
         return init_file_upload_res
 
     def upload_content(self, file_path, content, content_size, init_file_upload_response):
@@ -108,7 +104,7 @@ class StorageLogic:
                 'X-Reva-Transfer': protocol.token
             }
         put_res = requests.put(url=protocol.upload_endpoint, data=content, headers=headers)
-        
+
         return put_res
 
     def init_file_download(self, file_path, endpoint):
@@ -129,27 +125,27 @@ class StorageLogic:
 
         self.log.debug(
             'msg="readfile: InitiateFileDownloadRes returned" protocols="%s"' % init_file_download_response.protocols)
-            
+
         return init_file_download_response
 
     def download_content(self, init_file_download):
         protocol = [p for p in init_file_download.protocols if p.protocol == "simple"][0]
-            # if file is shared via OCM the request needs to go through webdav
+        # if file is shared via OCM the request needs to go through webdav
         if protocol.opaque and init_file_download.protocols[0].opaque.map['webdav-file-path'].value:
             download_url = protocol.download_endpoint + str(protocol.opaque.map['webdav-file-path'].value, 'utf-8')[1:]
             file_get = webdav.Client({}).session.request(
-                    method='GET',
-                    url=download_url,
-                    headers={
-                        'X-Access-Token': str(protocol.opaque.map['webdav-token'].value, 'utf-8')}
-                )
+                method='GET',
+                url=download_url,
+                headers={
+                    'X-Access-Token': str(protocol.opaque.map['webdav-token'].value, 'utf-8')}
+            )
         else:
             headers = {
-                    'x-access-token': self.auth.authenticate(),
-                    'X-Reva-Transfer': protocol.token  # needed if the downloads pass through the data gateway in reva
-                }
+                'x-access-token': self.auth.authenticate(),
+                'X-Reva-Transfer': protocol.token  # needed if the downloads pass through the data gateway in reva
+            }
             file_get = requests.get(url=protocol.download_endpoint, headers=headers)
         return file_get
-    
+
     def _get_token(self):
         return [('x-access-token', self.auth.authenticate())]

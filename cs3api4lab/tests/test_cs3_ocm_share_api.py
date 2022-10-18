@@ -3,10 +3,9 @@ from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from traitlets.config import LoggingConfigurable
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
+from cs3api4lab.exception.exceptions import ResourceNotFoundError, ShareAlreadyExistsError, ShareNotFoundError
 
-
-@skip
-class TestCs3OcmShareApi(TestCase):
+class TestCs3OCMShareApi(TestCase):
     api = None
     config = None
     share_id = None
@@ -32,8 +31,36 @@ class TestCs3OcmShareApi(TestCase):
         created_share = self._create_share()
         self.share_id = created_share['id']
         try:
-            if self.api.list(self.share_id)['id'] is None:
+            if self.api.get(self.share_id)['id'] is None:
                 raise Exception("Share not created")
+        finally:
+            self._clear_shares()
+
+    def test_create_ocm_share_no_file(self):
+        with self.assertRaises(ResourceNotFoundError) as cm:
+            self.api.create(self.receiver_id,
+                            self.receiver_idp,
+                            self.receiver_idp,
+                            self.config.endpoint,
+                            '/no_such_file',
+                            self.receiver_grantee_type,
+                            self.receiver_role, True)
+        self.assertEqual('Resource  /no_such_file  not found', cm.exception.args[0])
+
+    @skip('https://github.com/cs3org/reva/issues/2847')
+    def test_create_ocm_share_already_exists(self):
+        try:
+            created_share = self._create_share()
+            self.share_id = created_share['id']
+            with self.assertRaises(ShareAlreadyExistsError) as cm:
+                self.api.create(self.receiver_id,
+                                self.receiver_idp,
+                                self.receiver_idp,
+                                self.config.endpoint,
+                                self.file_path,
+                                self.receiver_grantee_type,
+                                self.receiver_role, True)
+            self.assertEqual('Resource /no_such_file not found', cm.exception.args[0])
         finally:
             self._clear_shares()
 
@@ -42,20 +69,27 @@ class TestCs3OcmShareApi(TestCase):
         self.share_id = created_share['id']
         try:
             self.api.update(self.share_id, 'permissions', ['editor', True])
-            if self.api.list(self.share_id)['permissions'] != 'editor':
-                raise Exception("Permissions not updated")
+            share = self.api.get(self.share_id)
+            self.assertEqual(share['permissions'], 'editor', 'Change permission for ocm share failed')
         finally:
             self._clear_shares()
+
+    @skip('https://github.com/cs3org/reva/issues/2847')
+    def test_update_ocm_share_no_share(self):
+        with self.assertRaises(ShareNotFoundError) as cm:
+            self.api.update('no_such_id', 'permissions', ['editor', True])
+            self.assertEqual('Resource /no_such_file not found', cm.exception.args[0])
 
     def test_ocm_share_remove(self):
         created_share = self._create_share()
         self.share_id = created_share['id']
         try:
-            if self.api.list(self.share_id)['id'] == '':
-                raise Exception("Share not created")
             self.api.remove(self.share_id)
-            if self.api.list(self.share_id)['id'] != '':
-                raise Exception("Share not removed")
+
+            with self.assertRaises(Exception) as context:
+                self.api.get(self.share_id)
+
+            self.assertIn("Incorrect server response:", context.exception.args[0])
         finally:
             self._remove_test_file()
 
@@ -63,9 +97,10 @@ class TestCs3OcmShareApi(TestCase):
         created_share = self._create_share()
         self.share_id = created_share['id']
         try:
-            share = self.api.list(share_id=self.share_id)
-            if share['id'] != self.share_id:
-                raise Exception("Shares not listed")
+            share_list = self.api.list()
+            self.assertTrue(
+                list(share for share in share_list.shares if share.id.opaque_id == self.share_id),
+                "Share not present")
         finally:
             self._clear_shares()
 

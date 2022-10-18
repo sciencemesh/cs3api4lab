@@ -14,9 +14,10 @@ import cs3.rpc.v1beta1.code_pb2 as cs3_code
 import grpc
 
 from tornado import escape
+
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
-from cs3api4lab.api.cs3_file_api import Cs3FileApi
 from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.common.strings import *
 from cs3api4lab.config.config_manager import Cs3ConfigManager
@@ -32,19 +33,18 @@ class Cs3ShareApi:
     log = None
     auth = None
     config = {}
-    file_api = None
 
     def __init__(self, log):
         self.log = log
         self.config = Cs3ConfigManager().get_config()
         self.auth = Auth.get_authenticator(config=self.config, log=self.log)
 
-        self.file_api = Cs3FileApi(log)
-
         channel = ChannelConnector().get_channel()
         auth_interceptor = check_auth_interceptor.CheckAuthInterceptor(log, self.auth)
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = grpc_gateway.GatewayAPIStub(intercept_channel)
+        self.file_api = Cs3FileApi(log)
+
 
     def create(self, endpoint, file_path, grantee, idp, role, grantee_type):
         share_permissions = self._get_share_permissions(role)
@@ -69,15 +69,17 @@ class Cs3ShareApi:
         else:
             self._handle_error(create_response)
 
-    def list(self):
-        list_request = sharing.ListSharesRequest()
+    def list(self, file_path=None):
+        list_request = self._share_filter_by_resource(file_path)
         list_response = self.cs3_api.ListShares(request=list_request,
                                                 metadata=[('x-access-token', self.auth.authenticate())])
+
         if self._is_code_ok(list_response):
             self.log.debug(f"List shares response for user {self.config.client_id}:\n{list_response}")
         else:
             self.log.error("Error listing shares response for user: " + self.config.client_id)
             self._handle_error(list_response)
+
         return list_response
 
     def list_shares_for_filepath(self, file_path):
@@ -95,6 +97,18 @@ class Cs3ShareApi:
                 shares.append(ShareUtils.get_share_info(share))
 
         return shares
+
+    def get(self, opaque_id):
+        share_id = sharing_res.ShareId(opaque_id=opaque_id)
+        ref = sharing_res.ShareReference(id=share_id)
+        request = sharing.GetShareRequest(ref=ref)
+        share = self.cs3_api.GetShare(request, metadata=[('x-access-token', self.auth.authenticate())])
+
+        if self._is_code_ok(share):
+            return share
+        else:
+            self.log.error(f"Error getting share for opaque_id {opaque_id}")
+            raise ShareNotFoundError(f"Error getting share for opaque_id {opaque_id}")
 
     def remove(self, share_id):
         share_id_object = sharing_res.ShareId(opaque_id=share_id)
@@ -139,6 +153,24 @@ class Cs3ShareApi:
         else:
             self.log.error("Error retrieving received shares for user: " + self.config.client_id)
             self._handle_error(list_response)
+
+    def _share_filter_by_resource(self, path):
+        if path is None:
+            return sharing.ListSharesRequest()
+
+        file_stat = self.file_api.stat_info(path)
+        share_filters = []
+        resource = storage_resources.ResourceId(
+            storage_id=file_stat['inode']['storage_id'],
+            opaque_id=file_stat['inode']['opaque_id']
+        )
+        share_filters.append(sharing_res.Filter(
+            resource_id=resource,
+            type=sharing_res.Filter.Type.TYPE_RESOURCE_ID
+        ))
+        list_request = sharing.ListSharesRequest(filters=share_filters)
+
+        return list_request
 
     def _map_received_shares(self, list_res):
         shares = []
@@ -250,7 +282,7 @@ class Cs3ShareApi:
         if stat_response.status.code == cs3_code.CODE_OK:
             return stat_response.info
         elif stat_response.status.code == cs3_code.CODE_NOT_FOUND:
-            raise ResourceNotFoundError("Resource not found")
+            raise ResourceNotFoundError(f"Resource {file_id} not found")
         else:
             self._handle_error(stat_response)
 
@@ -269,9 +301,12 @@ class Cs3ShareApi:
     def _get_share_permissions(self, role):
         if role == Role.VIEWER:
             permissions = storage_resources.ResourcePermissions(get_path=True,
+                                                                get_quota=True,
                                                                 initiate_file_download=True,
                                                                 list_file_versions=True,
                                                                 list_container=True,
+                                                                list_grants=True,
+                                                                list_recycle=True,
                                                                 stat=True)
             return sharing_res.SharePermissions(permissions=permissions)
         if role == Role.EDITOR:

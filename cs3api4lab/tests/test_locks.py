@@ -3,7 +3,6 @@ import json
 from unittest import TestCase
 from time import sleep
 from cs3api4lab.tests.share_test_base import ShareTestBase
-from traitlets.config import LoggingConfigurable
 import urllib.parse
 
 class TestLocks(ShareTestBase, TestCase):
@@ -26,8 +25,8 @@ class TestLocks(ShareTestBase, TestCase):
             self.share_id = created_share['opaque_id']
             self.file_api.write_file(self.file_name, 'content')
 
-            file_ref = self.storage_logic.get_unified_file_ref(self.file_name, '/')
-            file_info = self.storage_logic._stat_internal(file_ref).info
+            file_ref = self.storage_api.get_unified_file_ref(self.file_name, '/')
+            file_info = self.storage_api._stat_internal(file_ref).info
 
             self.assertTrue(file_info.arbitrary_metadata.metadata)
             self.assertIn("lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51", file_info.arbitrary_metadata.metadata)
@@ -52,8 +51,8 @@ class TestLocks(ShareTestBase, TestCase):
             for chunk in self.file_api.read_file(self.file_name):
                 continue
 
-            file_ref = self.storage_logic.get_unified_file_ref(self.file_name, '/')
-            file_info = self.storage_logic._stat_internal(file_ref).info
+            file_ref = self.storage_api.get_unified_file_ref(self.file_name, '/')
+            file_info = self.storage_api._stat_internal(file_ref).info
 
             self.assertTrue(file_info.arbitrary_metadata.metadata)
             self.assertIn("lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51", file_info.arbitrary_metadata.metadata)
@@ -80,7 +79,7 @@ class TestLocks(ShareTestBase, TestCase):
             self.file_api.write_file(self.file_name, 'content')
             self.conflict_name = self.richard_file_api.write_file(shared_name, "richard_content")
             
-            lock_stat = self.richard_file_api.stat(self.conflict_name)
+            lock_stat = self.richard_file_api.stat_info(self.conflict_name)
             self.assertEqual(lock_stat['filepath'], self.conflict_name)
 
             content = self.read_file_content(self.richard_file_api, self.conflict_name)
@@ -108,7 +107,7 @@ class TestLocks(ShareTestBase, TestCase):
             self.file_api.write_file(self.file_name, 'content')
             self.conflict_name = self.richard_file_api.write_file(shared_name, "richard_content")
             
-            lock_stat = self.richard_file_api.stat(self.conflict_name)
+            lock_stat = self.richard_file_api.stat_info(self.conflict_name)
             self.assertEqual(lock_stat['filepath'], self.conflict_name)
 
             content = self.read_file_content(self.richard_file_api, self.conflict_name)
