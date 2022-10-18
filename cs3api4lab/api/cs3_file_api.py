@@ -13,7 +13,7 @@ import requests
 import cs3.gateway.v1beta1.gateway_api_pb2_grpc as cs3gw_grpc
 import cs3.rpc.v1beta1.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
-from cs3api4lab.exception.exceptions import ResourceNotFoundError
+from cs3api4lab.exception.exceptions import ResourceNotFoundError, FileLockedError
 
 from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.api.storage_api import StorageApi
@@ -21,7 +21,7 @@ from cs3api4lab.auth import check_auth_interceptor
 from cs3api4lab.auth.authenticator import Auth
 from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
-from cs3api4lab.api.lock_manager import LockManager
+from cs3api4lab.locks.factory import LockApiFactory
 
 
 class Cs3FileApi:
@@ -29,7 +29,7 @@ class Cs3FileApi:
     cs3_api = None
     auth = None
     config = None
-    lock_manager = None
+    lock_api = None
 
     def __init__(self, log):
         self.log = log
@@ -40,10 +40,7 @@ class Cs3FileApi:
         intercept_channel = grpc.intercept_channel(channel, auth_interceptor)
         self.cs3_api = cs3gw_grpc.GatewayAPIStub(intercept_channel)
         self.storage_api = StorageApi(log)
-
-        self.lock_manager = LockManager(log)
-
-        return
+        self.lock_api = LockApiFactory.create(log, self.config)
 
     def mount_point(self):
         """
@@ -92,7 +89,12 @@ class Cs3FileApi:
 
         stat = self.storage_api.stat(file_path, endpoint)
         if stat.status.code == cs3code.CODE_OK:
-            self.lock_manager.handle_locks(file_path, endpoint) #this will refresh the lock on every file chunk read
+            try:
+                # this will refresh the lock on every file chunk read
+                self.lock_api.handle_locks(file_path, endpoint)
+            except FileLockedError:
+                self.log.info("File %s locked, opening in read-only mode" % file_path)
+                # todo change writable to false
         else:
             msg = "%s: %s" % (stat.status.code, stat.status.message)
             self.log.error('msg="Error when stating file for read" reason="%s"' % msg)
@@ -125,22 +127,20 @@ class Cs3FileApi:
         Write a file using the given userid as access token. The entire content is written
         and any pre-existing file is deleted (or moved to the previous version if supported).
         """
-        file_path = self.lock_manager.resolve_file_path(file_path, endpoint)
-
+        # todo fix me
+        #file_path = self.lock_api.resolve_file_path(file_path, endpoint)
         time_start = time.time()
 
         stat = self.storage_api.stat(file_path, endpoint)
         # fixme - this might cause overwriting/locking issues due to unexpected error codes
         if stat.status.code == cs3code.CODE_OK:
-            self.lock_manager.handle_locks(file_path, endpoint)
+            self.lock_api.handle_locks(file_path, endpoint)
 
         content_size = FileUtils.calculate_content_size(content, format)
         init_file_upload = self.storage_api.init_file_upload(file_path, endpoint, content_size)
 
         try:
             upload_response = self.storage_api.upload_content(file_path, content, content_size, init_file_upload)
-
-            self.lock_manager.handle_locks(file_path, endpoint)
         except requests.exceptions.RequestException as e:
             self.log.error('msg="Exception when uploading file to Reva" reason="%s"' % e)
             raise IOError(e)
