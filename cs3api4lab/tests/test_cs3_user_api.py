@@ -1,15 +1,13 @@
-import unittest
 from unittest import TestCase
 
-from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.api.cs3_user_api import Cs3UserApi
 from traitlets.config import LoggingConfigurable
 
 
-class TestCs3UserApi(TestCase, LoggingConfigurable):
+class TestCs3UserApi(TestCase):
 
     def setUp(self):
-        config = Cs3ConfigManager.get_config()
+        self.log = LoggingConfigurable().log
         self.user_api = Cs3UserApi(self.log)
 
     def test_get_user_info(self):

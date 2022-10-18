@@ -1,10 +1,9 @@
 import sys
 import grpc
-from traitlets.config import LoggingConfigurable
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 
 
-class Channel(LoggingConfigurable):
+class Channel:
     channel = None
 
     def __init__(self, **kwargs):
@@ -18,13 +17,19 @@ class Channel(LoggingConfigurable):
                 ca_cert = None
 
                 if config.client_cert is not None and len(config.client_cert) > 0:
-                    cert = open(config.client_cert, 'rb').read()
+                    client_cert_file = open(config.client_cert, 'rb')
+                    cert = client_cert_file.read()
+                    client_cert_file.close()
 
                 if config.client_cert is not None and len(config.client_key) > 0:
-                    key = open(config.client_key, 'rb').read()
+                    key_file = open(config.client_key, 'rb')
+                    key = key_file.read()
+                    key_file.close()
 
                 if config.client_cert is not None and len(config.ca_cert) > 0:
-                    ca_cert = open(config.ca_cert, 'rb').read()
+                    ca_cert_file = open(config.ca_cert, 'rb')
+                    ca_cert = ca_cert_file.read()
+                    ca_cert_file.close()
 
                 credentials = grpc.ssl_channel_credentials(root_certificates=ca_cert, private_key=key, certificate_chain=cert)
                 channel = grpc.secure_channel(config.reva_host, credentials)

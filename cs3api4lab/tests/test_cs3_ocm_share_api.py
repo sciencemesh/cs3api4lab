@@ -5,6 +5,8 @@ from traitlets.config import LoggingConfigurable
 from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
 from cs3api4lab.exception.exceptions import ResourceNotFoundError, ShareAlreadyExistsError, ShareNotFoundError
 
+
+@skip
 class TestCs3OCMShareApi(TestCase):
     api = None
     config = None

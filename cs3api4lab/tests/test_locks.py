@@ -1,9 +1,11 @@
 import json
 
-from unittest import TestCase
+from unittest import TestCase, skip
 from time import sleep
 from cs3api4lab.tests.share_test_base import ShareTestBase
+from cs3api4lab.exception.exceptions import FileLockedError
 import urllib.parse
+
 
 class TestLocks(ShareTestBase, TestCase):
     einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
@@ -19,6 +21,7 @@ class TestLocks(ShareTestBase, TestCase):
     
     def test_lock_created_when_file_written(self):
         self.file_name = self.file_path + self.get_random_suffix()
+        lock_name = "cs3apis4lab_lock"
 
         try:
             created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
@@ -29,9 +32,9 @@ class TestLocks(ShareTestBase, TestCase):
             file_info = self.storage_api._stat_internal(file_ref).info
 
             self.assertTrue(file_info.arbitrary_metadata.metadata)
-            self.assertIn("lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51", file_info.arbitrary_metadata.metadata)
+            self.assertIn(lock_name, file_info.arbitrary_metadata.metadata)
             
-            lock = json.loads(urllib.parse.unquote(file_info.arbitrary_metadata.metadata["lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51"]))
+            lock = json.loads(urllib.parse.unquote(file_info.arbitrary_metadata.metadata[lock_name]))
             self.assertEqual(lock['username'], 'einstein')
             self.assertEqual(lock['idp'], 'cernbox.cern.ch')
             self.assertEqual(lock['opaque_id'], '4c510ada-c86b-4815-8820-42cdf82c3d51')
@@ -43,7 +46,7 @@ class TestLocks(ShareTestBase, TestCase):
 
     def test_lock_created_when_file_read(self):
         self.file_name = self.file_path + self.get_random_suffix()
-
+        lock_name = "cs3apis4lab_lock"
         try:
             created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
             self.share_id = created_share['opaque_id']
@@ -55,9 +58,9 @@ class TestLocks(ShareTestBase, TestCase):
             file_info = self.storage_api._stat_internal(file_ref).info
 
             self.assertTrue(file_info.arbitrary_metadata.metadata)
-            self.assertIn("lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51", file_info.arbitrary_metadata.metadata)
+            self.assertIn(lock_name, file_info.arbitrary_metadata.metadata)
             
-            lock = json.loads(urllib.parse.unquote(file_info.arbitrary_metadata.metadata["lock_einstein_cernbox.cern.ch_4c510ada-c86b-4815-8820-42cdf82c3d51"]))
+            lock = json.loads(urllib.parse.unquote(file_info.arbitrary_metadata.metadata[lock_name]))
             self.assertEqual(lock['username'], 'einstein')
             self.assertEqual(lock['idp'], 'cernbox.cern.ch')
             self.assertEqual(lock['opaque_id'], '4c510ada-c86b-4815-8820-42cdf82c3d51')
@@ -67,6 +70,7 @@ class TestLocks(ShareTestBase, TestCase):
                 self.remove_test_share('einstein', self.share_id)
             self.remove_test_file('einstein', self.file_name)
 
+    @skip
     def test_write_file_locked_conflict_created(self):
         suffix = self.get_random_suffix()
         self.file_name = self.file_path + suffix
@@ -78,7 +82,7 @@ class TestLocks(ShareTestBase, TestCase):
 
             self.file_api.write_file(self.file_name, 'content')
             self.conflict_name = self.richard_file_api.write_file(shared_name, "richard_content")
-            
+
             lock_stat = self.richard_file_api.stat_info(self.conflict_name)
             self.assertEqual(lock_stat['filepath'], self.conflict_name)
 
@@ -91,6 +95,7 @@ class TestLocks(ShareTestBase, TestCase):
             if self.conflict_name:
                 self.remove_test_file('richard', self.conflict_name)
 
+    @skip
     def test_write_dir_file_locked(self):
         suffix = self.get_random_suffix()
         self.file_name = '/home/testdir/test_locks.txt' + suffix
@@ -106,7 +111,7 @@ class TestLocks(ShareTestBase, TestCase):
 
             self.file_api.write_file(self.file_name, 'content')
             self.conflict_name = self.richard_file_api.write_file(shared_name, "richard_content")
-            
+
             lock_stat = self.richard_file_api.stat_info(self.conflict_name)
             self.assertEqual(lock_stat['filepath'], self.conflict_name)
 
@@ -118,6 +123,84 @@ class TestLocks(ShareTestBase, TestCase):
             self.remove_test_file('einstein', self.file_name)
             if self.conflict_name:
                 self.remove_test_file('richard', self.conflict_name)
+
+    def test_read_locked_file_by_grantee(self):
+        suffix = self.get_random_suffix()
+        self.file_name = self.file_path + suffix
+        shared_file_path = self.shared_file_path + suffix
+        try:
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+
+            content = ''
+            for chunk in self.richard_file_api.read_file(shared_file_path):
+                content += chunk.decode('utf-8')
+            self.assertEqual(content, self.content)
+        finally:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            self.remove_test_file('einstein', self.file_name)
+
+    def test_write_new_locked_file_by_grantee(self):
+        suffix = self.get_random_suffix()
+        self.file_name = self.file_path + suffix
+        shared_file_path = self.shared_file_path + suffix
+        try:
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+            self.richard_file_api.write_file(shared_file_path, 'content')
+        finally:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            self.remove_test_file('einstein', self.file_name)
+
+    def test_write_locked_file_lock_expired_by_grantee(self):
+        suffix = self.get_random_suffix()
+        self.file_name = self.file_path + suffix
+        shared_file_path = self.shared_file_path + suffix
+        try:
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+            sleep(12)
+            self.richard_file_api.write_file(shared_file_path, 'content')
+        finally:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            self.remove_test_file('einstein', self.file_name)
+
+    def test_read_file_locked_by_grantee(self):
+        suffix = self.get_random_suffix()
+        self.file_name = self.file_path + suffix
+        shared_file_path = self.shared_file_path + suffix
+        try:
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+            sleep(12)
+            self.richard_file_api.write_file(shared_file_path, 'content')
+            content = ''
+            for chunk in self.file_api.read_file(shared_file_path):
+                content += chunk.decode('utf-8')
+            self.assertEqual(content, 'content')
+        finally:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            self.remove_test_file('einstein', self.file_name)
+
+    def test_write_file_locked_by_grantee(self):
+        suffix = self.get_random_suffix()
+        self.file_name = self.file_path + suffix
+        shared_file_path = self.shared_file_path + suffix
+        try:
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+            sleep(12)
+            self.richard_file_api.write_file(shared_file_path, 'content')
+            with self.assertRaises(FileLockedError):
+                self.file_api.write_file(shared_file_path, 'content')
+        finally:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            self.remove_test_file('einstein', self.file_name)
 
     def test_write_file_lock_expired(self):
         suffix = self.get_random_suffix()

@@ -29,7 +29,8 @@ class CS3APIsManager(ContentsManager):
 
     file_api = None
 
-    def __init__(self, parent, log):
+    def __init__(self, parent, log, **kwargs):
+        super().__init__(**kwargs)
         self.cs3_config = Cs3ConfigManager.get_config()
         self.log = log
         self.file_api = Cs3FileApi(self.log)
