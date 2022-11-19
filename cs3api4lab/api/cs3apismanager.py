@@ -21,6 +21,8 @@ from cs3api4lab.utils.model_utils import ModelUtils
 from cs3api4lab.utils.asyncify import asyncify
 from cs3api4lab.api.storage_api import StorageApi
 
+import nest_asyncio
+
 
 class CS3APIsManager(ContentsManager):
     cs3_config = None
@@ -34,6 +36,9 @@ class CS3APIsManager(ContentsManager):
         self.file_api = Cs3FileApi(self.log)
         self.share_api = ShareAPIFacade(log)
         self.storage_api = StorageApi(log)
+
+        # line below must be run in order for loop.run_until_complete() to work
+        nest_asyncio.apply()
 
     # _is_dir is already async, so no need to asyncify this
     def dir_exists(self, path):
