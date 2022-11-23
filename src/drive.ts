@@ -266,7 +266,7 @@ async function getFileList(
 }
 
 async function getSharedByMe(): Promise<any> {
-  return await requestAPI('/api/cs3/shares/list', {
+  return await requestAPI('/api/cs3/shares/list?filter_duplicates=1', {
     method: 'get'
   });
 }

@@ -4,6 +4,7 @@ from unittest import TestCase
 
 from unittest import skip
 
+
 class TestCs3UniShareApi(ShareTestBase, TestCase):
     einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
     einstein_idp = 'cernbox.cern.ch'
@@ -54,6 +55,52 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
                 self.remove_test_ocm_share('einstein', self.ocm_share_id)
             if self.ocm_file_name:
                 self.remove_test_file('einstein', self.ocm_file_name)
+            if self.file_name:
+                self.remove_test_file('einstein', self.file_name)
+
+    def test_list_with_filter(self):
+        if not self.config.enable_ocm:
+            self.skipTest('OCM disabled')
+        try:
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+
+            created_ocm_share = self.create_ocm_share('einstein', self.marie_id, self.marie_idp, self.file_name)
+            self.ocm_share_id = created_ocm_share['id']
+
+            share_list = self.uni_api.list_shares(filter_duplicates=True)
+            file_shares = list(filter(lambda s: s['name'] == self.file_name.split('/')[-1], share_list['content']))
+            self.assertEqual(len(file_shares), 1)
+
+        finally:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            if self.ocm_share_id:
+                self.remove_test_ocm_share('einstein', self.ocm_share_id)
+            if self.file_name:
+                self.remove_test_file('einstein', self.file_name)
+
+    def test_list_without_filter(self):
+        if not self.config.enable_ocm:
+            self.skipTest('OCM disabled')
+        try:
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+
+            created_ocm_share = self.create_ocm_share('einstein', self.marie_id, self.marie_idp, self.file_name)
+            self.ocm_share_id = created_ocm_share['id']
+
+            share_list = self.uni_api.list_shares(filter_duplicates=False)
+            file_shares = list(filter(lambda s: s['name'] == self.file_name.split('/')[-1], share_list['content']))
+            self.assertEqual(len(file_shares), 2)
+
+        finally:
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            if self.ocm_share_id:
+                self.remove_test_ocm_share('einstein', self.ocm_share_id)
             if self.file_name:
                 self.remove_test_file('einstein', self.file_name)
 
