@@ -57,6 +57,50 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
             if self.file_name:
                 self.remove_test_file('einstein', self.file_name)
 
+    def test_list_with_filter(self):
+        self.config.enable_ocm = True
+        try:
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+
+            created_ocm_share = self.create_ocm_share('einstein', self.marie_id, self.marie_idp, self.file_name)
+            self.ocm_share_id = created_ocm_share['id']
+
+            share_list = self.uni_api.list_shares(filter=True)
+            self.assertTrue(len(list(filter(lambda share: share['name'] == self.file_name.split('/')[-1], share_list['content']))) == 1)
+
+        finally:
+            self.config.enable_ocm = False
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            if self.ocm_share_id:
+                self.remove_test_ocm_share('einstein', self.ocm_share_id)
+            if self.file_name:
+                self.remove_test_file('einstein', self.file_name)
+
+    def test_list_without_filter(self):
+        self.config.enable_ocm = True
+        try:
+            self.file_name = self.file_path + self.get_random_suffix()
+            created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
+            self.share_id = created_share['opaque_id']
+
+            created_ocm_share = self.create_ocm_share('einstein', self.marie_id, self.marie_idp, self.file_name)
+            self.ocm_share_id = created_ocm_share['id']
+
+            share_list = self.uni_api.list_shares(filter=False)
+            self.assertTrue(len(list(filter(lambda share: share['name'] == self.file_name.split('/')[-1], share_list['content']))) == 2)
+
+        finally:
+            self.config.enable_ocm = False
+            if self.share_id:
+                self.remove_test_share('einstein', self.share_id)
+            if self.ocm_share_id:
+                self.remove_test_ocm_share('einstein', self.ocm_share_id)
+            if self.file_name:
+                self.remove_test_file('einstein', self.file_name)
+
     def test_list_received(self):
         try:
             self.file_name = self.file_path + self.get_random_suffix()

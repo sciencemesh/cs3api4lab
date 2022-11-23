@@ -60,7 +60,8 @@ class ListSharesHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self):
-        yield RequestHandler.async_handle_request(self, self.share_api.list_shares, 200)
+        yield RequestHandler.async_handle_request(self, self.share_api.list_shares, 200,
+                                                  self.get_query_argument('filter', default='true') == 'true')
 
 
 class ListReceivedSharesHandler(APIHandler):
