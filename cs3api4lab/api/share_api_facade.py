@@ -97,9 +97,10 @@ class ShareAPIFacade:
             else:
                 raise OCMDisabledError('Cannot remove OCM share - OCM functionality is disabled')
 
-    def list_shares(self):
+    def list_shares(self, filter_duplicates=False):
         """
         :return: created shares and OCM shares combined and mapped to Jupyter model
+        :param: filter_duplicates - wether to filter out duplicated shares by resource id
         :rtype: dict
         """
         share_list = self.share_api.list()
@@ -107,7 +108,21 @@ class ShareAPIFacade:
             ocm_share_list = self.ocm_share_api.list()
         else:
             ocm_share_list = None
-        return self.map_shares(share_list, ocm_share_list)
+        mapped_shares = self.map_shares(share_list, ocm_share_list)
+        if filter_duplicates:
+            mapped_shares = self._filter_duplicates(mapped_shares)
+        return mapped_shares
+
+    def _filter_duplicates(self, shares):
+        resource_ids = []
+        filtered_shares = []
+        for share in shares['content']:
+            if share['resource_id'] not in resource_ids:
+                filtered_shares.append(share)
+                resource_ids.append(share['resource_id'])
+        shares['content'] = filtered_shares
+        return shares
+
 
     def list_received(self, status=None):
         """
@@ -198,7 +213,6 @@ class ShareAPIFacade:
 
     def map_shares_to_model(self, list_response, received=False):
         respond_model = ModelUtils.create_respond_model()
-        path_list = []
         share_no = 0
         for share in list_response.shares:
             if received:
@@ -231,9 +245,9 @@ class ShareAPIFacade:
 
             if received:
                 model['state'] = ShareUtils.map_state(list_response.shares[share_no].state)
-            if model['path'] not in path_list:
-                respond_model['content'].append(model)
-                path_list.append(model['path'])
-                share_no = share_no + 1
+            model['resource_id'] = {'storage_id': share.resource_id.storage_id,
+                                    'opaque_id': share.resource_id.opaque_id}
+            respond_model['content'].append(model)
+            share_no = share_no + 1
 
         return respond_model
