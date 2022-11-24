@@ -21,6 +21,7 @@ from cs3api4lab.api.share_api_facade import ShareAPIFacade
 from cs3api4lab.utils.model_utils import ModelUtils
 from cs3api4lab.utils.asyncify import asyncify
 from cs3api4lab.api.storage_api import StorageApi
+from cs3api4lab.exception.exceptions import ResourceNotFoundError
 
 
 class CS3APIsManager(ContentsManager):
@@ -108,16 +109,25 @@ class CS3APIsManager(ContentsManager):
     def get(self, path, content=True, type=None, format=None):
         """Get a file, notebook or directory model."""
         path = FileUtils.remove_drives_names(path)
-        if type in (None, 'directory') and self._is_dir(path):
-            model = self._dir_model(path, content=content)
-        elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
-            model = self._notebook_model(path, content=content)
-        else:
-            if type == 'directory':
-                raise web.HTTPError(400, u'%s is a directory' % path, reason='bad type')
-            model = self._file_model(path, content=content, format=format)
+        model = None
 
-        return model
+        if type:
+            if type == 'directory' and self._is_dir(path):
+                model = self._dir_model(path, content=content)
+            elif type == 'file' and self.file_exists(path):
+                model = self._file_model(path, content=content, format=format)
+            elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
+                model = self._notebook_model(path, content=content)
+        else:
+            if self.file_exists(path):
+                model = self._file_model(path, content=content, format=format)
+            elif self._is_dir(path):
+                model = self._dir_model(path, content=content)
+
+        if model:
+            return model
+
+        raise web.HTTPError(404, u'Resource %s does not exist' % path)
 
     @asyncify
     def get_kernel_path(self, path, model=None):
@@ -315,10 +325,11 @@ class CS3APIsManager(ContentsManager):
 
     @asyncify
     def _dir_model(self, path, content):
-
-        cs3_container = self.file_api.read_directory(path, self.cs3_config.endpoint)
-        model = ModelUtils.convert_container_to_directory_model(path, cs3_container, content)
-
+        try:
+            cs3_container = self.file_api.read_directory(path, self.cs3_config.endpoint)
+            model = ModelUtils.convert_container_to_directory_model(path, cs3_container, content)
+        except ResourceNotFoundError:
+            raise web.HTTPError(404, u'%s does not exist' % path)
         return model
 
     @asyncify

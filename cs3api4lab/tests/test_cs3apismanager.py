@@ -27,8 +27,25 @@ class TestCS3APIsManager(TestCase):
         message = "Lorem ipsum dolor sit amet..."
         try:
             self.file_api.write_file(file_id, message, self.endpoint)
-            model = self.contents_manager.get(file_id, True, None)
+            model = self.contents_manager.get(file_id, True, 'file')
             self.assertEqual(model["name"], "test_get_text_file.txt")
+            self.assertEqual(model["path"], file_id)
+            self.assertEqual(model["content"], message)
+            self.assertEqual(model["format"], "text")
+            self.assertEqual(model["mimetype"], "text/plain")
+            self.assertEqual(model["size"], 29)
+            self.assertEqual(model["writable"], True)
+            self.assertEqual(model["type"], "file")
+        finally:
+            self.file_api.remove(file_id, self.endpoint)
+
+    def test_get_text_file_without_type(self):
+        file_id = "/test_get_text_file_no_type.txt"
+        message = "Lorem ipsum dolor sit amet..."
+        try:
+            self.file_api.write_file(file_id, message, self.endpoint)
+            model = self.contents_manager.get(file_id, True, None)
+            self.assertEqual(model["name"], "test_get_text_file_no_type.txt")
             self.assertEqual(model["path"], file_id)
             self.assertEqual(model["content"], message)
             self.assertEqual(model["format"], "text")
@@ -45,7 +62,7 @@ class TestCS3APIsManager(TestCase):
         message = "Lorem ipsum dolor sit amet..."
         try:
             self.file_api.write_file(file_id, message, self.endpoint)
-            model = self.contents_manager.get(file_path, True, None)
+            model = self.contents_manager.get(file_path, True, 'file')
             self.assertEqual(model["name"], "test_get_text_file.txt")
         finally:
             self.file_api.remove(file_id, self.endpoint)
@@ -56,7 +73,7 @@ class TestCS3APIsManager(TestCase):
         message = "Lorem ipsum dolor sit amet..."
         try:
             self.file_api.write_file(file_id, message, self.endpoint)
-            model = self.contents_manager.get(file_path, True, None)
+            model = self.contents_manager.get(file_path, True, 'file')
             self.assertEqual(model["name"], "test_get_text_file.txt")
         finally:
             self.file_api.remove(file_id, self.endpoint)
@@ -67,7 +84,7 @@ class TestCS3APIsManager(TestCase):
         message = "Lorem ipsum dolor sit amet..."
         self.file_api.write_file(file_id, message, self.endpoint)
 
-        model = self.contents_manager.get(file_path, True, None)
+        model = self.contents_manager.get(file_path, True, 'file')
         self.assertEqual(model["name"], "test_get_text_file.txt")
 
         self.file_api.remove(file_id, self.endpoint)
@@ -78,7 +95,7 @@ class TestCS3APIsManager(TestCase):
         message = "Lorem ipsum dolor sit amet..."
         try:
             self.file_api.write_file(file_id, message, self.endpoint)
-            model = self.contents_manager.get(share_file_id, True, None)
+            model = self.contents_manager.get(share_file_id, True, 'file')
             self.assertEqual(model["name"], "test_get_text_file.txt")
             self.assertEqual(model["path"], share_file_id)
             self.assertEqual(model["content"], message)
@@ -287,7 +304,7 @@ class TestCS3APIsManager(TestCase):
         }
         try:
             self.contents_manager.new(model, file_path)
-            model = self.contents_manager.get(file_path, True, None)
+            model = self.contents_manager.get(file_path, True, 'file')
             self.assertEqual(model["name"], "test_new_file_model.txt")
             self.assertEqual(model["path"], file_path)
             self.assertEqual(model["content"], "Test content")
@@ -371,6 +388,64 @@ class TestCS3APIsManager(TestCase):
 
         with self.assertRaises(IOError):
             self.file_api.stat_info(file_path, self.endpoint)
+
+    def test_get_directory(self):
+        try:
+            dir_path = "/test_get_directory"
+            self.file_api.create_directory(dir_path, self.endpoint)
+            sub_dir_path = "/test_get_directory/sub_dir"
+            self.file_api.create_directory(sub_dir_path, self.endpoint)
+
+            model = self.contents_manager.get(dir_path, True, 'directory')
+            self.assertEqual(model["path"], dir_path)
+            self.assertEqual(model["content"][0]["path"], sub_dir_path)
+
+        finally:
+            self.contents_manager.delete(dir_path)
+
+    def test_get_directory_without_type(self):
+        try:
+            dir_path = "/test_get_directory_no_type"
+            self.file_api.create_directory(dir_path, self.endpoint)
+            sub_dir_path = "/test_get_directory_no_type/sub_dir"
+            self.file_api.create_directory(sub_dir_path, self.endpoint)
+
+            model = self.contents_manager.get(dir_path, True, None)
+            self.assertEqual(model["path"], dir_path)
+            self.assertEqual(model["content"][0]["path"], sub_dir_path)
+
+        finally:
+            self.contents_manager.delete(dir_path)
+
+    def test_returns_404_for_nonexisting_file(self):
+        dir_path = '/no_such_dir'
+        with self.assertRaises(web.HTTPError) as err:
+            self.contents_manager.get(dir_path, type='file')
+        self.assertEqual(err.exception.status_code, 404)
+
+    def test_returns_404_for_nonexisting_file_with_no_type(self):
+        dir_path = '/no_such_file'
+        with self.assertRaises(web.HTTPError) as err:
+            self.contents_manager.get(dir_path, type=None)
+        self.assertEqual(err.exception.status_code, 404)
+
+    def test_returns_404_for_nonexisting_dir(self):
+        dir_path = '/no_such_file'
+        with self.assertRaises(web.HTTPError) as err:
+            self.contents_manager.get(dir_path, type='directory')
+        self.assertEqual(err.exception.status_code, 404)
+
+    def test_returns_404_for_nonexisting_notebook(self):
+        notebook_path = '/no_such_notebook.ipynb'
+        with self.assertRaises(web.HTTPError) as err:
+            self.contents_manager.get(notebook_path, type='notebook')
+        self.assertEqual(err.exception.status_code, 404)
+
+    def test_returns_404_for_nonexisting_notebook_without_type(self):
+        notebook_path = '/no_such_notebook.ipynb'
+        with self.assertRaises(web.HTTPError) as err:
+            self.contents_manager.get(notebook_path, type=None)
+        self.assertEqual(err.exception.status_code, 404)
 
     def test_recreate_directory(self):
         file_path = "/test_recreate_directory"
