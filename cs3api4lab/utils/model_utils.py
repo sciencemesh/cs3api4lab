@@ -152,7 +152,7 @@ class ModelUtils:
                 cs3_model = cs3_tmp_model
 
         if cs3_model is None:
-            raise web.HTTPError(404, u'%s is not a file' % path, reason='bad type')
+            raise web.HTTPError(404, u'%s does not exist' % path)
 
         model = ModelUtils.convert_container_to_base_model(cs3_model.path, cs3_container)
         return model, cs3_model
