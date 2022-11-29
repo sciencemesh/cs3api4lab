@@ -2,6 +2,7 @@ import nbformat
 import mimetypes
 import os
 import posixpath
+import nest_asyncio
 
 import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
 import cs3.rpc.v1beta1.code_pb2 as cs3code
@@ -34,6 +35,9 @@ class CS3APIsManager(ContentsManager):
         self.file_api = Cs3FileApi(self.log)
         self.share_api = ShareAPIFacade(log)
         self.storage_api = StorageApi(log)
+    
+        #line below must be run in order for loop.run_until_complete() to work
+        nest_asyncio.apply()
 
     # _is_dir is already async, so no need to asyncify this
     def dir_exists(self, path):
