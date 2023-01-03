@@ -23,6 +23,7 @@ from cs3api4lab.utils.asyncify import asyncify
 from cs3api4lab.api.storage_api import StorageApi
 from cs3api4lab.locks.factory import LockApiFactory
 from cs3api4lab.exception.exceptions import ResourceNotFoundError
+from traitlets.config import HasTraits
 
 """
 This class redefines default upstream ContentsManager.
@@ -38,6 +39,7 @@ class CS3APIsManager(ContentsManager):
 
     def __init__(self, parent, log, **kwargs):
         super().__init__(**kwargs)
+        HasTraits.__init__(self, **kwargs)
         self.cs3_config = Cs3ConfigManager.get_config()
         self.log = log
         self.file_api = Cs3FileApi(self.log)
@@ -195,7 +197,7 @@ class CS3APIsManager(ContentsManager):
                 self.check_and_sign(nb, path)
                 self._save_notebook(path, nb, model['format'])
 
-                # ToDo: Implements save to checkpoint
+                # ToDo: Implement save to checkpoint
                 # if not self.checkpoints.list_checkpoints(path):
                 #     self.create_checkpoint(path)
 

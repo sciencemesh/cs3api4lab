@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   revad:
-    image: cs3org/revad:v1.21.0
+    image: cs3org/revad:v1.21.0 # 'latest' tag is temporarily not available
     container_name: revad
     ports:
       - "19000-19001:19000-19001"

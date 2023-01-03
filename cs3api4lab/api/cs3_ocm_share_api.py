@@ -69,16 +69,16 @@ class Cs3OcmShareApi:
                                                 recipient_mesh_provider=provider_info)
         response = self.ocm_share_api.CreateOCMShare(request=request,
                                                      metadata=self._token())
-        if self._is_code_ok(response):
-            self.log.info("OCM share created:\n")
-            return self._map_share(response.share)
-        elif response.status.code == cs3_code.CODE_NOT_FOUND:
+
+        if response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ResourceNotFoundError(f"resource {file_path} not found")
         elif response.status.code == cs3_code.CODE_ALREADY_EXISTS:
-            raise ShareAlreadyExistsError("Error creating share: "
-                                          + endpoint + file_path)
-        else:
+            raise ShareAlreadyExistsError("Error creating share: " + endpoint + file_path)
+        elif not self._is_code_ok(response):
             self._handle_error(response, "Error creating OCM share")
+
+        self.log.info("OCM share created:\n")
+        return self._map_share(response.share)
 
     def remove(self, share_id):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
@@ -87,13 +87,11 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.RemoveOCMShare(request=request,
                                                      metadata=self._token())
 
-        if self._is_code_ok(response):
-            self.log.info("OCM share deleted: " + share_id)
-            return
-        elif response.status.code == cs3_code.CODE_NOT_FOUND:
+        if response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ShareNotFoundError(f"ocm share {share_id} not found")
-        else:
+        elif not self._is_code_ok(response):
             self._handle_error(response, "Error removing OCM share")
+        self.log.info("OCM share deleted: " + share_id)
 
     def update(self, share_id, field, value):
         share_id_obj = sharing_res.ShareId(opaque_id=share_id)
@@ -110,13 +108,12 @@ class Cs3OcmShareApi:
 
         response = self.ocm_share_api.UpdateOCMShare(request=request,
                                                      metadata=self._token())
-        if self._is_code_ok(response):
-            self.log.info("OCM share updated:\n" + share_id)
-            return
-        elif response.status.code == cs3_code.CODE_NOT_FOUND:
+        if response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ShareNotFoundError(f"ocm share {share_id} not found")
-        else:
+        elif not self._is_code_ok(response):
             self._handle_error(response, "Error updating OCM share:")
+
+        self.log.info("OCM share updated:\n" + share_id)
 
     def update_received(self, ocm_share_id, field, value):
         share_id_obj = sharing_res.ShareId(opaque_id=ocm_share_id)
@@ -131,20 +128,19 @@ class Cs3OcmShareApi:
             request = ocm_api.UpdateReceivedOCMShareRequest(ref=ref,
                                                             field=ocm_api.UpdateReceivedOCMShareRequest
                                                             .UpdateField(
-                                                                state=ShareUtils.map_state(value)
+                                                                state=ShareUtils.string_to_state(value)
                                                             ))
         else:
             raise ValueError("Unknown field to update")
 
         response = self.ocm_share_api.UpdateReceivedOCMShare(request=request,
                                                              metadata=self._token())
-        if self._is_code_ok(response):
-            self.log.info("OCM received share updated: " + ocm_share_id)
-            return
-        elif response.status.code == cs3_code.CODE_NOT_FOUND:
+        if response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ShareNotFoundError(f"ocm share {ocm_share_id} not found")
-        else:
-            self._handle_error(response, "Error updating OCM received share:")
+        if not self._is_code_ok(response):
+            self._handle_error(response, "Error updating OCM received share: ")
+
+        self.log.info("OCM received share updated: " + ocm_share_id)
         return response.opaque
 
     def list(self, file_path=None):
@@ -161,12 +157,13 @@ class Cs3OcmShareApi:
         ref = sharing_res.ShareReference(id=share_id_obj)
         request = ocm_api.GetOCMShareRequest(ref=ref)
         response = self.ocm_share_api.GetOCMShare(request=request, metadata=self._token())
-        if response.status.code == cs3_code.CODE_OK:
-            return self._map_share(response.share)
-        elif response.status.code == cs3_code.CODE_NOT_FOUND:
+
+        if response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ShareNotFoundError(f"ocm share {share_id} not found")
-        else:
+        elif response.status.code != cs3_code.CODE_OK:
             self._handle_error(response)
+
+        return self._map_share(response.share)
 
     def get_received_ocm_shares(self, share_id):
         if share_id is None:
@@ -179,7 +176,7 @@ class Cs3OcmShareApi:
         response = self.ocm_share_api.ListReceivedOCMShares(request=request,
                                                             metadata=self._token())
         if not self._is_code_ok(response):
-            self._handle_error(response, "Error listing OCM received shares: ")
+            self._handle_error(response, "Error listing OCM received shares:")
 
         return response
 
@@ -189,12 +186,12 @@ class Cs3OcmShareApi:
         request = ocm_api.GetReceivedOCMShareRequest(ref=ref)
         response = self.ocm_share_api.GetReceivedOCMShare(request=request,
                                                           metadata=self._token())
-        if response.status.code == cs3_code.CODE_OK:
-            return self._map_share(response.share.share, response.share.state)
-        elif response.status.code == cs3_code.CODE_NOT_FOUND:
+        if response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ShareNotFoundError(f"ocm share {share_id} not found")
-        else:
+        elif response.status.code != cs3_code.CODE_OK:
             self._handle_error(response)
+
+        return self._map_share(response.share.share, response.share.state)
 
     def _share_filter_by_resource(self, path):
         if path is None:
@@ -245,7 +242,7 @@ class Cs3OcmShareApi:
             }
         }
         if state:
-            response.update({"state": ShareUtils.map_state(state)})
+            response.update({"state": ShareUtils.state_to_string(state)})
 
         return response
 
@@ -253,11 +250,12 @@ class Cs3OcmShareApi:
         request = ocm_provider_api.GetInfoByDomainRequest(domain=domain)
         response = self.provider_api.GetInfoByDomain(request=request,
                                                      metadata=self._token())
-        if response.status.code == cs3_code.CODE_OK:
-            return response.provider_info
-        elif response.status.code == cs3_code.CODE_NOT_FOUND:
+
+        if response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ProviderNotFoundError(f"provider with domain {domain} not found")
-        else:self._handle_error(response)
+        elif response.status.code == cs3_code.CODE_OK:
+            self._handle_error(response)
+        return response.provider_info
 
     def _map_role(self, role):
         if role == Role.VIEWER:
@@ -279,9 +277,8 @@ class Cs3OcmShareApi:
         ref = FileUtils.get_reference(file_id, endpoint)
         stat_response = self.cs3_api.Stat(request=storage_provider.StatRequest(ref=ref),
                                           metadata=[('x-access-token', self.auth.authenticate())])
-        if stat_response.status.code == cs3_code.CODE_OK:
-            return stat_response.info
-        elif stat_response.status.code == cs3_code.CODE_NOT_FOUND:
+        if stat_response.status.code == cs3_code.CODE_NOT_FOUND:
             raise ResourceNotFoundError(f"Resource  {file_id}  not found")
-        else:
+        elif stat_response.status.code == cs3_code.CODE_OK:
             self._handle_error(stat_response)
+        return stat_response.info

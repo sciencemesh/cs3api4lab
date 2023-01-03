@@ -13,3 +13,4 @@ class Role:
 class Grantee:
     USER = 'user'
     GROUP = 'group'
+    INVALID = 'invalid'

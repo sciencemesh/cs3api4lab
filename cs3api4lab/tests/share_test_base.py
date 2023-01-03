@@ -2,10 +2,19 @@ import random
 import string
 import urllib.parse
 
+from cs3api4lab.api.cs3_file_api import Cs3FileApi
+from cs3api4lab.api.cs3_ocm_share_api import Cs3OcmShareApi
+from cs3api4lab.api.cs3_share_api import Cs3ShareApi
+from cs3api4lab.api.share_api_facade import ShareAPIFacade
+from cs3api4lab.api.storage_api import StorageApi
+from cs3api4lab.tests.extensions import ExtCs3FileApi, ExtCs3ShareApi, ExtCs3OcmShareApi, ExtStorageApi, \
+    ExtCs3ShareApiFacade, Cs3ConfigManager, ExtAuthenticator
+
 from cs3api4lab.tests.extensions import *
 from traitlets.config import LoggingConfigurable
 import cs3.rpc.v1beta1.code_pb2 as cs3code
 from collections import namedtuple
+
 
 class ShareTestBase:
     storage_id = '123e4567-e89b-12d3-a456-426655440000'

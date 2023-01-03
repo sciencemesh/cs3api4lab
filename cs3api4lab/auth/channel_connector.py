@@ -33,8 +33,7 @@ class Channel(LoggingConfigurable):
                 credentials = grpc.ssl_channel_credentials(root_certificates=ca_cert, private_key=key, certificate_chain=cert)
                 channel = grpc.secure_channel(config.reva_host, credentials)
 
-            except:
-                ex = sys.exc_info()[0]
+            except Exception as ex:
                 self.log.error('msg="Error create secure channel" reason="%s"' % ex)
                 raise IOError(ex)
         else:
