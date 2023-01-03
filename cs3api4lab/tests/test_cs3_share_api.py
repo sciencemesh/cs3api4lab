@@ -83,10 +83,7 @@ class TestCs3ShareApi(ShareTestBase, TestCase):
                 self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
             self.assertEqual(cm.exception.args[0], 'Incorrect server response: error creating share')
 
-            # todo change this after https://github.com/cs3org/reva/issues/2847 is fixed
-            # with self.assertRaises(ShareAlreadyExistsError) as context:
-            #     self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
-            # self.assertIn("Share already exists for file:", context.exception.args[0])
+            # todo check if ShareAlreadyExistsError is raised after https://github.com/cs3org/reva/issues/2847 is fixed
         finally:
             if self.share_id:
                 self.remove_test_share('richard', self.share_id)

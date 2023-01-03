@@ -9,6 +9,7 @@ def get_or_create_eventloop():
         if "There is no current event loop in thread" in str(ex):
             asyncio.set_event_loop(asyncio.new_event_loop())
             return asyncio.get_event_loop()
+        raise Exception("Unable to create event loop")
 
 def asyncify(func):
     @wraps(func)

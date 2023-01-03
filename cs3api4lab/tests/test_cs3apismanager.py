@@ -117,7 +117,7 @@ class TestCS3APIsManager(ShareTestBase,TestCase):
             model = self.contents_manager.get(file_id, True, "notebook")
             self.assertEqual(model["name"], "test_get_notebook_file.ipynb")
             self.assertEqual(model["path"], file_id)
-            self.assertTrue("### Markdown example" in str(model["content"]))
+            self.assertIn("### Markdown example", str(model["content"]))
             self.assertEqual(model["format"], "json")
             self.assertEqual(model["mimetype"], None)
             self.assertEqual(model["size"], 637)
@@ -211,7 +211,8 @@ class TestCS3APIsManager(ShareTestBase,TestCase):
         finally:
             try:
                 self.contents_manager.delete_file(file_path)
-            except: pass
+            except Exception as e:
+                self.log.warn("Cannot remove %s:%s" % (file_path, e))
 
     def test_is_editor(self):
         file_path  = '/home/test_is_editor_file.txt'
@@ -464,7 +465,7 @@ class TestCS3APIsManager(ShareTestBase,TestCase):
             self.contents_manager.delete_file(file_path)
             with self.assertRaises(IOError):
                 self.file_api.stat_info(file_path, self.endpoint)
-        except:
+        except Exception:
             self.contents_manager.delete_file(file_path)
 
     def test_create_subdirectory(self):
@@ -485,7 +486,8 @@ class TestCS3APIsManager(ShareTestBase,TestCase):
         finally:
             try:
                 self.contents_manager.delete(file_path)
-            except: pass
+            except Exception as e:
+                self.log.warn("Cannot remove %s:%s" % (file_path, e))
 
     def test_kernel_path_when_config_entry_provided(self):
         self.config.kernel_path = "/test/path"

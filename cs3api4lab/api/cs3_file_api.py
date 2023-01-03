@@ -16,7 +16,7 @@ import cs3.rpc.v1beta1.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 from google.protobuf.json_format import MessageToDict
 
-from cs3api4lab.exception.exceptions import ResourceNotFoundError, FileLockedError
+from cs3api4lab.exception.exceptions import ResourceNotFoundError
 
 from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.api.storage_api import StorageApi
@@ -63,27 +63,29 @@ class Cs3FileApi:
         """
         time_start = time.time()
         stat = self.storage_api.stat(file_path, endpoint)
-        if stat.status.code == cs3code.CODE_OK:
-            time_end = time.time()
-            self.log.info('msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (file_path, (time_end - time_start) * 1000))
-            return {
-                'inode': {'storage_id': stat.info.id.storage_id,
-                          'opaque_id': stat.info.id.opaque_id},
-                'filepath': stat.info.path,
-                'userid': stat.info.owner.opaque_id,
-                'size': stat.info.size,
-                'mtime': stat.info.mtime.seconds,
-                'type': stat.info.type,
-                'mime_type': stat.info.mime_type,
-                'idp': stat.info.owner.idp,
-                'permissions': stat.info.permission_set,
-                'arbitrary_metadata': MessageToDict(stat.info.arbitrary_metadata),
-            }
-        elif stat.status.code == cs3code.CODE_NOT_FOUND:
+
+        if stat.status.code == cs3code.CODE_NOT_FOUND:
             self.log.info('msg="Failed stat" fileid="%s" reason="%s"' % (file_path, stat.status.message))
             raise FileNotFoundError(stat.status.message + ", file " + file_path)
-        else:
+
+        if stat.status.code != cs3code.CODE_OK:
             self._handle_error(stat)
+
+        time_end = time.time()
+        self.log.info('msg="Invoked stat" fileid="%s" elapsedTimems="%.1f"' % (file_path, (time_end - time_start) * 1000))
+        return {
+            'inode': {'storage_id': stat.info.id.storage_id,
+                      'opaque_id': stat.info.id.opaque_id},
+            'filepath': stat.info.path,
+            'userid': stat.info.owner.opaque_id,
+            'size': stat.info.size,
+            'mtime': stat.info.mtime.seconds,
+            'type': stat.info.type,
+            'mime_type': stat.info.mime_type,
+            'idp': stat.info.owner.idp,
+            'permissions': stat.info.permission_set,
+            'arbitrary_metadata': MessageToDict(stat.info.arbitrary_metadata),
+        }
         
     def read_file(self, stat, endpoint=None):
         """

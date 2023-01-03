@@ -116,7 +116,7 @@ class TestCs3FileApi(TestCase):
             self.storage.remove(file_id, self.endpoint)
             with self.assertRaises(IOError):
                 self.storage.stat_info(file_id, self.endpoint)
-        except:
+        except Exception:
             self.storage.remove(file_id, self.endpoint)
 
     def test_read_directory(self):
@@ -136,8 +136,8 @@ class TestCs3FileApi(TestCase):
         dest_id = "/file_after_rename.txt"
         try:
             self.storage.remove(dest_id)
-        except:
-            pass
+        except Exception as e:
+            self.log.warn("Cannot remove %s:%s" % (dest_id, e))
         try:
             self.storage.write_file(src_id, buffer, self.endpoint)
             self.storage.move(src_id, dest_id, self.endpoint)
@@ -147,10 +147,12 @@ class TestCs3FileApi(TestCase):
         finally:
             try:
                 self.storage.remove(src_id, self.endpoint)
-            except: pass
+            except Exception as e:
+                self.log.warn("Cannot remove %s:%s" % (src_id, e))
             try:
                 self.storage.remove(dest_id, self.endpoint)
-            except: pass
+            except Exception as e:
+                self.log.warn("Cannot remove %s:%s" % (dest_id, e))
 
     def test_move_no_file(self):
         src_id = "/no_such_file.txt"
@@ -158,7 +160,7 @@ class TestCs3FileApi(TestCase):
 
         with self.assertRaises(IOError) as cm:
             self.storage.move(src_id, dest_id)
-        self.assertTrue('error moving: path:"/no_such_file.txt"' in cm.exception.args[0])
+        self.assertIn('error moving: path:"/no_such_file.txt" ', cm.exception.args[0])
 
     def test_move_file_already_exists(self):
         try:
@@ -174,10 +176,10 @@ class TestCs3FileApi(TestCase):
         finally:
             try:
                 self.storage.remove(source_path, self.endpoint)
-            except: pass
+            except Exception as e:
+                self.log.warn("Cannot remove %s:%s" % (source_path, e))
             try:
                 self.storage.remove(destination_path, self.endpoint)
-            except: pass
+            except Exception as e:
+                self.log.warn("Cannot remove %s:%s" % (destination_path, e))
 
-if __name__ == '__main__':
-    unittest.main()
