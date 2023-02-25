@@ -2,11 +2,18 @@
 {
     display: flex;
 }
+jp-bottom-hidden-files {
+    display: flex;
 
+}
 .jp-bottom-div
 {
+    display: block;
     text-align: right;
-    margin-bottom: 5px;
+    width: auto;
+    height: 100%;
+    margin-right: 10px;
+    margin-top: 5px;
 }
 
 .jp-file-info
@@ -200,17 +207,30 @@
 
 .c3-panel-header
 {
-    height: 75px !important;
+    /*height: 75px !important;*/
+}
+
+#cs3-bottom-widget {
+    box-sizing: border-box;
 }
 
 .c3-panel-bottom
 {
-    height: 25px !important;
+    display: flex;
+    align-content: center;
+    text-align: right;
+    background-color: var(--jp-layout-color2);
+    border-top: 1px solid var(--jp-border-color1);
 }
 
 .c3-panel-bottom > div
 {
-    padding-left: 10px;
+    font-family: var(--jp-ui-font-family);
+    color: var(--jp-ui-font-color2);
+}
+
+#cs3-header-widget {
+    background-color: var(--jp-layout-color0);
 }
 
 #cs3-dock-panel-header h1
@@ -310,4 +330,47 @@
     content: var(--jp-icon-caret-up);
     font-weight: bold;
     color: var(--jp-ui-font-color0);
+}
+
+#cs3-panel .m-TabBar {
+    border-bottom: 1px solid var(--jp-layout-color3) !important;
+}
+
+.jp-main-tab {
+    /*background-color: var(--jp-layout-color3);*/
+    border: none !important;
+
+    border-bottom: 1px solid var(--jp-layout-color3) !important;
+    background-color: var(--jp-layout-color0) !important;
+}
+#cs3-dock-panel-main .lm-TabBar-tab.lm-mod-current {
+
+    transform: none !important;
+    /*border-bottom: 1px solid var(--jp-layout-color3) !important;*/
+}
+
+#cs3-dock-panel-main .lm-TabBar {
+    border: none !important;
+    /*border-bottom: 1px solid var(--jp-layout-color3) !important;*/
+}
+
+.jp-main-tab.lm-mod-current > div {
+    background-color: var(--jp-layout-color3) !important;
+    color: var(--jp-ui-font-color0) !important;
+    /*border-bottom: 1px solid var(--jp-layout-color3) !important;*/
+}
+
+.jp-main-tab > div {
+    background-color: var(--jp-layout-color0) !important;
+    color: var(--jp-ui-font-color0) !important;
+    text-align: center;
+    text-transform: capitalize;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+.jp-main-tab-icon {
+    display: none;
+}
+#cs3-panel {
+    background-color: var(--jp-layout-color0);
 }

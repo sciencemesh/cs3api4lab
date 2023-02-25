@@ -37,19 +37,13 @@ import {
 import { PendingSharesListWrapper } from './pendingShares';
 import { addHomeDirButton, addLaunchersButton } from './utils';
 import { AccordionPanel } from '@lumino/widgets';
-import {
-  kernelIcon,
-  caseSensitiveIcon,
-  inspectorIcon,
-  newFolderIcon,
-  circleIcon
-} from '@jupyterlab/ui-components';
+import { kernelIcon } from '@jupyterlab/ui-components';
 import { Contents } from '@jupyterlab/services';
 import { addCommands, createLauncher, restoreBrowser } from './browserCommands';
 import { IMainMenu } from '@jupyterlab/mainmenu';
 import { ITranslator } from '@jupyterlab/translation';
 import { requestAPI } from './services';
-// import { cs3AccordionChild } from './cs3Accordion';
+import { infoIcon, shareIcon } from './icons';
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -179,7 +173,8 @@ const cs3share: JupyterFrontEndPlugin<void> = {
           dialogTracker.add(dialog);
         }
       },
-      iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
+      // iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
+      icon: infoIcon,
       label: () => {
         return 'File info';
       }
@@ -205,7 +200,8 @@ const cs3share: JupyterFrontEndPlugin<void> = {
           });
         }
       },
-      iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
+      // iconClass: () => 'jp-MaterialIcon jp-FileUploadIcon',
+      icon: shareIcon,
       label: () => {
         return 'Share file';
       }
@@ -276,12 +272,14 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     // const fileBrowser = factory.defaultBrowser
     factory.defaultBrowser.title.label = 'My Files';
     factory.defaultBrowser.title.caption = 'My Files';
-    factory.defaultBrowser.title.icon = caseSensitiveIcon;
+    factory.defaultBrowser.title.className = 'jp-main-tab';
+    factory.defaultBrowser.title.iconClass = 'jp-main-tab-icon';
+    // factory.defaultBrowser.title.icon = caseSensitiveIcon;
 
     factory.defaultBrowser.toolbar.addItem(
       'Share files',
       new ToolbarButton({
-        icon: circleIcon,
+        icon: shareIcon,
         tooltip: 'Share files',
         onClick: () => {
           const selectedFileList: Contents.IModel[] = toArray(
@@ -312,7 +310,9 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     const cs3BottomWidget: ReactWidget = new Cs3BottomWidget(
       'cs3Api Bottom',
       'cs3-bottom-widget',
-      {},
+      {
+        // he
+      },
       stateDB,
       factory.defaultBrowser
     );
@@ -363,8 +363,8 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     // Projects tab
     //
     const cs3TabWidget3: ReactWidget = new Cs3TabWidget(
-      'Projects',
-      newFolderIcon
+      'Projects'
+      // newFolderIcon
     );
 
     /**
@@ -448,7 +448,8 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     cs3Accordion.id = 'sharesPanel';
     cs3Accordion.title.caption = 'Shares';
     cs3Accordion.title.label = 'Shares';
-    cs3Accordion.title.icon = inspectorIcon;
+    cs3Accordion.title.iconClass = 'jp-main-tab-icon';
+    cs3Accordion.title.className = 'jp-main-tab';
     cs3Accordion.hide();
 
     const pendingShares = new PendingSharesListWrapper();

@@ -16,7 +16,7 @@ import cs3.rpc.v1beta1.code_pb2 as cs3code
 import cs3.storage.provider.v1beta1.provider_api_pb2 as cs3sp
 from google.protobuf.json_format import MessageToDict
 
-from cs3api4lab.exception.exceptions import ResourceNotFoundError, FileLockedError
+from cs3api4lab.exception.exceptions import ResourceNotFoundError
 
 from cs3api4lab.utils.file_utils import FileUtils
 from cs3api4lab.api.storage_api import StorageApi
@@ -268,3 +268,4 @@ class Cs3FileApi:
         self.log.error(response)
         raise Exception("Incorrect server response: " +
                         response.status.message)
+
