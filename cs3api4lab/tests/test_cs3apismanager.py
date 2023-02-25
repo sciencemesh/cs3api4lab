@@ -225,8 +225,8 @@ class TestCS3APIsManager(ShareTestBase,TestCase):
         finally:
             try:
                 self.contents_manager.delete_file(file_path)
-            except Exception:
-                pass
+            except Exception as e:
+                self.log.warn("Cannot remove %s:%s" % (file_path, e))
 
     def test_is_editor_shared_as_viewer(self):
         self.content  = "Lorem ipsum dolor sit amet..."
@@ -246,41 +246,6 @@ class TestCS3APIsManager(ShareTestBase,TestCase):
                 self.remove_test_file('richard', file_path)
             except Exception:
                 pass   #we don't need any actions here
-
-
-    def test_is_editor(self):
-        file_path  = '/home/test_is_editor_file.txt'
-        message = "Lorem ipsum dolor sit amet..."
-        try:
-            self.file_api.write_file(file_path, message, self.endpoint)
-            stat = self.file_api.stat_info(file_path, self.config.endpoint)
-            result = self.contents_manager._is_editor(stat)
-            self.assertEqual(result, True, 'Incorrect check if file is editor')
-        finally:
-            try:
-                self.contents_manager.delete_file(file_path)
-            except Exception:
-                pass
-
-    def test_is_editor_shared_as_viewer(self):
-        self.content  = "Lorem ipsum dolor sit amet..."
-        file_path  = '/home/test_is_editor_file.txt'
-        remote_path = '/reva/richard/test_is_editor_file.txt'
-        einstein_id = '4c510ada-c86b-4815-8820-42cdf82c3d51'
-        einstein_idp = 'cernbox.cern.ch'
-        try:
-            richards_share = self.create_share('richard', einstein_id, einstein_idp, file_path, 'viewer')
-            self.share_id = richards_share['opaque_id']
-            stat = self.file_api.stat_info(remote_path, self.config.endpoint)
-            result = self.contents_manager._is_editor(stat)
-            self.assertEqual(result, False, 'Is editor should be false')
-        finally:
-            try:
-                self.remove_test_share('richard', self.share_id)
-                self.remove_test_file('richard', file_path)
-            except Exception:
-                pass   #we don't need any actions here
-
 
     def test_delete_non_exits_file(self):
         file_path = "/test_delete_non_exits_file.txt"

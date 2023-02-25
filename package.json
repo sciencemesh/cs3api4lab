@@ -84,7 +84,7 @@
     "typescript": "~4.1.6"
   },
   "sideEffects": [
-    "style/*.css",
+    "style/**/*.css",
     "style/index.js"
   ],
   "jupyterlab": {

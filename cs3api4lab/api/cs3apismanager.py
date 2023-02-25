@@ -126,7 +126,7 @@ class CS3APIsManager(ContentsManager):
             elif type == 'notebook' or (type is None and path.endswith('.ipynb')):
                 try:   #this needs to be fixed/refactored in a separate issue
                     model = self._notebook_model(path, content=content)
-                except Exception:
+                except Exception as e:
                     self.log.info("Notebook does not exist %s", path)
         else:
             if path.endswith('.ipynb'):

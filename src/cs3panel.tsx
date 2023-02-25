@@ -134,15 +134,17 @@ export class Cs3HeaderWidget extends ReactWidget {
 }
 
 export const Bottom = (props: BottomProps): JSX.Element => {
-  const [text, setText] = useState('');
+  // const [text, setText] = useState('');
+  const [hiddenFiles, setHiddenFiles] = useState(0);
+  const [action, setAction] = useState('show');
 
   const setLabel = async (): Promise<void> => {
     const showHidden: boolean = (await props.db.fetch('showHidden')) as boolean;
-    const hiddenFilesNo: number = (await props.db.fetch(
-      'hiddenFilesNo'
-    )) as number;
+    const hiddenFilesNo: number =
+      ((await props.db.fetch('hiddenFilesNo')) as number) || 0;
     const action = showHidden === undefined || !showHidden ? 'show' : 'hide';
-    setText(`${hiddenFilesNo} hidden files (${action})`);
+    setHiddenFiles(hiddenFilesNo);
+    setAction(action);
   };
 
   props.browser.model.pathChanged.connect(async () => {
@@ -153,7 +155,13 @@ export const Bottom = (props: BottomProps): JSX.Element => {
     await setLabel();
   });
 
-  return <div className={'jp-bottom-div'}>{text}</div>;
+  return (
+    <div className={'jp-bottom-div'}>
+      <div className="jp-bottom-hidden-files">
+        {hiddenFiles} hidden files (<a>{action}</a>)
+      </div>
+    </div>
+  );
 };
 
 export class Cs3BottomWidget extends ReactWidget {
@@ -170,7 +178,8 @@ export class Cs3BottomWidget extends ReactWidget {
     browser: FileBrowser
   ) {
     super(options);
-    this.addClass('c3-bottom-widget');
+    // this.addClass('c3-bottom-widget');
+    // this.addClass('p-Widget');
     this.id = id;
     this.title.closable = false;
     this.bottomProps = { db: stateDB, browser: browser };
@@ -189,13 +198,17 @@ export class Cs3BottomWidget extends ReactWidget {
 }
 
 export class Cs3TabWidget extends ReactWidget {
-  constructor(title: string, icon: LabIcon, options: Widget.IOptions = {}) {
+  constructor(title: string, icon?: LabIcon, options: Widget.IOptions = {}) {
     super(options);
     this.addClass('c3-tab-widget');
 
     this.title.label = title;
     this.title.caption = title;
-    this.title.icon = icon;
+    this.title.className = 'jp-main-tab';
+    this.title.iconClass = 'jp-main-tab-icon';
+    if (icon) {
+      this.title.icon = icon;
+    }
   }
 
   protected render(): JSX.Element {
