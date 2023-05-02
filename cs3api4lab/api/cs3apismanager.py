@@ -1,3 +1,4 @@
+import importlib
 import urllib
 import nbformat
 import os
@@ -8,6 +9,7 @@ import cs3.storage.provider.v1beta1.resources_pb2 as resource_types
 import cs3.rpc.v1beta1.code_pb2 as cs3code
 
 from base64 import decodebytes
+
 from jupyter_server.services.contents.manager import ContentsManager
 from requests import HTTPError
 
@@ -47,9 +49,32 @@ class CS3APIsManager(ContentsManager):
         self.share_api = ShareAPIFacade(log)
         self.storage_api = StorageApi(log)
         self.lock_api = LockApiFactory.create(log, self.cs3_config)
+        self.checkpoints = self._create_checkpoints_instance(log, self.cs3_config)
 
         #line below must be run in order for loop.run_until_complete() to work
         nest_asyncio.apply()
+
+    def _create_checkpoints_instance(self, log, config):
+        checkpoints_class = self.cs3_config.checkpoints_class
+        if checkpoints_class:
+            module_name, class_name = checkpoints_class.rsplit('.', 1)
+            try:
+                module = importlib.import_module(module_name)
+                checkpoints_class = getattr(module, class_name)
+                return checkpoints_class(parent=self, log=log, config=config)
+            except (ImportError, AttributeError):
+                pass
+
+        # Fallback to default checkpoints implementation
+        return super().checkpoints
+
+    def _load_checkpoints_class(self, class_path):
+        module_name, class_name = class_path.rsplit('.', 1)
+        try:
+            module = importlib.import_module(module_name)
+            return getattr(module, class_name)
+        except (ImportError, AttributeError):
+            return None
 
     # _is_dir is already async, so no need to asyncify this
     def dir_exists(self, path):
@@ -484,7 +509,6 @@ class CS3APIsManager(ContentsManager):
 
         return is_editor
 
-
     #
     # Notebook hack - disable checkpoint
     #
@@ -498,18 +522,6 @@ class CS3APIsManager(ContentsManager):
     @asyncify
     def rename(self, old_path, new_path):
         self.rename_file(old_path, new_path)
-
-    def create_checkpoint(self, path):
-        return {'id': 'checkpoint', 'last_modified': "0"}
-
-    def restore_checkpoint(self, checkpoint_id, path):
-        pass
-
-    def list_checkpoints(self, path):
-        return [{'id': 'checkpoint', 'last_modified': "0"}]
-
-    def delete_checkpoint(self, checkpoint_id, path):
-        pass
 
     @asyncify
     def create_clone_file(self, path):

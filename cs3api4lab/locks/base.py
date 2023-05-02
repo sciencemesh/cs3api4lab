@@ -32,6 +32,10 @@ class LockBase(ABC):
     def is_file_locked(self, stat):
         pass
 
+    @abstractmethod
+    def get_lock(self, ref):
+        pass
+
     def get_current_user(self):
         if self.user is None:
             self.user = self.cs3_api.WhoAmI(request=cs3gw.WhoAmIRequest(token=self.auth.authenticate()),

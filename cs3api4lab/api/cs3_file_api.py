@@ -26,7 +26,6 @@ from cs3api4lab.auth.channel_connector import ChannelConnector
 from cs3api4lab.config.config_manager import Cs3ConfigManager
 from cs3api4lab.locks.factory import LockApiFactory
 
-
 class Cs3FileApi:
     log = None
     cs3_api = None
@@ -86,7 +85,7 @@ class Cs3FileApi:
             'permissions': stat.info.permission_set,
             'arbitrary_metadata': MessageToDict(stat.info.arbitrary_metadata),
         }
-        
+
     def read_file(self, stat, endpoint=None):
         """
         Read a file using the given userid as access token.
@@ -260,6 +259,7 @@ class Cs3FileApi:
         tend = time.time()
         self.log.debug(
             'msg="Invoked create container" filepath="%s" elapsedTimems="%.1f"' % (path, (tend - tstart) * 1000))
+
 
     def get_home_dir(self):
         return self.config.home_dir if self.config.home_dir else ""

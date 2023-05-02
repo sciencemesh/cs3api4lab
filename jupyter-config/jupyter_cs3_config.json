@@ -16,6 +16,8 @@
 	"locks_expiration_time": 150,
 	"tus_enabled": false,
 	"enable_ocm": false,
-    "dev_env": true
+	"checkpoints_class": "cs3api4lab.api.cs3checkpoints.CS3Checkpoints",
+    "dev_env": true,
+	"lock_api": "metadata"
 	}
 }

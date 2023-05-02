@@ -23,7 +23,7 @@ class Metadata(LockBase):
     def is_file_locked(self, stat):
         file_is_locked = True
 
-        lock = self._get_lock(stat)
+        lock = self.get_lock(stat)
         if not lock:
             file_is_locked = False
         elif self._is_lock_mine(lock) or self._is_lock_expired(lock):
@@ -42,7 +42,7 @@ class Metadata(LockBase):
         }))
 
     def is_valid_external_lock(self, stat):
-        lock = self._get_lock(stat)
+        lock = self.get_lock(stat)
         is_mine = self._is_lock_mine(lock)
         return lock and not is_mine and not self._is_lock_expired(lock)
 
@@ -58,7 +58,7 @@ class Metadata(LockBase):
             return True
         return (time.time() - lock['updated']) > datetime.timedelta(seconds=self.locks_expiration_time).total_seconds()
 
-    def _get_lock(self, stat):
+    def get_lock(self, stat):
         if not stat['arbitrary_metadata']:
             return None
 
