@@ -20,7 +20,7 @@ class Cs3(LockBase):
 
     def set_lock(self, stat):
         ref = FileUtils.get_reference(stat['inode']['opaque_id'], stat['inode']['storage_id'])
-        lock = self._get_lock(ref)
+        lock = self.get_lock(ref)
         '''
         this if statement should be replaced with self.is_file_locked()  and set_lock
         function after the bug with setting/refreshing locks is resolved 
@@ -36,7 +36,7 @@ class Cs3(LockBase):
         file_is_locked = True
 
         ref = FileUtils.get_reference(stat['inode']['opaque_id'], stat['inode']['storage_id'])
-        lock = self._get_lock(ref)
+        lock = self.get_lock(ref)
         if not lock:
            file_is_locked = False
         elif self._is_lock_mine(lock):
@@ -46,14 +46,14 @@ class Cs3(LockBase):
 
     def is_valid_external_lock(self, stat):
         ref = FileUtils.get_reference(stat['inode']['opaque_id'], stat['inode']['storage_id'])
-        lock = self._get_lock(ref)
+        lock = self.get_lock(ref)
         return lock and not self._is_lock_mine(lock)
 
     def _is_lock_mine(self, lock):
         user = self.get_current_user()
         return lock['user']['idp'] == user.id.idp and lock['user']['opaqueId'] == user.id.opaque_id
 
-    def _get_lock(self, ref):
+    def get_lock(self, ref):
         request = storage_api.GetLockRequest(ref=ref)
         lock_response = self.cs3_api.GetLock(request=request, metadata=[('x-access-token', self.auth.authenticate())])
         if lock_response.status.code == cs3code.CODE_OK:

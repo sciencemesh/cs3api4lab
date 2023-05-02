@@ -81,6 +81,9 @@ class Config(LoggingConfigurable):
         config=True, allow_none=False, help="""Locking API implementation to choose from 'cs3' (cs3apis 
         grpc locks) and 'metadata' (file arbitrary metadata, the default one)""",
     )
+    checkpoints_class = Unicode(
+        config=True, allow_none=False, help="""Checkpoint class"""
+    )
     dev_env = Bool(
         config=True, allow_none=True, default_value=False, help=""""This is a temporary variable to determine whether this is dev environment"""
     )
@@ -184,6 +187,10 @@ class Config(LoggingConfigurable):
     def _locks_api(self):
         return self._get_config_value("locks_api")
 
+    @default("checkpoints_class")
+    def _checkpoint_class(self):
+        return self._get_config_value("checkpoints_class")
+
     @default("dev_env")
     def _dev_env_default(self):
         return self._get_config_value("dev_env") in ["true", True]
@@ -245,6 +252,7 @@ class Config(LoggingConfigurable):
         "oauth_token": None,
         "locks_api": "metadata",
         "oauth_token": None,
+        "checkpoints_class": "cs3api4lab.api.cs3checkpoints.CS3Checkpoints",
         "dev_env": False
     }
 
