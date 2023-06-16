@@ -30,7 +30,7 @@ export class PendingSharesListWrapper extends ReactWidget {
 
   protected render(): JSX.Element {
     return (
-      <div>
+      <div className="jp-DirListing-content">
         <PendingSharesContent hideWidget={this.hide} showWidget={this.show} />
       </div>
     );
