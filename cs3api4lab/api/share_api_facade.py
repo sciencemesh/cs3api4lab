@@ -147,8 +147,10 @@ class ShareAPIFacade:
             ocm_share_list = None
 
         mapped_shares = self.map_shares(share_list, ocm_share_list, True)
-        if status is not None:
-            mapped_shares['content'] = list(filter(lambda share: share['state'] == status, mapped_shares['content']))
+        if not status:
+            status = 'accepted'
+
+        mapped_shares['content'] = list(filter(lambda share: share['state'] == status, mapped_shares['content']))
 
         return mapped_shares
 
