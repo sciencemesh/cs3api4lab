@@ -109,6 +109,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
             self.file_name = self.file_path + self.get_random_suffix()
             created_share = self.create_share('richard', self.einstein_id, self.einstein_idp, self.file_name)
             self.share_id = created_share['opaque_id']
+            self.uni_api.update_received(self.share_id, 'accepted')
             share_list = self.uni_api.list_received()
             contains = False
             for share in share_list['content']:
