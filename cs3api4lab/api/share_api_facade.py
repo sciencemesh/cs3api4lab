@@ -154,7 +154,7 @@ class ShareAPIFacade:
 
         return mapped_shares
 
-    def list_grantees_for_file(self, file_path):
+    def list_grantees_for_file(self, file_path, type):
         """
         :param file_path: path to the file
         :return: list of grantees
@@ -164,15 +164,22 @@ class ShareAPIFacade:
         file_path = FileUtils.check_and_transform_file_path(file_path)
 
         all_shares_list = []
-        share_list = self.share_api.list(file_path)
-        all_shares_list.extend(share_list.shares)
+        if type == 'received':
+            share_list = self.share_api.list_received(file_path)
+            for share in share_list.shares:
+                all_shares_list.append(share.share)
 
-        if self.config.enable_ocm:
-            ocm_share_list = self.ocm_share_api.list(file_path)
-            all_shares_list.extend(ocm_share_list.shares)
+        else:
+            share_list = self.share_api.list(file_path)
+            all_shares_list.extend(share_list.shares)
+            if self.config.enable_ocm:
+                ocm_share_list = self.ocm_share_api.list(file_path)
+                all_shares_list.extend(ocm_share_list.shares)
 
         shares = []
+        # print(all_shares_list)
         for share in all_shares_list:
+            # print('loop', share)
             shares.append(ShareUtils.get_share_info(share))
 
         return {"file_path": file_path, "shares": shares}

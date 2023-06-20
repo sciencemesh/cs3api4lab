@@ -62,6 +62,7 @@
 
 .jp-pending-shares-header-item-name {
     flex: 1 0 100px;
+    min-width: 140px;
 }
 
 .jp-pending-shares-header-item-shared-by {
@@ -121,6 +122,9 @@
 
 .jp-pending-shares-listing-name {
     flex: 1 0 100px;
+    min-width: 140px;
+    overflow: hidden;
+    margin-right: 5px;
 }
 
 .jp-pending-shares-listing-shared-by {

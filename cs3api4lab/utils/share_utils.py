@@ -105,8 +105,9 @@ class ShareUtils:
 
     @staticmethod
     def get_share_info(share):
+        print('get share info', share)
         return {
-            "opaque_id": share.id.opaque_id,
+            # "opaque_id": share.id.opaque_id,
             "grantee": {
                 "idp": share.grantee.user_id.idp,
                 "opaque_id": share.grantee.user_id.opaque_id,

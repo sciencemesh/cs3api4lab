@@ -93,7 +93,8 @@ class ListSharesForFile(APIHandler):
     @gen.coroutine
     def get(self):
         file_path = self.get_query_argument('file_path')
-        yield RequestHandler.async_handle_request(self, self.share_api.list_grantees_for_file, 200, file_path)
+        type = self.get_query_argument('type')
+        yield RequestHandler.async_handle_request(self, self.share_api.list_grantees_for_file, 200, file_path, type)
 
 class HomeDirHandler(APIHandler):
     @property
