@@ -44,6 +44,8 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 import { ITranslator } from '@jupyterlab/translation';
 import { requestAPI } from './services';
 import { infoIcon, shareIcon } from './icons';
+import { SharedWithMeListWrapper } from './sharedWithMe';
+import { SharedByMeListWrapper } from './sharedByMe';
 
 /**
  * The command IDs used by the react-widget plugin.
@@ -351,14 +353,6 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     );
     docManager.services.contents.addDrive(driveShareWithMe);
 
-    const fileBrowserSharedWithMe: FileBrowser = factory.createFileBrowser(
-      'fileBrowserSharedWithMe',
-      {
-        driveName: driveShareWithMe.name
-      }
-    );
-    fileBrowserSharedWithMe.toolbar.hide();
-
     //
     // Projects tab
     //
@@ -453,16 +447,25 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
     cs3Accordion.hide();
 
     const pendingShares = new PendingSharesListWrapper();
+    const sharedByMe = new SharedByMeListWrapper(
+      factory.defaultBrowser.model,
+      cs3Panel
+    );
+    const sharedWithMe = new SharedWithMeListWrapper(
+      factory.defaultBrowser.model,
+      cs3Panel
+    );
+
     pendingShares.title.label = 'Pending shares';
-    fileBrowserSharedByMe.title.label = 'Shared by me';
-    fileBrowserSharedWithMe.title.label = 'Shared with me';
+    sharedWithMe.title.label = 'Shared with me';
+    sharedByMe.title.label = 'Shared by me';
 
     // fold accordion widget
-    pendingShares.hide();
+    sharedWithMe.hide();
 
     cs3Accordion.insertWidget(1, pendingShares);
-    cs3Accordion.insertWidget(2, fileBrowserSharedByMe);
-    cs3Accordion.insertWidget(3, fileBrowserSharedWithMe);
+    cs3Accordion.insertWidget(2, sharedByMe);
+    cs3Accordion.insertWidget(3, sharedWithMe);
     cs3Accordion.setRelativeSizes([100, 400, 400]);
 
     cs3Panel.addTab(factory.defaultBrowser);
@@ -471,8 +474,8 @@ const cs3browser: JupyterFrontEndPlugin<void> = {
 
     // refresh shares on share tab activation
     cs3Panel.sharesTabVisible().connect(() => {
-      void fileBrowserSharedWithMe.model.refresh();
       void fileBrowserSharedByMe.model.refresh();
+      sharedWithMe.update();
     });
 
     // refresh files on share tab activation

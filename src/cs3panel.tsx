@@ -6,7 +6,7 @@ import { IStateDB } from '@jupyterlab/statedb';
 import { BottomProps } from './types';
 import { useState } from 'react';
 import { FileBrowser } from '@jupyterlab/filebrowser';
-import { IIterator } from '@lumino/algorithm';
+import { each, IIterator } from '@lumino/algorithm';
 import { ISignal, Signal } from '@lumino/signaling';
 
 export class Cs3Panel extends Widget {
@@ -15,6 +15,7 @@ export class Cs3Panel extends Widget {
   protected bottom: BoxPanel;
   private _sharesTabVisible = new Signal<Widget, any>(this);
   private _filesTabVisible = new Signal<Widget, any>(this);
+  private stateDB: IStateDB;
 
   constructor(
     title: string,
@@ -25,6 +26,7 @@ export class Cs3Panel extends Widget {
   ) {
     super(options);
 
+    this.stateDB = stateDB;
     this.id = id;
     this.title.caption = title;
     this.title.icon = icon;
@@ -65,7 +67,6 @@ export class Cs3Panel extends Widget {
     rootLayout.addWidget(this.bottom);
 
     this.layout = rootLayout;
-
     // detect which tab is opened to limit calls
     this.main.layoutModified.connect((dockPanel): void => {
       if (dockPanel.layout !== null) {
@@ -94,6 +95,19 @@ export class Cs3Panel extends Widget {
     this.main.addWidget(widget, options);
   }
 
+  public activateFileBrowserTab(): void {
+    each(this.main.widgets(), widget => {
+      if (widget.id === 'sharesPanel') {
+        widget.hide();
+      }
+
+      if (widget.id === 'cs3filebrowser') {
+        widget.show();
+        this.main.selectWidget(widget);
+        void this.stateDB.save('activeTab', 'cs3filebrowser');
+      }
+    });
+  }
   public addHeader(widget: Widget): void {
     this.header.addWidget(widget);
   }

@@ -28,6 +28,7 @@ import { debounce } from 'ts-debounce';
  */
 class Main extends React.Component<any, any> {
   private readonly tabname: string;
+  private readonly type: string;
 
   public state = {
     activeTab: 'info'
@@ -41,6 +42,7 @@ class Main extends React.Component<any, any> {
   public constructor(props: MainProps) {
     super(props);
     this.tabname = props.tabname;
+    this.type = props.type;
   }
 
   public componentDidMount() {
@@ -68,6 +70,7 @@ class Main extends React.Component<any, any> {
         <Content
           contentType={this.state.activeTab}
           content={this.props.fileInfo}
+          type={this.type}
         />
       </div>
     );
@@ -112,7 +115,8 @@ const Content = (props: ContentProps): JSX.Element => {
   switch (props.contentType) {
     case 'shares':
       elementToDisplay = Shares({
-        fileInfo: props.content
+        fileInfo: props.content,
+        type: props.type
       });
       break;
     case 'info':
@@ -140,16 +144,20 @@ const Header = (props: HeaderProps): JSX.Element => {
 export class InfoboxWidget extends ReactWidget {
   private readonly fileInfo: Contents.IModel;
   private readonly tabname: string;
+  private readonly type: string | undefined;
 
   public constructor(props: InfoboxProps) {
     super();
     this.addClass('jp-ReactWidget');
     this.fileInfo = props.fileInfo;
     this.tabname = props.tabname;
+    this.type = props.type;
   }
 
   protected render(): JSX.Element {
-    return <Main fileInfo={this.fileInfo} tabname={this.tabname} />;
+    return (
+      <Main fileInfo={this.fileInfo} tabname={this.tabname} type={this.type} />
+    );
   }
 }
 
@@ -199,9 +207,12 @@ const Shares = (props: ShareProps): JSX.Element => {
   const [share, setShare] = useState<any>({});
 
   const getGrantees = async (): Promise<any> => {
-    requestAPI<any>(`/api/cs3/shares/file?file_path=${props.fileInfo.path}`, {
-      method: 'GET'
-    }).then(async granteesRequest => {
+    requestAPI<any>(
+      `/api/cs3/shares/file?file_path=${props.fileInfo.path}&type=${props.type}`,
+      {
+        method: 'GET'
+      }
+    ).then(async granteesRequest => {
       if (granteesRequest.shares.length <= 0) {
         setGrantees([]);
         return false;
@@ -302,6 +313,7 @@ const Shares = (props: ShareProps): JSX.Element => {
                   labelField="name"
                   multi={false}
                   className="jp-share-permission"
+                  disabled={props.type === 'received'}
                   options={[
                     {
                       name: 'viewer'
@@ -334,7 +346,8 @@ const Shares = (props: ShareProps): JSX.Element => {
                     backgroundColor: 'transparent',
                     border: 'none',
                     padding: '5px',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    display: props.type === 'received' ? 'none' : 'block'
                   }}
                   onClick={() => {
                     const selectedShare = share.shares
@@ -487,7 +500,8 @@ export function createInfobox(
   return new Dialog({
     body: new InfoboxWidget({
       fileInfo: fileInfo,
-      tabname: tabname
+      tabname: tabname,
+      type: 'share'
     }),
     buttons: [Dialog.okButton({ label: 'Close' })]
   });

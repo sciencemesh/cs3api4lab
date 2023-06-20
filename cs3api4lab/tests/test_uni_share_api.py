@@ -274,7 +274,7 @@ class TestCs3UniShareApi(ShareTestBase, TestCase):
             created_share = self.create_share('einstein', self.richard_id, self.richard_idp, self.file_name)
             self.share_id = created_share['opaque_id']
 
-            grantees = self.uni_api.list_grantees_for_file(self.file_name)
+            grantees = self.uni_api.list_grantees_for_file(self.file_name, 'recevied')
 
             self.assertTrue(
                 list(share for share in grantees['shares']

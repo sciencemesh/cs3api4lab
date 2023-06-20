@@ -374,3 +374,22 @@ jp-bottom-hidden-files {
 #cs3-panel {
     background-color: var(--jp-layout-color0);
 }
+
+.jp-ShareListing-content {
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+    overflow: auto;
+    background-color: var(--jp-layout-color1);
+}
+
+.jp-ShareListing-content .jp-mod-selected {
+    color: white !important;
+    background: var(--jp-brand-color1) !important;
+}
+
+.jp-share-button {
+    justify-content: left !important;
+    flex: 0 0 72px !important;
+}
