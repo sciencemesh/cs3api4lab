@@ -2,7 +2,7 @@
 
 [![Github Actions Status](https://github.com/sciencemesh/cs3api4lab.git/workflows/Build/badge.svg)](https://github.com/sciencemesh/cs3api4lab.git/actions/workflows/build.yml)
 
-This is an Extension for Jupyterlab that allow the retrieval of files and and added functionality (i.e sharing) provided by the CS3APIs.
+This is an Extension for Jupyterlab that allow the retrieval of files and added functionality (i.e sharing) provided by the CS3APIs.
 
 
 This extension is composed of a Python package named `cs3api4lab`
@@ -17,45 +17,11 @@ the default managers.
 
 * JupyterLab >= 3.0
 
-## Install
-
-To install the extension, execute:
-
-```bash
-pip install cs3api4lab
-```
-
-## Uninstall
-
-To remove the extension, execute:
-
-```bash
-pip uninstall cs3api4lab
-```
-
-
-## Troubleshoot
-
-If you are seeing the frontend extension, but it is not working, check
-that the server extension is enabled:
-
-```bash
-jupyter server extension list
-```
-
-If the server extension is installed and enabled, but you are not seeing
-the frontend extension, check the frontend extension is installed:
-
-```bash
-jupyter labextension list
-```
-
-
 ## Contributing
 
 ### Development install
 
-Note: You will need NodeJS to build the extension package.
+Note: You will need NodeJS (ver 14.x) to build the extension package.
 
 The `jlpm` command is JupyterLab's pinned version of
 [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
@@ -73,6 +39,11 @@ jupyter server extension enable cs3api4lab
 # Rebuild extension Typescript source after making changes
 jlpm run build
 ```
+Note: After building the project please see sections:
+
+[Disable default file browser](#disable-default-file-browser) - cs3api4lab plugin replaces default filebrowser
+
+[Setup env](#setup-env) - before running the plugin you need to change JupyterLab configuration
 
 You can watch the source directory and run JupyterLab at the same time in different terminals to watch for changes in the extension's source and automatically rebuild the extension.
 
@@ -133,7 +104,7 @@ python test_cs3_file_api.py
 python test_cs3apismanager.py
 ```
 
-### Setup env 
+### Setup env
 
 Create config:
 ```
@@ -232,6 +203,41 @@ and put necessary config values for authenticator class.
 	"client_id": "einstein"
 	}
 }
+```
+
+## Install
+
+**Note: This version of installation method is not ready yet. Please use [Development installation instructions](#development-install).**
+
+To install the extension, execute:
+
+```bash
+pip install cs3api4lab
+```
+
+## Uninstall
+
+To remove the extension, execute:
+
+```bash
+pip uninstall cs3api4lab
+```
+
+
+## Troubleshoot
+
+If you are seeing the frontend extension, but it is not working, check
+that the server extension is enabled:
+
+```bash
+jupyter server extension list
+```
+
+If the server extension is installed and enabled, but you are not seeing
+the frontend extension, check the frontend extension is installed:
+
+```bash
+jupyter labextension list
 ```
 
 ## Setup for docker image
